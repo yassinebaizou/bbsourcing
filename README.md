@@ -1,4 +1,4 @@
-# BeastSourcing website: how to put it online
+# DDPSourcing website: how to put it online
 
 ## What's in this folder
 
@@ -39,7 +39,7 @@ Your repository: `github.com/yassinebaizou/bsourcing`
 2. Open the `site` folder.
 3. Click **Add file → Upload files**.
 4. Drag in `index.html`, `privacy.html`, `terms.html`, `favicon.svg`, and the `media` folder. They replace the old files with the same name.
-5. At the bottom, write "New BeastSourcing website" and click **Commit changes**.
+5. At the bottom, write "New DDPSourcing website" and click **Commit changes**.
 
 **About `vercel.json`:** your repository already has one at the root, used for the `/team` dashboard password. Keep your existing one for now. If you no longer need the old `/team` dashboard (the Google Sheet replaces it), tell me and I'll give you a clean replacement.
 
@@ -47,7 +47,7 @@ Vercel detects the change and publishes the new site automatically within about 
 
 ## Step 3: Connect your domain
 
-In Vercel: **Project → Settings → Domains → Add**, type your domain (for example `beastsourcing.ma`), and follow the DNS instructions Vercel shows (usually one A record and one CNAME at your domain provider).
+In Vercel: **Project → Settings → Domains → Add**, type your domain (for example `ddpsourcing.ma`), and follow the DNS instructions Vercel shows (usually one A record and one CNAME at your domain provider).
 
 ## Step 4: Test
 
