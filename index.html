@@ -82,13 +82,8 @@ p{margin:0}
 .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(40px,6vw,72px);align-items:center}
 .hero h1{font-size:clamp(40px,6vw,66px);font-weight:900;letter-spacing:-.03em;line-height:1.02}
 .hero .lead{color:var(--on-navy);margin-top:22px}
-.quick{margin-top:32px;max-width:590px}
-.quick label{display:block;font-size:15px;font-weight:600;margin-bottom:10px}
-.quick-row{display:flex;gap:8px;background:#fff;border-radius:12px;padding:6px}
-.quick-row input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:16px var(--font);color:var(--navy);padding:0 12px;height:52px}
-.quick-row .btn{min-height:52px;white-space:nowrap}
-.hero-meta{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin-top:18px;font-size:15px;color:var(--on-navy-muted)}
-.hero-meta a{color:#F7F8FA;font-weight:600;text-underline-offset:4px}
+.hero-cta-row{margin-top:32px}
+.btn-lg{min-height:60px;padding:0 36px;font-size:19px}
 .route{background:var(--navy-2);border:1px solid var(--navy-line);border-radius:var(--r-lg);padding:30px}
 .route-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .route-top p{font-size:15px;font-weight:600;color:var(--on-navy-muted)}
@@ -106,7 +101,6 @@ p{margin:0}
 .route-foot span{color:var(--on-navy-muted);font-size:15px}
 .route-foot b{font-weight:800}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr}}
-@media (max-width:520px){.quick-row{flex-direction:column}.quick-row .btn{width:100%}}
 
 /* trust strip */
 .trust{background:var(--white);border-bottom:1px solid var(--line)}
@@ -324,16 +318,8 @@ fieldset.field{border:0;margin:0;padding:0}
     <div>
       <h1>Source from China. One final price. Delivered to your door.</h1>
       <p class="lead">Just send us the product link. We find a trusted supplier, give you the final price per unit, ship by express air, clear Moroccan customs for you, and deliver your stock to your door within 15 to 20 days.</p>
-      <form class="quick" id="quickForm" novalidate>
-        <label for="quickLink">Paste your product link to get the final price</label>
-        <div class="quick-row">
-          <input id="quickLink" type="url" inputmode="url" placeholder="https://www.alibaba.com/product/…" autocomplete="off">
-          <button class="btn btn-primary" type="submit">Get my price</button>
-        </div>
-      </form>
-      <div class="hero-meta">
-        <a href="#process">See how it works</a>
-        <span>Free request. Minimum order: MAD 5,000 or 100 units.</span>
+      <div class="hero-cta-row">
+        <a class="btn btn-primary btn-lg" href="#request">Get my price</a>
       </div>
     </div>
     <div class="route" aria-label="Your order from China to Morocco">
@@ -723,16 +709,6 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     $('mobileWa').href = wa; $('mobileWa').target = '_blank'; $('mobileWa').rel = 'noopener'; $('mobileWa').hidden = false;
   }
   if (CONFIG.email) { const li = el('li'); li.appendChild(el('a', { href: 'mailto:' + CONFIG.email }, CONFIG.email)); contact.insertBefore(li, contact.lastElementChild); }
-
-  // Hero quick link -> request form
-  $('quickForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const v = $('quickLink').value.trim();
-    if (v) $('f-link').value = v;
-    showStep(1);
-    $('request').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-    setTimeout(() => (v ? $('f-qty') : $('f-link')).focus({ preventScroll: true }), 450);
-  });
 
   // ---------- Request form ----------
   let step = 1;
