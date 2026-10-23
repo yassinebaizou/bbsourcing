@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price Estimator | DDPSourcing</title>
+<meta name="description" content="Get an indicative door-to-door price per unit for your product from China to Morocco, before you send your sourcing request.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1220; --navy-2:#121B2E; --orange:#FF6B00; --orange-dark:#E55F00;
+    --cloud:#F7F8FA; --slate:#334155; --muted:#64748B; --line:#E2E8F0;
+    --green:#168A5B; --red:#C0362C; --white:#FFFFFF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--cloud);color:var(--navy);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+
+  /* Header */
+  .top{background:var(--navy);color:var(--white)}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px}
+  .brand{font-weight:800;letter-spacing:.02em;text-decoration:none;font-size:20px;line-height:1}
+  .brand small{display:block;color:var(--orange);font-size:10px;letter-spacing:.32em;margin-top:3px}
+  .top-link{color:#CBD5E1;text-decoration:none;font-size:14px;font-weight:500}
+  .top-link:hover{color:var(--white)}
+
+  .wrap{max-width:1080px;margin:0 auto}
+
+  /* Hero */
+  .hero{background:var(--navy);color:var(--white);padding:28px 16px 96px}
+  .hero .eyebrow{color:var(--orange);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 10px}
+  .hero h1{font-size:clamp(28px,5vw,44px);line-height:1.1;margin:0 0 12px;font-weight:800;max-width:720px}
+  .hero p{color:#CBD5E1;max-width:620px;margin:0;font-size:16px}
+
+  /* Layout */
+  .main{padding:0 16px 56px;margin-top:-72px}
+  .grid{display:grid;grid-template-columns:1fr;gap:20px}
+  @media (min-width:880px){.grid{grid-template-columns:1.15fr .85fr}}
+
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 10px 30px rgba(11,18,32,.08)}
+  .form-card{padding:24px}
+  .form-card h2{margin:0 0 4px;font-size:20px}
+  .form-card .sub{margin:0 0 20px;color:var(--muted);font-size:14px}
+
+  .field{margin-bottom:18px}
+  label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;color:var(--navy)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .control{position:relative}
+  select,input{width:100%;font:inherit;font-size:16px;color:var(--navy);background:var(--white);border:1.5px solid var(--line);border-radius:10px;padding:13px 14px;outline:none;transition:border-color .15s, box-shadow .15s;appearance:none;-webkit-appearance:none}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23334155' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:40px}
+  select:focus,input:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.15)}
+  .with-unit input{padding-right:64px}
+  .unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--muted);pointer-events:none}
+  .two{display:grid;grid-template-columns:1fr;gap:0 16px}
+  @media (min-width:520px){.two{grid-template-columns:1fr 1fr}}
+
+  .err{display:none;color:var(--red);font-size:13px;margin-top:6px}
+  .field.invalid .err{display:block}
+  .field.invalid select,.field.invalid input{border-color:var(--red)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:10px;padding:15px 20px;font:inherit;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s, transform .05s}
+  .btn[hidden]{display:none}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--orange);color:var(--navy)}
+  .btn-primary:hover{background:var(--orange-dark)}
+  .btn-primary[disabled]{opacity:.6;cursor:wait}
+  .btn-ghost{background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,.35)}
+  .btn-ghost:hover{border-color:var(--white)}
+  .form-error{display:none;margin-top:12px;font-size:14px;color:var(--red)}
+
+  /* Result */
+  .result{background:var(--navy);color:var(--white);border-color:var(--navy);padding:24px;display:flex;flex-direction:column}
+  .result h3{margin:0 0 16px;font-size:14px;font-weight:600;color:#CBD5E1;text-transform:uppercase;letter-spacing:.08em}
+  .placeholder{color:#94A3B8;font-size:15px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:200px}
+  .placeholder .big{font-size:44px;font-weight:800;color:#334155;line-height:1}
+  .price{display:none}
+  .price .amount{font-size:clamp(44px,8vw,60px);font-weight:800;line-height:1;color:var(--orange);letter-spacing:-.01em}
+  .price .per{font-size:16px;color:#CBD5E1;margin-top:6px}
+  .divider{height:1px;background:rgba(255,255,255,.12);margin:18px 0}
+  .row{display:flex;justify-content:space-between;gap:12px;font-size:15px;color:#E2E8F0}
+  .row strong{color:var(--white)}
+  .badge{display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,107,0,.15);color:#FFB27A;margin-top:12px}
+  .badge[hidden]{display:none}
+  .disclaimer{font-size:13px;color:#94A3B8;margin:16px 0 18px}
+  .actions{display:grid;gap:10px;margin-top:auto}
+
+  .includes{margin-top:20px;padding:20px 24px}
+  .includes h4{margin:0 0 12px;font-size:15px}
+  .includes ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:8px 18px}
+  @media (min-width:520px){.includes ul{grid-template-columns:1fr 1fr}}
+  .includes li{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--slate)}
+  .includes li::before{content:"";flex:0 0 18px;height:18px;margin-top:1px;border-radius:50%;background:var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath d='M1 4l3 3 5-6' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E") no-repeat center}
+
+  footer{text-align:center;color:var(--muted);font-size:13px;padding:24px 16px 40px}
+
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  @media (prefers-reduced-motion:no-preference){.price.show{animation:pop .35s ease-out}}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/">DDP<small>SOURCING</small></a>
+    <a class="top-link" href="/">← Back to homepage</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Price estimator</p>
+    <h1>Estimate your door-to-door price before you apply.</h1>
+    <p>Choose your product type, enter the Alibaba price and the weight. You get an indicative price per unit, delivered anywhere in Morocco, so you can test your product quickly.</p>
+  </div>
+</section>
+
+<main class="main">
+  <div class="wrap">
+    <div class="grid">
+
+      <div>
+        <form class="card form-card" id="estimator" novalidate>
+          <h2>Your product</h2>
+          <p class="sub">Three details are enough for an estimate.</p>
+
+          <div class="field" data-field="category">
+            <label for="category">Product category</label>
+            <div class="control">
+              <select id="category" name="category" required>
+                <option value="">Select a category</option>
+                <option value="gadget">Gadget (standard)</option>
+                <option value="connected">Gadget with Bluetooth / WiFi</option>
+                <option value="vibration">Product with vibration</option>
+                <option value="textile">Textile &amp; clothing</option>
+                <option value="home">Home &amp; kitchen</option>
+                <option value="beauty">Beauty &amp; accessories</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <p class="err" id="err-category"></p>
+          </div>
+
+          <div class="two">
+            <div class="field" data-field="priceUsd">
+              <label for="priceUsd">Alibaba price per unit</label>
+              <div class="control with-unit">
+                <input id="priceUsd" name="priceUsd" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="e.g. 4.00" required>
+                <span class="unit">USD</span>
+              </div>
+              <p class="hint">The unit price shown on Alibaba.</p>
+              <p class="err" id="err-priceUsd"></p>
+            </div>
+
+            <div class="field" data-field="weightGrams">
+              <label for="weightGrams">Weight per unit</label>
+              <div class="control with-unit">
+                <input id="weightGrams" name="weightGrams" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 200" required>
+                <span class="unit">grams</span>
+              </div>
+              <p class="hint">One unit with its packaging.</p>
+              <p class="err" id="err-weightGrams"></p>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="submitBtn">Estimate my price</button>
+          <p class="form-error" id="formError" role="alert"></p>
+        </form>
+
+        <div class="card includes">
+          <h4>What the estimate covers</h4>
+          <ul>
+            <li>Product purchase cost</li>
+            <li>Express air freight</li>
+            <li>Customs clearance and import charges</li>
+            <li>Transit and handling fees</li>
+            <li>Door-to-door delivery in Morocco</li>
+            <li>Our sourcing service</li>
+          </ul>
+        </div>
+      </div>
+
+      <aside class="card result" aria-live="polite">
+        <h3>Your estimate</h3>
+
+        <div class="placeholder" id="placeholder">
+          <span class="big">— MAD</span>
+          <span>Fill in your product details to see an indicative price per unit.</span>
+        </div>
+
+        <div class="price" id="price">
+          <div class="amount" id="amount">0 MAD</div>
+          <div class="per">per unit, delivered to your door</div>
+          <span class="badge" id="connectedBadge" hidden>Includes the approval fee for connected products</span>
+
+          <div class="divider"></div>
+          <div class="row"><span>Based on a stock of</span><strong id="qty">100 units</strong></div>
+          <div class="row" style="margin-top:8px"><span>Estimated total</span><strong id="total">0 MAD</strong></div>
+
+          <p class="disclaimer">This is an indicative price to help you test your product. Your exact final price is confirmed in your quotation after our team reviews your request. It may be slightly higher or lower.</p>
+        </div>
+
+        <div class="actions">
+          <a class="btn btn-primary" id="requestBtn" href="/#request">Request my exact quote</a>
+          <button class="btn btn-ghost" type="button" id="resetBtn" hidden>Try another product</button>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</main>
+
+<footer>Minimum order: MAD 5,000 or 100 units · Monday to Friday, 10:00 AM–6:00 PM Morocco time</footer>
+
+<script>
+(function () {
+  // Where "Request my exact quote" sends the visitor. Change if your form lives elsewhere.
+  var REQUEST_URL = "/#request";
+
+  var form = document.getElementById("estimator");
+  var btn = document.getElementById("submitBtn");
+  var formError = document.getElementById("formError");
+  var placeholder = document.getElementById("placeholder");
+  var price = document.getElementById("price");
+  var resetBtn = document.getElementById("resetBtn");
+  var requestBtn = document.getElementById("requestBtn");
+  var fmt = new Intl.NumberFormat("en-US");
+
+  function setError(name, msg) {
+    var f = form.querySelector('[data-field="' + name + '"]');
+    var e = document.getElementById("err-" + name);
+    if (!f || !e) return;
+    f.classList.toggle("invalid", !!msg);
+    e.textContent = msg || "";
+  }
+
+  function clearErrors() {
+    ["category", "priceUsd", "weightGrams"].forEach(function (n) { setError(n, ""); });
+    formError.style.display = "none";
+  }
+
+  function validate(d) {
+    var ok = true;
+    if (!d.category) { setError("category", "Please choose a product category."); ok = false; }
+    if (!(d.priceUsd > 0)) { setError("priceUsd", "Enter the Alibaba unit price in USD."); ok = false; }
+    if (!(d.weightGrams >= 1)) { setError("weightGrams", "Enter the weight of one unit in grams."); ok = false; }
+    return ok;
+  }
+
+  function buildRequestLink(d) {
+    var params = new URLSearchParams({
+      category: d.category,
+      priceUsd: String(d.priceUsd),
+      weightGrams: String(d.weightGrams),
+      source: "estimator"
+    });
+    var parts = REQUEST_URL.split("#");
+    return parts[0] + (parts[0].indexOf("?") > -1 ? "&" : "?") + params.toString() + (parts[1] ? "#" + parts[1] : "");
+  }
+
+  function showResult(r, d) {
+    document.getElementById("amount").textContent = fmt.format(r.pricePerUnit) + " MAD";
+    document.getElementById("qty").textContent = r.batchQty + " units";
+    document.getElementById("total").textContent = fmt.format(r.batchTotal) + " MAD";
+    document.getElementById("connectedBadge").hidden = !r.connectedNotice;
+    placeholder.style.display = "none";
+    price.style.display = "block";
+    price.classList.remove("show"); void price.offsetWidth; price.classList.add("show");
+    requestBtn.href = buildRequestLink(d);
+    resetBtn.hidden = false;
+  }
+
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    clearErrors();
+    var d = {
+      category: form.category.value,
+      priceUsd: parseFloat(form.priceUsd.value),
+      weightGrams: parseFloat(form.weightGrams.value)
+    };
+    if (!validate(d)) return;
+
+    btn.disabled = true;
+    btn.textContent = "Calculating…";
+
+    fetch("/api/estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(d)
+    })
+      .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j }; }); })
+      .then(function (r) {
+        if (!r.ok) {
+          if (r.j && r.j.errors) { Object.keys(r.j.errors).forEach(function (k) { setError(k, r.j.errors[k]); }); return; }
+          throw new Error("bad response");
+        }
+        showResult(r.j, d);
+        if (window.matchMedia("(max-width: 879px)").matches) {
+          document.querySelector(".result").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      })
+      .catch(function () {
+        formError.textContent = "We could not calculate your estimate right now. Please try again in a moment.";
+        formError.style.display = "block";
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = "Estimate my price";
+      });
+  });
+
+  resetBtn.addEventListener("click", function () {
+    form.reset();
+    clearErrors();
+    price.style.display = "none";
+    placeholder.style.display = "flex";
+    resetBtn.hidden = true;
+    requestBtn.href = REQUEST_URL;
+    form.category.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+})();
+</script>
+</body>
+</html>
