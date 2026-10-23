@@ -82,8 +82,10 @@ p{margin:0}
 .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(40px,6vw,72px);align-items:center}
 .hero h1{font-size:clamp(40px,6vw,66px);font-weight:900;letter-spacing:-.03em;line-height:1.02}
 .hero .lead{color:var(--on-navy);margin-top:22px}
-.hero-cta-row{margin-top:32px}
+.hero-cta-row{margin-top:32px;display:flex;flex-wrap:wrap;gap:14px}
 .btn-lg{min-height:60px;padding:0 36px;font-size:19px}
+.btn-ghost-dark{background:transparent;color:#F7F8FA;border:1.5px solid rgba(255,255,255,.35)}
+.btn-ghost-dark:hover{border-color:#fff;color:#fff}
 .route{background:var(--navy-2);border:1px solid var(--navy-line);border-radius:var(--r-lg);padding:30px}
 .route-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .route-top p{font-size:15px;font-weight:600;color:var(--on-navy-muted)}
@@ -331,6 +333,7 @@ fieldset.field{border:0;margin:0;padding:0}
       <p class="lead">Just send us the product link. We find a trusted supplier, give you the final price per unit, ship by express air, clear Moroccan customs for you, and deliver your stock to your door within 15 to 20 days.</p>
       <div class="hero-cta-row">
         <a class="btn btn-primary btn-lg" href="#request">Get my price</a>
+        <a class="btn btn-ghost-dark btn-lg" href="/estimate">Try the price estimator</a>
       </div>
     </div>
     <div class="route" aria-label="Your order from China to Morocco">
