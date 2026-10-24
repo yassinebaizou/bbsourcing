@@ -93,6 +93,26 @@
   .done-card h2{margin:0 0 8px}
   .done-card p{color:var(--slate);max-width:460px;margin:0 auto 18px}
   .profile-card{padding:22px;max-width:640px}
+  .steps div[hidden]{display:none}
+
+  /* Guest */
+  .guest-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#EEF1F5;border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:14px;color:var(--slate)}
+  .guest-bar strong{color:var(--navy)}
+
+  /* Conversation */
+  .unread{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--orange-dark);margin-top:10px}
+  .unread::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--orange)}
+  .chat{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto;padding:4px 2px;margin-bottom:12px}
+  .bubble{max-width:82%;padding:9px 12px;border-radius:12px;font-size:14px;line-height:1.45}
+  .bubble p{margin:0;white-space:pre-wrap;word-break:break-word}
+  .bubble .meta{font-size:11.5px;margin-top:4px;opacity:.8}
+  .bubble.mine{align-self:flex-end;background:var(--navy);color:var(--white);border-bottom-right-radius:4px}
+  .bubble.theirs{align-self:flex-start;background:#F4F6F9;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .bubble .att{display:inline-block;margin-top:6px;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+  .bubble.update{align-self:center;max-width:100%;background:var(--green-soft, #E7F6EC);color:var(--green);font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px}
+  .composer textarea{min-height:80px}
+  .composer-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .file-chip{font-size:12.5px;background:#EEF1F5;border-radius:6px;padding:4px 8px}
 </style>
 </head>
 <body>
@@ -104,6 +124,7 @@
       <span class="hello" id="hello"></span>
       <a href="/team" id="crmLink" hidden>Team CRM</a>
       <a href="/estimate">Price estimator</a>
+      <button type="button" id="loginTop" hidden>Log in</button>
       <button type="button" id="logoutBtn" hidden>Log out</button>
     </div>
   </div>
@@ -122,6 +143,8 @@
       <h1 id="authTitle">Your sourcing account</h1>
       <p class="lead" id="authLead">Create a free account to send sourcing requests and follow every order.</p>
       <div class="alert alert-info" id="prefillNotice" hidden>Your product details are saved. Create your account or log in to send this request.</div>
+
+      <p class="auth-foot" id="backToForm" hidden style="margin:-8px 0 16px"><button type="button" class="link" id="backToFormBtn">← Back to the request form</button></p>
 
       <div class="tabs" role="tablist">
         <button type="button" role="tab" id="tabSignup" aria-selected="true">Create account</button>
@@ -199,8 +222,12 @@
 
       <!-- New request -->
       <div id="tab-new" hidden>
+        <div class="guest-bar" id="guestBar" hidden>
+          <span><strong>Get your door-to-door price.</strong> Fill in your request, then create your free account to send it.</span>
+          <span>Already a client? <button type="button" class="link" id="guestLogin">Log in</button></span>
+        </div>
         <div class="steps" id="steps">
-          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Budget and timing</div>
+          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Budget and timing</div><div id="step4Label" hidden>4. Your account</div>
         </div>
         <form class="card form-card" id="reqForm" novalidate>
           <div id="reqMsg"></div>
@@ -291,6 +318,42 @@
             <p class="hint">Your information is used only to review your request and contact you about our sourcing service.</p>
           </div>
 
+          <div data-step="4" hidden>
+            <h2>Create your account to send it</h2>
+            <p class="sub">Your request is ready. Your free account lets you follow your quotation, payments and delivery, and talk with our team, in one place.</p>
+            <div class="tabs" role="tablist">
+              <button type="button" role="tab" id="gTabSignup" aria-selected="true">Create account</button>
+              <button type="button" role="tab" id="gTabLogin" aria-selected="false">I already have an account</button>
+            </div>
+            <div id="gSignup">
+              <div class="field"><label for="g_name">Full name</label><input id="g_name" autocomplete="name"></div>
+              <div class="field"><label for="g_email">Email</label><input id="g_email" type="email" autocomplete="email"></div>
+              <div class="field">
+                <label for="g_whatsapp">WhatsApp number</label>
+                <input id="g_whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="+212 6 12 34 56 78">
+                <p class="hint">We contact you on WhatsApp about your request.</p>
+              </div>
+              <div class="grid-2">
+                <div class="field">
+                  <label for="g_status">Selling status</label>
+                  <select id="g_status">
+                    <option value="">Select</option>
+                    <option value="starting">Preparing to start</option>
+                    <option value="selling">Already selling</option>
+                    <option value="scaling">Scaling an established store</option>
+                  </select>
+                </div>
+                <div class="field"><label for="g_business">Business or store name <span class="opt">(optional)</span></label><input id="g_business"></div>
+              </div>
+              <div class="field"><label for="g_password">Password</label><input id="g_password" type="password" autocomplete="new-password" minlength="8"><p class="hint">At least 8 characters.</p></div>
+            </div>
+            <div id="gLogin" hidden>
+              <div class="field"><label for="gl_email">Email</label><input id="gl_email" type="email" autocomplete="email"></div>
+              <div class="field"><label for="gl_password">Password</label><input id="gl_password" type="password" autocomplete="current-password"></div>
+              <p class="hint"><button type="button" class="link" id="gForgot">Forgot your password?</button></p>
+            </div>
+          </div>
+
           <div class="form-actions">
             <button class="btn btn-secondary" type="button" id="prevBtn" hidden>Back</button>
             <span></span>
@@ -305,9 +368,10 @@
         <div class="card done-card">
           <div class="check-big"><svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true"><path d="M2 10l7 7L24 2" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h2>Your sourcing request has been received.</h2>
-          <p>Reference <strong id="sentCode"></strong>. Our team will review it and contact you on WhatsApp within the same business day. Requests sent outside Monday–Friday, 10:00 AM–6:00 PM Morocco time are handled on the next business day.</p>
+          <p id="sentText">Reference <strong id="sentCode"></strong>. Our team will review it and contact you on WhatsApp within the same business day. Requests sent outside Monday–Friday, 10:00 AM–6:00 PM Morocco time are handled on the next business day.</p>
+          <p id="sentConfirm" hidden>One last step: we sent a confirmation link to <strong id="sentEmail"></strong>. Open it to activate your account, then log in to follow your request and chat with our team. Our team will also contact you on WhatsApp within the same business day.</p>
           <div class="alert alert-warn" id="sentFileWarn" hidden style="text-align:left"></div>
-          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap" id="sentActions">
             <button class="btn btn-primary" type="button" id="viewRequestsBtn">View my requests</button>
             <button class="btn btn-secondary" type="button" id="anotherBtn">Send another request</button>
           </div>
@@ -416,19 +480,23 @@
     return;
   }
   var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: false };
+  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: false, guest: false, submitting: false, gMode: "signup", unread: {}, chatFile: null, chatTimer: null };
+  var lastStep = function () { return state.guest ? 4 : 3; };
+  var safeName = function (n) { return String(n).toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-60); };
 
   // Estimator → account: keep the product details until the request is sent.
   (function capturePrefill() {
     var q = new URLSearchParams(location.search);
     var link = q.get("link") || "";
     if (link && !/^https?:\/\/\S+$/i.test(link)) link = "";
-    if (q.get("source") === "estimator" || q.get("category") || link) {
+    var qty = /^\d{1,7}$/.test(q.get("qty") || "") ? q.get("qty") : "";
+    if (q.get("source") === "estimator" || q.get("source") === "home" || q.get("category") || link || qty) {
       store(PREFILL_KEY, {
         category: q.get("category") || "",
         priceUsd: q.get("priceUsd") || "",
         weightGrams: q.get("weightGrams") || "",
-        link: link
+        link: link,
+        qty: qty
       });
       history.replaceState(null, "", location.pathname + location.hash);
     }
@@ -439,8 +507,23 @@
     $("boot").hidden = true;
     $("authView").hidden = view !== "auth";
     $("appView").hidden = view !== "app";
-    $("logoutBtn").hidden = view !== "app";
+    $("logoutBtn").hidden = view !== "app" || state.guest;
+    $("loginTop").hidden = !state.guest || view !== "app";
+    $("backToForm").hidden = !state.guest || view !== "auth";
+    document.querySelector(".subnav").hidden = state.guest;
+    $("guestBar").hidden = !state.guest;
+    $("step4Label").hidden = !state.guest;
   }
+  // Visitors without an account fill the request form first and create their account at the last step.
+  function enterGuest() {
+    state.guest = true;
+    show("app");
+    resetRequestForm();
+    tab("new");
+    $("pageTitle").textContent = "Request your price";
+    $("newReqTop").hidden = true;
+  }
+  function guestToLogin() { show("auth"); authMode("login"); }
   function authMode(mode) {
     ["signupForm", "loginForm", "forgotForm", "resetForm"].forEach(function (id) { $(id).hidden = true; });
     $(mode + "Form").hidden = false;
@@ -472,6 +555,21 @@
   $("viewRequestsBtn").onclick = function () { openTab("requests"); };
   $("anotherBtn").onclick = function () { openTab("new"); };
   $("logoutBtn").onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
+  $("loginTop").onclick = guestToLogin;
+  $("guestLogin").onclick = guestToLogin;
+  $("backToFormBtn").onclick = function () { if ($("tab-new").hidden) enterGuest(); else show("app"); };
+  $("gTabSignup").onclick = function () { guestMode("signup"); };
+  $("gTabLogin").onclick = function () { guestMode("login"); };
+  $("gForgot").onclick = function () { $("fp_email").value = $("gl_email").value; show("auth"); authMode("forgot"); };
+  function guestMode(m) {
+    state.gMode = m;
+    $("gSignup").hidden = m !== "signup";
+    $("gLogin").hidden = m !== "login";
+    $("gTabSignup").setAttribute("aria-selected", m === "signup");
+    $("gTabLogin").setAttribute("aria-selected", m === "login");
+    $("sendBtn").textContent = m === "login" ? "Log in and send my request" : "Create my account and send my request";
+    msg($("reqMsg"));
+  }
 
   function openTab(name) {
     if (name === "new") resetRequestForm();
@@ -555,10 +653,15 @@
   });
 
   // ---------- App ----------
-  function enterApp(user) {
-    if (state.user && state.user.id === user.id && !$("appView").hidden) return;
+  // Loads the profile, statuses and role, and switches the header to the signed-in look.
+  function loadBase(user) {
     state.user = user;
-    Promise.all([
+    // A request sent at signup travels in the account metadata; the database already created it, so drop the copy.
+    if (user.user_metadata && user.user_metadata.pending_request) {
+      store(PREFILL_KEY, null);
+      sb.auth.updateUser({ data: { pending_request: null } }).catch(function () {});
+    }
+    return Promise.all([
       sb.from("profiles").select("*").eq("id", user.id).single(),
       sb.from("request_statuses").select("*"),
       sb.rpc("staff_role")
@@ -567,20 +670,41 @@
       (res[1].data || []).forEach(function (s) { state.statuses[s.code] = s; });
       $("crmLink").hidden = !res[2].data;
       $("hello").textContent = state.profile.full_name ? "Hi, " + state.profile.full_name.split(" ")[0] : "";
+      state.guest = false;
       show("app");
-      if (load(PREFILL_KEY)) openTab("new"); else openTab("requests");
+    });
+  }
+
+  function enterApp(user) {
+    if (state.user && state.user.id === user.id && !$("appView").hidden) return;
+    // A visitor who logs in halfway through the form keeps what they typed.
+    var draft = state.guest && $("f_name").value.trim();
+    loadBase(user).then(function () {
+      if (draft) { tab("new"); goStep(Math.min(state.step, 3)); }
+      else if (load(PREFILL_KEY)) openTab("new");
+      else openTab("requests");
     });
   }
 
   function loadRequests() {
     var list = $("reqList");
     list.innerHTML = '<div class="loading"><div class="spinner"></div> Loading your requests…</div>';
-    sb.from("requests")
-      .select("id, code, product_name, category, quantity, estimated_value_mad, status, created_at, below_minimum")
-      .order("created_at", { ascending: false })
-      .then(function (r) {
+    Promise.all([
+      sb.from("requests")
+        .select("id, code, product_name, category, quantity, estimated_value_mad, status, created_at, below_minimum")
+        .order("created_at", { ascending: false }),
+      sb.from("request_messages").select("request_id, created_at").eq("from_team", true),
+      sb.from("message_reads").select("request_id, last_read_at")
+    ]).then(function (res) {
+        var r = res[0];
         if (r.error) { list.innerHTML = ""; return msg(list, "error", friendly(r.error)); }
         state.requests = r.data || [];
+        var reads = {};
+        (res[2].data || []).forEach(function (x) { reads[x.request_id] = x.last_read_at; });
+        state.unread = {};
+        (res[1].data || []).forEach(function (m) {
+          if (!reads[m.request_id] || new Date(m.created_at) > new Date(reads[m.request_id])) state.unread[m.request_id] = (state.unread[m.request_id] || 0) + 1;
+        });
         if (!state.requests.length) {
           list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Send us the product you want to import and we will source it for you.</p><button class="btn btn-primary" type="button" id="emptyNew">Send my first request</button></div>';
           $("emptyNew").onclick = function () { openTab("new"); };
@@ -591,7 +715,8 @@
           return '<button type="button" class="card req" data-id="' + esc(q.id) + '">' +
             '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
             '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
-            pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) + '</button>';
+            pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) +
+            (state.unread[q.id] ? '<div class="unread">' + state.unread[q.id] + ' new from our team</div>' : "") + '</button>';
         }).join("");
         list.querySelectorAll(".req").forEach(function (b) { b.onclick = function () { openDetail(b.dataset.id); }; });
       });
@@ -643,8 +768,16 @@
         row("Product link", q.product_link ? '<a href="' + esc(q.product_link) + '" target="_blank" rel="noopener nofollow">Open link</a>' : "") +
         row("Specifications", esc(q.specifications)) +
         row("Notes", esc(q.client_notes)) +
-        "</dl>" + (files.length ? '<h3 class="section-title">Images</h3><div class="thumbs" id="thumbs"></div>' : "") + "</div>";
+        "</dl>" + (files.length ? '<h3 class="section-title">Images</h3><div class="thumbs" id="thumbs"></div>' : "") + "</div>" +
+        '<div class="card" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">Conversation with our team</h3>' +
+        '<p class="muted" style="margin:-6px 0 12px;font-size:14px">Ask a question, send photos or documents, and read our updates on this request.</p>' +
+        '<div class="chat" id="chat"><div class="loading"><div class="spinner"></div></div></div>' +
+        '<div class="composer"><div class="field" style="margin-bottom:10px"><textarea id="chatMsg" aria-label="Your message" maxlength="5000" placeholder="Write your message…"></textarea></div>' +
+        '<div class="composer-actions"><span><label class="link" style="display:inline;font-weight:600;margin:0;cursor:pointer">Attach a photo or PDF<input type="file" id="chatFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label> <span id="chatFileName"></span></span>' +
+        '<button class="btn btn-primary" type="button" id="chatSend">Send</button></div></div></div>';
       $("backList").onclick = function () { openTab("requests"); };
+      bindChat(q);
+      loadChat(q.id, true);
       if (files.length) {
         sb.storage.from("request-files").createSignedUrls(files.map(function (f) { return f.path; }), 3600).then(function (r) {
           $("thumbs").innerHTML = (r.data || []).filter(function (x) { return x.signedUrl; }).map(function (x) {
@@ -653,6 +786,79 @@
         });
       }
     });
+  }
+
+  // ---------- Conversation ----------
+  function chatTime(t) {
+    return new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  function markRead(id) {
+    delete state.unread[id];
+    sb.from("message_reads").upsert({ request_id: id }, { onConflict: "request_id,user_id" }).then(function () {});
+  }
+  function loadChat(id, scroll) {
+    sb.from("request_messages").select("id, kind, from_team, body, attachment_path, attachment_name, created_at")
+      .eq("request_id", id).order("created_at").then(function (r) {
+        var box = $("chat"); if (!box) return;
+        if (r.error) { box.innerHTML = '<div class="muted">' + esc(friendly(r.error)) + "</div>"; return; }
+        var list = r.data || [];
+        var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+        box.innerHTML = list.length ? list.map(function (m) {
+          if (m.kind === "update") return '<div class="bubble update">' + esc(m.body) + " · " + esc(chatTime(m.created_at)) + "</div>";
+          return '<div class="bubble ' + (m.from_team ? "theirs" : "mine") + '"><p>' + esc(m.body) + "</p>" +
+            (m.attachment_path ? '<button type="button" class="att" data-file="' + esc(m.attachment_path) + '">📎 ' + esc(m.attachment_name || "Attachment") + "</button>" : "") +
+            '<div class="meta">' + (m.from_team ? "DDPSourcing team" : "You") + " · " + esc(chatTime(m.created_at)) + "</div></div>";
+        }).join("") : '<div class="muted" style="font-size:14px">No messages yet. Our updates and answers will appear here.</div>';
+        if (scroll || atBottom) box.scrollTop = box.scrollHeight;
+        box.querySelectorAll("[data-file]").forEach(function (b) {
+          b.onclick = function () {
+            sb.storage.from("request-files").createSignedUrl(b.dataset.file, 600).then(function (u) {
+              if (u.error) return toast(friendly(u.error), true);
+              window.open(u.data.signedUrl, "_blank", "noopener");
+            });
+          };
+        });
+        markRead(id);
+      });
+  }
+  function bindChat(q) {
+    state.chatFile = null;
+    clearInterval(state.chatTimer);
+    state.chatTimer = setInterval(function () {
+      if (!$("chat") || $("tab-detail").hidden) return clearInterval(state.chatTimer);
+      if (document.visibilityState === "visible") loadChat(q.id, false);
+    }, 30000);
+    $("chatFile").onchange = function () {
+      var f = this.files && this.files[0];
+      this.value = "";
+      if (!f) return;
+      if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(f.type)) return toast("Only JPG, PNG, WEBP or PDF files.", true);
+      if (f.size > 10 * 1024 * 1024) return toast("This file is larger than 10 MB.", true);
+      state.chatFile = f;
+      $("chatFileName").innerHTML = '<span class="file-chip">' + esc(f.name) + ' <button type="button" class="link" id="chatFileRm" aria-label="Remove file">×</button></span>';
+      $("chatFileRm").onclick = function () { state.chatFile = null; $("chatFileName").innerHTML = ""; };
+    };
+    $("chatSend").onclick = function () {
+      var body = $("chatMsg").value.trim(), f = state.chatFile, btn = this;
+      if (!body && !f) return toast("Write a message or attach a file.", true);
+      btn.disabled = true; btn.textContent = "Sending…";
+      var done = function () { btn.disabled = false; btn.textContent = "Send"; };
+      var send = function (path) {
+        return sb.from("request_messages").insert({ request_id: q.id, body: body || ("File: " + f.name), attachment_path: path, attachment_name: path ? f.name : null }).then(function (r) {
+          done();
+          if (r.error) return toast(friendly(r.error), true);
+          $("chatMsg").value = ""; state.chatFile = null; $("chatFileName").innerHTML = "";
+          toast("Message sent to our team.");
+          loadChat(q.id, true);
+        });
+      };
+      if (!f) return send(null);
+      var path = state.user.id + "/" + q.id + "/msg-" + Date.now() + "-" + safeName(f.name);
+      sb.storage.from("request-files").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+        if (u.error) { done(); return toast(friendly(u.error), true); }
+        send(path);
+      });
+    };
   }
 
   // ---------- New request ----------
@@ -672,6 +878,7 @@
       if (p.priceUsd) $("f_usd").value = p.priceUsd;
       if (p.weightGrams) $("f_weight").value = p.weightGrams;
       if (p.link) $("f_link").value = p.link;
+      if (p.qty) $("f_qty").value = p.qty;
       refreshEstimate();
     }
     goStep(1);
@@ -730,8 +937,10 @@
       d.className = i + 1 < n ? "done" : i + 1 === n ? "active" : "";
     });
     $("prevBtn").hidden = n === 1;
-    $("nextBtn").hidden = n === 3;
-    $("sendBtn").hidden = n !== 3;
+    $("nextBtn").hidden = n === lastStep();
+    $("sendBtn").hidden = n !== lastStep();
+    if (!state.guest) $("sendBtn").textContent = "Send my sourcing request";
+    else if (n === 4) guestMode(state.gMode);
     msg($("reqMsg"));
   }
 
@@ -756,6 +965,16 @@
         return false;
       }
     }
+    if (n === 4 && state.gMode === "signup") {
+      ok = req("g_name", function (v) { return v.trim().length >= 2; }) &
+        req("g_email", function (v) { return /^\S+@\S+\.\S+$/.test(v.trim()); }) &
+        req("g_whatsapp", function (v) { return !!normWhatsapp(v); }) &
+        req("g_status") & req("g_password", function (v) { return v.length >= 8; });
+      if (!ok) { msg($("reqMsg"), "error", "Please complete the highlighted fields. Your password needs at least 8 characters, and your WhatsApp number should look like +212 6 12 34 56 78."); return false; }
+    }
+    if (n === 4 && state.gMode === "login") {
+      ok = req("gl_email", function (v) { return /^\S+@\S+\.\S+$/.test(v.trim()); }) & req("gl_password", function (v) { return v.length > 0; });
+    }
     if (!ok) msg($("reqMsg"), "error", "Please complete the highlighted fields.");
     return !!ok;
   }
@@ -771,7 +990,9 @@
 
   $("reqForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    if (!validateStep(3)) return;
+    if (state.step !== lastStep()) return $("nextBtn").click();
+    if (!validateStep(3)) return goStep(3);
+    if (state.guest && !validateStep(4)) return;
     var num = function (id) { var v = $(id).value; return v === "" ? null : Number(v); };
     var row = {
       product_name: $("f_name").value.trim(),
@@ -793,23 +1014,88 @@
       privacy_accepted: true
     };
     var btn = $("sendBtn");
+    btn.dataset.label = btn.textContent;
     btn.disabled = true; btn.textContent = "Sending…";
+    if (state.guest) return guestSubmit(row);
+    insertRequest(row);
+  });
+
+  function sendFailed(err) {
+    var btn = $("sendBtn");
+    state.submitting = false;
+    btn.disabled = false; btn.textContent = btn.dataset.label || "Send my sourcing request";
+    msg($("reqMsg"), "error", friendly(err));
+  }
+
+  function insertRequest(row) {
     sb.from("requests").insert(row).select("id, code").single().then(function (r) {
-      if (r.error) {
-        btn.disabled = false; btn.textContent = "Send my sourcing request";
-        return msg($("reqMsg"), "error", friendly(r.error));
+      if (r.error) return sendFailed(r.error);
+      finishSent(r.data);
+    });
+  }
+
+  function finishSent(created) {
+    return uploadFiles(created.id).then(function (failed) {
+      var btn = $("sendBtn");
+      state.submitting = false;
+      btn.disabled = false; btn.textContent = "Send my sourcing request";
+      store(PREFILL_KEY, null);
+      $("sentCode").textContent = created.code;
+      $("sentText").hidden = false; $("sentConfirm").hidden = true; $("sentActions").hidden = false;
+      $("sentFileWarn").hidden = !failed;
+      if (failed) $("sentFileWarn").textContent = failed + " image(s) could not be uploaded. Your request is saved; open it and send the images in the conversation.";
+      tab("sent");
+    });
+  }
+
+  // Guest: create the account (or log in) and send the request in one go.
+  function guestSubmit(row) {
+    state.submitting = true;
+    if (state.gMode === "login") {
+      sb.auth.signInWithPassword({ email: $("gl_email").value.trim(), password: $("gl_password").value }).then(function (r) {
+        if (r.error) return sendFailed(r.error);
+        loadBase(r.data.user).then(function () { insertRequest(row); });
+      });
+      return;
+    }
+    var email = $("g_email").value.trim();
+    sb.auth.signUp({
+      email: email, password: $("g_password").value,
+      options: {
+        emailRedirectTo: location.origin + "/account",
+        data: {
+          full_name: $("g_name").value.trim(), whatsapp: normWhatsapp($("g_whatsapp").value), city: row.delivery_city,
+          selling_status: $("g_status").value, business_name: $("g_business").value.trim(),
+          pending_request: row
+        }
       }
-      var created = r.data;
-      return uploadFiles(created.id).then(function (failed) {
-        btn.disabled = false; btn.textContent = "Send my sourcing request";
+    }).then(function (r) {
+      if (r.error) return sendFailed(r.error);
+      if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+        guestMode("login");
+        $("gl_email").value = email;
+        return sendFailed({ message: "An account already exists with this email. Enter your password to log in and send your request." });
+      }
+      if (!r.data.session) {
+        // The request is already saved under the new account; photos can be added once the email is confirmed.
+        state.submitting = false;
         store(PREFILL_KEY, null);
-        $("sentCode").textContent = created.code;
-        $("sentFileWarn").hidden = !failed;
-        if (failed) $("sentFileWarn").textContent = failed + " image(s) could not be uploaded. Your request is saved; you can send the images to our team on WhatsApp.";
+        $("sentEmail").textContent = email;
+        $("sentText").hidden = true; $("sentConfirm").hidden = false; $("sentActions").hidden = true;
+        $("sentFileWarn").hidden = !state.files.length;
+        $("sentFileWarn").textContent = "Your photos were not uploaded yet. After you log in, open your request and send them in the conversation.";
+        $("guestBar").hidden = true; $("loginTop").hidden = false;
         tab("sent");
+        return;
+      }
+      loadBase(r.data.user).then(function () {
+        return sb.from("requests").select("id, code").order("created_at", { ascending: false }).limit(1);
+      }).then(function (q) {
+        if (q && q.data && q.data[0]) return finishSent(q.data[0]);
+        insertRequest(row);
       });
     });
-  });
+  }
 
   function uploadFiles(requestId) {
     var failed = 0;
@@ -864,7 +1150,7 @@
   // ---------- Start ----------
   sb.auth.onAuthStateChange(function (event, session) {
     if (event === "PASSWORD_RECOVERY") { state.recovering = true; show("auth"); authMode("reset"); return; }
-    if (state.recovering) return;
+    if (state.recovering || state.submitting) return;
     if (session && session.user) enterApp(session.user);
     else if (event === "SIGNED_OUT") { state.user = null; show("auth"); authMode("login"); }
   });
@@ -873,10 +1159,12 @@
     var session = r.data && r.data.session;
     if (state.recovering) return;
     if (session) return enterApp(session.user);
+    // Returning from an email link, or asked for the login page (/account?login): show log in. Otherwise the request form.
+    var wantsLogin = /type=signup|error_description/.test(location.hash) || /[?&]login\b/.test(location.search);
+    if (!wantsLogin) return enterGuest();
+    state.guest = true;
     show("auth");
-    var hasPrefill = !!load(PREFILL_KEY);
-    $("prefillNotice").hidden = !hasPrefill;
-    authMode(/type=signup|error_description/.test(location.hash) ? "login" : "signup");
+    authMode("login");
     if (/error_description/.test(location.hash)) {
       var d = decodeURIComponent((location.hash.match(/error_description=([^&]+)/) || [])[1] || "").replace(/\+/g, " ");
       msg($("authMsg"), "error", d || "This link is no longer valid. Please try again.");

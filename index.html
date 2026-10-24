@@ -509,68 +509,24 @@ fieldset.field{border:0;margin:0;padding:0}
     </div>
     <div class="req-grid">
       <div class="card-form">
-        <form id="reqForm" novalidate>
-          <div id="formBody">
-            <div class="progress-head"><span id="stepLabel">Your product</span><span id="stepCount">Step 1 of 2</span></div>
-            <div class="bar" aria-hidden="true"><i id="bar"></i></div>
-
-            <fieldset id="step1" style="border:0;margin:0;padding:0">
-              <legend class="sr-only">Step 1: your product</legend>
-              <div class="fields">
-                <div class="field full">
-                  <label for="f-link">Product link <span aria-hidden="true">*</span></label>
-                  <div class="link-box">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
-                    <input id="f-link" type="url" inputmode="url" placeholder="Paste the link: Alibaba, 1688, AliExpress, Amazon, TikTok…" aria-describedby="linkHint">
-                  </div>
-                  <p class="hint" id="linkHint">No link? Add a photo below instead.</p>
-                </div>
-                <div class="field full"><label for="f-prod">Product name (optional)</label><input id="f-prod" type="text" maxlength="200" placeholder="e.g. Wireless earbuds with charging case"></div>
-                <div class="field"><label for="f-qty">Quantity you have in mind <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
-                <fieldset class="field"><legend>Order type <span aria-hidden="true">*</span></legend>
-                  <div class="radios">
-                    <label><input type="radio" name="otype" value="New product" checked> New product</label>
-                    <label><input type="radio" name="otype" value="Restock"> Restock</label>
-                  </div>
-                </fieldset>
-                <div class="field full"><label for="f-img">Product photos (optional, up to 3)</label><input class="file" id="f-img" type="file" accept="image/*" multiple></div>
-                <div class="field full"><label for="f-notes">Color, size, packaging, or other details (optional)</label><textarea id="f-notes" rows="3" maxlength="2000"></textarea></div>
+        <form id="startForm" action="/account" method="get" novalidate>
+          <input type="hidden" name="source" value="home">
+          <div class="fields">
+            <div class="field full">
+              <label for="f-link">Product link</label>
+              <div class="link-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+                <input id="f-link" name="link" type="url" inputmode="url" placeholder="Paste the link: Alibaba, 1688, AliExpress, Amazon, TikTok…" aria-describedby="linkHint">
               </div>
-            </fieldset>
-
-            <fieldset id="step2" hidden style="border:0;margin:0;padding:0">
-              <legend class="sr-only">Step 2: your contact details</legend>
-              <div class="fields">
-                <div class="field"><label for="f-name">Full name <span aria-hidden="true">*</span></label><input id="f-name" type="text" autocomplete="name" maxlength="120"></div>
-                <div class="field"><label for="f-wa">WhatsApp number <span aria-hidden="true">*</span></label><div class="phone"><span>+212</span><input id="f-wa" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="6 12 34 56 78"></div></div>
-                <div class="field"><label for="f-city">City <span aria-hidden="true">*</span></label><input id="f-city" type="text" autocomplete="address-level2" placeholder="Casablanca" maxlength="80"></div>
-                <div class="field"><label for="f-store">Store name or link (optional)</label><input id="f-store" type="text" maxlength="300" placeholder="Your store, Instagram, or TikTok"></div>
-                <p class="note full" style="margin:0">Minimum order: MAD 5,000 or 100 units. Below the minimum? Send your request anyway and we will review it.</p>
-                <label class="check full"><input type="checkbox" id="consent-wa"> I agree to be contacted on WhatsApp about this request.</label>
-                <label class="check full"><input type="checkbox" id="consent-privacy"> <span>I accept the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
-              </div>
-            </fieldset>
-
-            <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" type="text" tabindex="-1" autocomplete="off"></div>
-
-            <div class="errors" id="errors" role="alert" tabindex="-1"></div>
-
-            <div class="form-foot">
-              <button type="button" class="btn btn-ghost" id="backBtn" hidden>Back</button>
-              <span class="spacer" id="timeHint">Takes less than 1 minute</span>
-              <button type="button" class="btn btn-primary" id="nextBtn">Continue</button>
-              <button type="submit" class="btn btn-primary" id="submitBtn" hidden>Get my final price</button>
+              <p class="hint" id="linkHint">No link? Continue anyway, you can describe the product and add photos on the next page.</p>
             </div>
-            <p class="privacy-line">Your information is used only to review your request and contact you about our sourcing service.</p>
+            <div class="field full"><label for="f-qty">Quantity you have in mind (optional)</label><input id="f-qty" name="qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
           </div>
-
-          <div class="done" id="done" tabindex="-1">
-            <div class="ok"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></div>
-            <h3>Your request has been received.</h3>
-            <p>We will review your product and send you the final price per unit and the minimum quantity on WhatsApp, the same business day. Please check that your WhatsApp number is active.</p>
-            <span class="rid">Request ID: <b id="rid"></b></span>
-            <div style="margin-top:22px"><button type="button" class="btn btn-ghost" id="againBtn">Send another request</button></div>
+          <div class="form-foot">
+            <span class="spacer">Takes about 2 minutes</span>
+            <button type="submit" class="btn btn-primary">Get my final price</button>
           </div>
+          <p class="privacy-line">On the next page you describe your product, then create your free account to send it. You follow your quotation, payments and delivery from your account, and chat with our team there.</p>
         </form>
       </div>
 
@@ -658,8 +614,6 @@ fieldset.field{border:0;margin:0;padding:0}
    SETTINGS: edit these values (see README.md)
    ========================================================= */
 const CONFIG = {
-  // Web App URL from Google Apps Script (ends with /exec)
-  formEndpoint: 'https://script.google.com/macros/s/AKfycbzU5ixeZM817Oa9ETxEglilM5mbp5pI1xPd-fxX4ULtkzlmDm7mL2mPZobVvMYhEkaQ/exec',
   // Business WhatsApp in international format, digits only, e.g. '212612345678'. Leave '' to hide WhatsApp buttons.
   whatsappNumber: '',
   // Business email. Leave '' to hide it.
@@ -764,116 +718,13 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   }
   if (CONFIG.email) { const li = el('li'); li.appendChild(el('a', { href: 'mailto:' + CONFIG.email }, CONFIG.email)); contact.insertBefore(li, contact.lastElementChild); }
 
-  // ---------- Request form ----------
-  let step = 1;
-  function showStep(n) {
-    step = n;
-    $('step1').hidden = n !== 1; $('step2').hidden = n !== 2;
-    $('backBtn').hidden = n === 1; $('timeHint').hidden = n !== 1;
-    $('nextBtn').hidden = n !== 1; $('submitBtn').hidden = n !== 2;
-    $('stepLabel').textContent = n === 1 ? 'Your product' : 'Your contact';
-    $('stepCount').textContent = 'Step ' + n + ' of 2';
-    $('bar').style.width = n === 1 ? '50%' : '100%';
-    clearErrors();
-  }
-  function clearErrors() { $('errors').classList.remove('show'); $('errors').innerHTML = ''; document.querySelectorAll('#reqForm [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid')); }
-  function showErrors(list, fields = []) {
-    const box = $('errors'); box.innerHTML = '';
-    box.appendChild(el('strong', {}, list.length > 1 ? 'Please fix the following:' : 'Please fix this:'));
-    const ul = el('ul'); list.forEach((m) => ul.appendChild(el('li', {}, m))); box.appendChild(ul);
-    box.classList.add('show');
-    fields.forEach((id) => $(id) && $(id).setAttribute('aria-invalid', 'true'));
-    (fields.length && $(fields[0]) ? $(fields[0]) : box).focus();
-  }
-  function validLink(v) { try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
-
-  function validateStep1() {
-    const errs = [], bad = [];
-    const link = $('f-link').value.trim(), files = $('f-img').files;
-    if (!link && !files.length) { errs.push('Add a product link or at least one photo.'); bad.push('f-link'); }
-    else if (link && !validLink(link)) { errs.push('The product link should start with https://'); bad.push('f-link'); }
-    if (files.length > 3) { errs.push('You can add up to 3 photos.'); bad.push('f-img'); }
-    const q = Number($('f-qty').value);
-    if (!q || q < 1) { errs.push('Enter the quantity you have in mind.'); bad.push('f-qty'); }
-    if (errs.length) { showErrors(errs, bad); return false; }
-    return true;
-  }
-  function validateStep2() {
-    const errs = [], bad = [];
-    if ($('f-name').value.trim().length < 2) { errs.push('Enter your full name.'); bad.push('f-name'); }
-    const wa = $('f-wa').value.replace(/\D/g, '');
-    if (wa.length < 9) { errs.push('Enter a valid WhatsApp number, for example 6 12 34 56 78.'); bad.push('f-wa'); }
-    if (!$('f-city').value.trim()) { errs.push('Enter your city.'); bad.push('f-city'); }
-    if (!$('consent-wa').checked) { errs.push('Agree to be contacted on WhatsApp so we can send your price.'); bad.push('consent-wa'); }
-    if (!$('consent-privacy').checked) { errs.push('Accept the Privacy Policy.'); bad.push('consent-privacy'); }
-    if (errs.length) { showErrors(errs, bad); return false; }
-    return true;
-  }
-
-  // Resize photos in the browser so uploads stay small and fast.
-  function compress(file) {
-    return new Promise((resolve, reject) => {
-      if (!/^image\//.test(file.type)) return reject(new Error(file.name + ' is not an image.'));
-      const img = new Image(), url = URL.createObjectURL(file);
-      img.onload = () => {
-        const max = 1600, scale = Math.min(1, max / Math.max(img.width, img.height));
-        const c = document.createElement('canvas'); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-        const data = c.toDataURL('image/jpeg', 0.82).split(',')[1];
-        resolve({ name: file.name.replace(/\.\w+$/, '') + '.jpg', type: 'image/jpeg', data });
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read ' + file.name + '. Try a JPG or PNG photo.')); };
-      img.src = url;
-    });
-  }
-
-  $('nextBtn').addEventListener('click', () => { if (validateStep1()) { showStep(2); $('f-name').focus(); } });
-  $('backBtn').addEventListener('click', () => showStep(1));
-  $('reqForm').addEventListener('keydown', (e) => { if (e.key === 'Enter' && step === 1 && e.target.tagName === 'INPUT') { e.preventDefault(); $('nextBtn').click(); } });
-
-  $('reqForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (step !== 2) return;
-    if (!validateStep2()) return;
-    if (!CONFIG.formEndpoint || CONFIG.formEndpoint.indexOf('http') !== 0) {
-      console.warn('DDPSourcing: set CONFIG.formEndpoint to your Apps Script Web App URL.');
-      return showErrors(['The request form is not connected yet. Please contact us on WhatsApp.']);
-    }
-    const btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const photos = [];
-      for (const f of Array.from($('f-img').files).slice(0, 3)) photos.push(await compress(f));
-      const payload = {
-        productLink: $('f-link').value.trim(),
-        productName: $('f-prod').value.trim(),
-        quantity: $('f-qty').value,
-        orderType: (document.querySelector('input[name="otype"]:checked') || {}).value || 'New product',
-        details: $('f-notes').value.trim(),
-        fullName: $('f-name').value.trim(),
-        whatsapp: $('f-wa').value.trim(),
-        city: $('f-city').value.trim(),
-        store: $('f-store').value.trim(),
-        consentWhatsapp: $('consent-wa').checked,
-        consentPrivacy: $('consent-privacy').checked,
-        website: $('website').value,
-        page: location.href,
-        photos
-      };
-      const res = await fetch(CONFIG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-      const out = await res.json();
-      if (!out.ok) throw Object.assign(new Error('rejected'), { list: out.errors });
-      $('rid').textContent = out.id;
-      $('formBody').hidden = true; $('done').classList.add('show'); $('done').focus();
-      if (window.fbq) window.fbq('track', 'Lead');
-    } catch (err) {
-      showErrors(err.list && err.list.length ? err.list : [err.message && err.message !== 'rejected' && !/fetch|network/i.test(err.message) ? err.message : 'Your request could not be sent. Check your connection and try again, or contact us on WhatsApp.']);
-    } finally {
-      btn.disabled = false; btn.textContent = 'Get my final price';
-    }
-  });
-
-  $('againBtn').addEventListener('click', () => {
-    $('reqForm').reset(); $('formBody').hidden = false; $('done').classList.remove('show'); showStep(1); $('f-link').focus();
+  // ---------- Request starter ----------
+  // The full request is sent from /account. Drop an invalid link so it is not carried over.
+  $('startForm').addEventListener('submit', () => {
+    const link = $('f-link');
+    if (link.value.trim() && !/^https?:\/\/\S+$/i.test(link.value.trim())) link.value = '';
+    if (!link.value.trim()) link.disabled = true;
+    if (!$('f-qty').value) $('f-qty').disabled = true;
   });
 })();
 

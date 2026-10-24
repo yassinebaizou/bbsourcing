@@ -23,10 +23,10 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 
 | Path | What |
 |---|---|
-| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks, **old Google-Sheet request form**) |
+| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). The `#request` box is a plain GET form to `/account?source=home&link=…&qty=…` (the Google Sheet form is retired) |
 | `estimate/index.html` | Public price estimator → "Request my exact quote" opens `/account` prefilled |
-| `account/index.html` | Client portal: sign up, log in, reset password, 3-step request form with images, my requests + tracking, profile |
-| `team/index.html` | Internal CRM: overview KPIs, requests table + filters, request drawer (status, assignment, next action, quotation, 40/60 payments with proof upload, notes, activity), payments view, team management |
+| `account/index.html` | Client portal. Visitors without a session get the request form directly (guest mode); step 4 creates the account and the request travels in signup metadata `pending_request`, inserted by the `handle_new_user` trigger (works before email confirmation). Also: log in, reset password, my requests + tracking + unread badges, two-way conversation per request, profile |
+| `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management; request drawer with client conversation, status, assignment, next action, quotation, 40/60 payments with proof, costs & profit, notes, activity |
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
@@ -57,10 +57,12 @@ Tables: `profiles` (1 per auth user, created by trigger), `staff` (role `admin` 
 `ops_finance`, `active`), `requests` (code `BS-1001…`, 18 statuses in `request_statuses`),
 `request_internal` (next action, team only), `payments` (1 per request, created when a quote is
 saved; deposit/balance are generated columns), `request_notes`, `request_files`,
-`request_events` (activity log, written only by triggers).
+`request_events` (activity log, written only by triggers), `request_messages` (client ↔ team
+conversation; `kind='update'` rows are written by the status trigger when the client stage changes),
+`message_reads` (per-user last read), `order_costs` (admin + ops_finance only; profit = final price − total cost).
 
 Who sees what:
-- **Client**: only their own requests and product images. No notes, payments, events, internal fields.
+- **Client**: only their own requests, product images and conversation (team messages show as "DDPSourcing team"). No notes, payments, costs, events, internal fields.
 - **Administrator**: everything; only role that assigns, manages staff, undoes a verified payment.
 - **Sourcing Agent**: only requests assigned to them; stages up to `awaiting_deposit`; enters the quote.
 - **Operations & Finance**: requests from `awaiting_deposit` onward; verifies payments; stages to `completed`.
@@ -81,20 +83,17 @@ The pages were tested end to end against a local Postgres + PostgREST with Supab
 (client signup from estimator → request with image → admin assigns → agent contacts and quotes
 24,000 → deposit 9,600 / balance 14,400 → Ops verifies with proof → client sees "Order in production";
 every forbidden action refused). For new work, test against the real project with test accounts,
-or a Supabase branch; don't leave test data in production.
+or a Supabase branch; don't leave test data in production. CRM v2 (migration `20261024015046`) was
+tested on the live project inside one transaction that ends with `raise exception` so it rolls back:
+signup with `pending_request` creates the request (malformed one: signup still works, no request),
+client/team message stamping, attachment folder checks, read markers, stage-change update messages,
+costs refused for client and agent, other client and unassigned agent see nothing.
 
 ## To do next (in this order)
 
-1. **Homepage request flow.** `index.html` still posts its `#request` form to a Google Apps Script
-   (`CONFIG.formEndpoint`). Requests now require an account. Replace that form section with a short
-   "Create your free account to send your request" block, and point every "Get my price" /
-   "Request your final price" button to `/account`. The hero "paste a product link" box should go to
-   `/account?link=<encoded URL>` (the account page already prefills the link from that parameter).
-   Remove the now-unused Apps Script code.
+1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
 2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
-   request and payment-tracking data, product images, and how to delete an account.
-3. **Team alert on new request**: Supabase Database Webhook or Edge Function on `requests` insert →
+   request, conversation and payment-tracking data, product images, and how to delete an account.
+3. **Team alert on new request / new client message**: Supabase Database Webhook or Edge Function →
    email (and later WhatsApp) to the team. Secrets via `create_edge_function_secret`, never in code.
-4. **`vercel.json`**: add `X-Robots-Tag: noindex` for `/team` and `/account`.
-5. **README.md**: rewrite for the new setup (no more Google Sheet).
-6. Nice to have: export requests/payments to CSV from the CRM; client confirmation email.
+4. Nice to have: export requests/payments to CSV from the CRM; client email when the team replies.
