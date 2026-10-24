@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   body{font-size:14.5px}
+  /* Chart series (validated: blue/orange pass CVD + normal-vision + contrast on white) */
+  :root{--series-1:#2a78d6;--series-2:#eb6834;--grid:#EEF1F5}
+
   /* Login */
   .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--navy)}
   .login{width:100%;max-width:400px}
@@ -28,6 +31,7 @@
   .side nav button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:#CBD5E1;padding:11px 12px;border-radius:10px;font-weight:600;font-size:14.5px;cursor:pointer;text-align:left}
   .side nav button:hover{background:var(--navy-2);color:var(--white)}
   .side nav button[aria-current=page]{background:var(--orange);color:var(--navy)}
+  .side nav button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
   .side nav svg{width:18px;height:18px;flex:0 0 18px}
   .side .count{margin-left:auto;background:rgba(255,255,255,.12);color:var(--white);border-radius:999px;font-size:11.5px;padding:1px 8px}
   .side nav button[aria-current=page] .count{background:rgba(11,18,32,.15);color:var(--navy)}
@@ -60,21 +64,34 @@
   @media (max-width:640px){.page{padding:16px}}
   .page-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
   .page-head h1{font-size:24px;margin:0}
+  .group-title{font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin:22px 0 10px}
+  .group-title:first-of-type{margin-top:0}
+
+  /* Segmented control */
+  .seg{display:inline-flex;background:#EEF1F5;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+  .seg button{border:0;background:none;padding:7px 12px;border-radius:8px;font:inherit;font-size:13.5px;font-weight:600;color:var(--slate);cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(11,18,32,.1)}
+  .seg button:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
 
   /* KPIs */
-  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
-  .kpi{padding:16px 18px;display:flex;gap:14px;align-items:flex-start;text-align:left;cursor:pointer;border:1px solid var(--line);font:inherit;color:inherit;width:100%}
-  .kpi:hover{border-color:var(--line-2)}
-  .kpi .ico{width:42px;height:42px;border-radius:10px;background:var(--orange-soft);color:var(--orange-dark);display:flex;align-items:center;justify-content:center;flex:0 0 42px}
-  .kpi .lbl{font-size:13.5px;color:var(--slate);font-weight:500}
-  .kpi .val{font-size:26px;font-weight:800;line-height:1.2}
-  .kpi .sub{font-size:12.5px;color:var(--muted)}
-  .kpi .sub.orange{color:var(--orange-dark);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+  .kpi{padding:14px 16px;text-align:left;border:1px solid var(--line);font:inherit;color:inherit;width:100%;background:var(--white)}
+  button.kpi{cursor:pointer}
+  button.kpi:hover{border-color:var(--line-2)}
+  .kpi .lbl{font-size:13px;color:var(--slate);font-weight:500;display:block}
+  .kpi .val{font-size:24px;font-weight:800;line-height:1.25;display:block;font-variant-numeric:tabular-nums}
+  .kpi .sub{font-size:12.5px;color:var(--muted);display:block}
+  .kpi .sub.warn{color:var(--amber);font-weight:600}
+  .kpi.hl{border-color:#FFD3B0;background:var(--orange-soft)}
 
-  /* Table */
+  /* Panels & tables */
   .panel{overflow:hidden}
-  .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .panel + .panel{margin-top:16px}
+  .two-col{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
+  @media (min-width:1200px){.two-col{grid-template-columns:3fr 2fr}}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
   .panel-head h2{font-size:16px;margin:0}
+  .panel-body{padding:16px 18px}
   .filters{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line);background:#FBFCFD}
   .filters select,.filters input{width:auto;min-width:140px;font-size:13.5px;padding:8px 10px;border-radius:8px}
   .filters select{padding-right:32px;background-position:right 10px center}
@@ -82,27 +99,56 @@
   .filters input[type=checkbox]{min-width:0;width:18px;margin:0}
   .table-wrap{overflow-x:auto}
   table{width:100%;border-collapse:collapse;min-width:820px}
+  table.compact{min-width:560px}
   th{text-align:left;font-size:12.5px;font-weight:600;color:var(--muted);padding:11px 16px;border-bottom:1px solid var(--line);background:#FBFCFD;white-space:nowrap}
-  td{padding:12px 16px;border-bottom:1px solid #EEF1F5;vertical-align:middle}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:#FFF8F2}
+  td{padding:11px 16px;border-bottom:1px solid #EEF1F5;vertical-align:middle}
+  tbody tr[data-id],tbody tr[data-client]{cursor:pointer}
+  tbody tr[data-id]:hover,tbody tr[data-client]:hover{background:#FFF8F2}
   tbody tr.selected{background:var(--orange-soft)}
   .code{color:var(--orange-dark);font-weight:700;white-space:nowrap}
   .flag{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:4px;padding:1px 6px;vertical-align:middle}
-  .num{text-align:right;white-space:nowrap}
+  .unread{display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11px;font-weight:700;color:var(--white);background:var(--blue);border-radius:999px;padding:1px 7px;vertical-align:middle}
+  .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .neg{color:var(--red)}
   .pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;color:var(--muted);font-size:13.5px;flex-wrap:wrap}
   .pager .btns{display:flex;gap:6px}
+  .reason{font-weight:600}
+  .reason small{display:block;font-weight:400;color:var(--muted)}
+
+  /* Chart */
+  .chart-wrap{position:relative;overflow-x:auto}
+  .chart-wrap svg{display:block;width:100%;min-width:620px;height:auto}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--slate);margin-bottom:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .tip{position:absolute;pointer-events:none;background:var(--navy);color:var(--white);font-size:12.5px;line-height:1.45;padding:9px 11px;border-radius:8px;white-space:nowrap;box-shadow:var(--shadow);z-index:2}
+  .tip b{display:block;font-size:13px;margin-bottom:2px}
+  .tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+
+  /* Kanban */
+  .kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+  .kcol{flex:0 0 250px;background:#EEF1F5;border-radius:12px;padding:10px;max-height:calc(100vh - 230px);display:flex;flex-direction:column}
+  .kcol h3{font-size:13px;margin:2px 4px 10px;display:flex;justify-content:space-between;gap:8px}
+  .kcol h3 span{color:var(--muted);font-weight:600}
+  .kcards{display:grid;gap:8px;overflow-y:auto}
+  .kcard{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%}
+  .kcard:hover{border-color:var(--line-2)}
+  .kcard:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+  .kcard .t{font-weight:700;margin:2px 0}
+  .kcard .m{font-size:12.5px;color:var(--muted)}
+  .kcard .b{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:8px}
+  .kempty{font-size:12.5px;color:var(--muted);padding:6px 4px}
 
   /* Drawer */
   .drawer-backdrop{position:fixed;inset:0;background:rgba(11,18,32,.35);z-index:50}
-  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--white);z-index:51;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(11,18,32,.15)}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--white);z-index:51;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(11,18,32,.15)}
   .drawer-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
   .drawer-head h2{margin:0;font-size:20px}
   .drawer-head .x{margin-left:auto;background:none;border:0;cursor:pointer;color:var(--slate);padding:4px}
   .drawer-body{flex:1;overflow-y:auto;padding:4px 20px 32px}
   .sec{padding:18px 0;border-bottom:1px solid #EEF1F5}
   .sec:last-child{border-bottom:0}
-  .sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+  .sec h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
   .row-inline{display:flex;gap:8px;align-items:flex-end}
   .row-inline .field{flex:1;margin:0}
   .row-inline input,.row-inline select{font-size:14.5px;padding:10px 12px}
@@ -117,13 +163,13 @@
   .pay.pendingc{border-left-color:var(--orange)}
   .pay-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
   .pay-amt{font-size:20px;font-weight:800}
-  .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .pay-grid .field{margin:0}
-  .pay-grid input,.pay-grid select{font-size:14px;padding:9px 11px}
+  .pay-grid,.cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pay-grid .field,.cost-grid .field{margin:0}
+  .pay-grid input,.pay-grid select,.cost-grid input{font-size:14px;padding:9px 11px}
   .pay-grid select{padding-right:32px}
   .pay-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
   .totals{display:flex;gap:18px;font-size:13.5px;flex-wrap:wrap}
-  .totals strong{display:block;font-size:16px}
+  .totals strong{display:block;font-size:16px;font-variant-numeric:tabular-nums}
   .thumbs{display:flex;gap:8px;flex-wrap:wrap}
   .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
   .notes{display:grid;gap:10px;margin-bottom:12px}
@@ -137,13 +183,27 @@
   .timeline li::after{content:"";position:absolute;left:7.5px;top:16px;bottom:0;width:1px;background:var(--line)}
   .timeline li:last-child::after{display:none}
   .timeline small{display:block;color:var(--muted)}
-  .actions-row{display:flex;gap:8px;flex-wrap:wrap}
+  .actions-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .readonly{color:var(--muted);font-size:13px}
+
+  /* Conversation */
+  .chat{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;padding:12px;background:#F8FAFC;border:1px solid #EEF1F5;border-radius:12px;margin-bottom:10px}
+  .bubble{max-width:82%;padding:9px 12px;border-radius:12px;font-size:14px;line-height:1.45}
+  .bubble p{margin:0;white-space:pre-wrap;word-break:break-word}
+  .bubble .meta{font-size:11.5px;margin-top:4px;opacity:.8}
+  .bubble.team{align-self:flex-end;background:var(--navy);color:var(--white);border-bottom-right-radius:4px}
+  .bubble.client{align-self:flex-start;background:var(--white);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .bubble .att{display:inline-block;margin-top:6px;font-weight:600;color:inherit;text-decoration:underline;background:none;border:0;padding:0;cursor:pointer;font:inherit;font-size:13px}
+  .bubble.update{align-self:center;max-width:100%;background:var(--green-soft);color:var(--green);font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px}
+  .compose textarea{min-height:70px}
+  .compose .actions-row{justify-content:space-between}
+  .file-chip{font-size:12.5px;background:#EEF1F5;border-radius:6px;padding:3px 8px}
 
   .team-add{display:flex;gap:8px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--line)}
   .team-add input{flex:2;min-width:200px;font-size:14px;padding:10px 12px}
   .team-add select{flex:1;min-width:160px;font-size:14px;padding:10px 34px 10px 12px}
   td select{font-size:13.5px;padding:7px 30px 7px 10px;width:auto;background-position:right 9px center}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -160,7 +220,7 @@
     <span class="brand">DDP<small>SOURCING</small></span>
     <div class="card">
       <h1>Team login</h1>
-      <p class="sub">Private area for the DDP Sourcing team.</p>
+      <p class="sub">Private area for the DDPSourcing team.</p>
       <div id="loginMsg"></div>
       <form id="loginForm" novalidate>
         <div class="field"><label for="l_email">Email</label><input id="l_email" type="email" autocomplete="email" required></div>
@@ -180,10 +240,12 @@
   <aside class="side" id="side">
     <span class="brand">DDP<small>SOURCING</small></span>
     <nav>
-      <button type="button" data-view="overview" aria-current="page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</button>
+      <button type="button" data-view="dashboard" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard <span class="count" id="countAttention" hidden></span></button>
       <button type="button" data-view="requests">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Requests <span class="count" id="countNew" hidden></span></button>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>Requests &amp; orders <span class="count" id="countNew" hidden></span></button>
+      <button type="button" data-view="clients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Clients</button>
       <button type="button" data-view="payments" id="navPayments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Payments</button>
       <button type="button" data-view="team" id="navTeam" hidden>
@@ -204,63 +266,133 @@
     <div class="topbar">
       <div class="search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input id="globalSearch" type="search" placeholder="Search requests, customers, products, cities…" aria-label="Search">
+        <input id="globalSearch" type="search" placeholder="Search requests, clients, products, cities…" aria-label="Search">
       </div>
       <button class="btn btn-secondary btn-sm" type="button" id="refreshBtn" title="Refresh data">Refresh</button>
       <div class="who"><span class="avatar" id="meAvatar"></span><span class="who-text"><strong id="meName2"></strong><small id="meRole2"></small></span></div>
     </div>
 
     <div class="page">
-      <!-- Overview -->
-      <section id="view-overview">
-        <div class="page-head"><h1>Operations overview</h1><span class="muted" id="todayLbl"></span></div>
-        <div class="kpis" id="kpis"></div>
-        <div class="card panel">
-          <div class="panel-head"><h2>Requests requiring attention</h2><button class="btn btn-secondary btn-sm" type="button" id="seeAllBtn">View all requests</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Request</th><th>Customer</th><th>City</th><th>Product</th><th>Status</th><th>Owner</th><th>Next action</th><th>Created</th></tr></thead><tbody id="attentionBody"></tbody></table></div>
+      <!-- Dashboard -->
+      <section id="view-dashboard">
+        <div class="page-head">
+          <h1>Dashboard</h1>
+          <div class="seg" id="periodSeg" role="group" aria-label="Period">
+            <button type="button" data-p="month" aria-pressed="true">This month</button>
+            <button type="button" data-p="3m" aria-pressed="false">Last 3 months</button>
+            <button type="button" data-p="year" aria-pressed="false">This year</button>
+            <button type="button" data-p="all" aria-pressed="false">All time</button>
+          </div>
+        </div>
+        <p class="muted" id="periodNote" style="margin:-8px 0 16px"></p>
+
+        <h2 class="group-title">Requests &amp; orders</h2>
+        <div class="kpis" id="kpiRequests"></div>
+        <h2 class="group-title">Money</h2>
+        <div class="kpis" id="kpiMoney"></div>
+        <h2 class="group-title">Operations</h2>
+        <div class="kpis" id="kpiOps"></div>
+
+        <div class="card panel" style="margin-top:20px">
+          <div class="panel-head"><h2>Needs attention</h2><span class="muted" id="attentionCount"></span></div>
+          <div class="table-wrap"><table class="compact"><thead><tr><th>Request</th><th>Client</th><th>Why</th><th>Status</th><th>Owner</th></tr></thead><tbody id="attentionBody"></tbody></table></div>
+        </div>
+
+        <div class="two-col">
+          <div class="card panel">
+            <div class="panel-head"><h2 id="chartTitle">Last 12 months</h2><span class="muted" style="font-size:12.5px">By month the 40% deposit was verified</span></div>
+            <div class="panel-body">
+              <div class="legend" id="chartLegend"></div>
+              <div class="chart-wrap" id="chartWrap"></div>
+            </div>
+            <div class="table-wrap"><table class="compact"><thead id="monthHead"></thead><tbody id="monthBody"></tbody></table></div>
+          </div>
+          <div class="card panel">
+            <div class="panel-head"><h2>Pipeline by stage</h2></div>
+            <div class="table-wrap"><table class="compact" style="min-width:360px"><thead><tr><th>Stage</th><th class="num">Requests</th><th class="num">Value</th></tr></thead><tbody id="pipeBody"></tbody></table></div>
+          </div>
+        </div>
+
+        <div class="card panel" id="agentPanel" style="margin-top:16px" hidden>
+          <div class="panel-head"><h2>Team performance</h2><span class="muted" style="font-size:12.5px">Selected period</span></div>
+          <div class="table-wrap"><table class="compact"><thead><tr><th>Team member</th><th>Role</th><th class="num">Open requests</th><th class="num">Quotes sent</th><th class="num">Orders won</th><th class="num">Conversion</th><th class="num">Sales</th></tr></thead><tbody id="agentBody"></tbody></table></div>
         </div>
       </section>
 
       <!-- Requests -->
       <section id="view-requests" hidden>
-        <div class="page-head"><h1>Requests</h1></div>
+        <div class="page-head">
+          <h1>Requests &amp; orders</h1>
+          <div class="seg" id="reqViewSeg" role="group" aria-label="View">
+            <button type="button" data-v="table" aria-pressed="true">Table</button>
+            <button type="button" data-v="kanban" aria-pressed="false">Board</button>
+          </div>
+        </div>
         <div class="card panel">
           <div class="filters">
             <select id="fStatus" aria-label="Status"><option value="">All statuses</option><option value="open">All open</option></select>
             <select id="fOwner" aria-label="Owner"><option value="">All owners</option><option value="none">Unassigned</option></select>
             <select id="fCity" aria-label="City"><option value="">All cities</option></select>
+            <select id="fCategory" aria-label="Category"><option value="">All categories</option></select>
             <select id="fPay" aria-label="Payment">
               <option value="">All payments</option>
+              <option value="unpaid">Unpaid (quote sent)</option>
               <option value="dep_wait">Deposit to verify</option>
-              <option value="dep_ok">Deposit verified</option>
-              <option value="fin_wait">Final payment to verify</option>
-              <option value="fin_ok">Final payment verified</option>
+              <option value="deposit_paid">Deposit paid</option>
+              <option value="fin_wait">60% to verify</option>
+              <option value="paid">Fully paid</option>
             </select>
             <input type="date" id="fFrom" aria-label="From date">
             <input type="date" id="fTo" aria-label="To date">
+            <label class="check"><input type="checkbox" id="fUnread"> Unread messages</label>
             <label class="check"><input type="checkbox" id="fBelow"> Below minimum</label>
             <button class="btn btn-ghost btn-sm" type="button" id="clearFilters">Clear</button>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Request</th><th>Customer</th><th>City</th><th>Product</th><th class="num">Qty</th><th>Status</th><th>Owner</th><th class="num">Quote</th><th>Created</th></tr></thead><tbody id="reqBody"></tbody></table></div>
-          <div class="pager"><span id="pagerInfo"></span><div class="btns"><button class="btn btn-secondary btn-sm" type="button" id="prevPage">Previous</button><button class="btn btn-secondary btn-sm" type="button" id="nextPage">Next</button></div></div>
+          <div id="reqTable">
+            <div class="table-wrap"><table><thead><tr><th>Request</th><th>Client</th><th>City</th><th>Product</th><th class="num">Qty</th><th>Status</th><th>Payment</th><th>Owner</th><th class="num">Quote</th><th>Created</th></tr></thead><tbody id="reqBody"></tbody></table></div>
+            <div class="pager"><span id="pagerInfo"></span><div class="btns"><button class="btn btn-secondary btn-sm" type="button" id="prevPage">Previous</button><button class="btn btn-secondary btn-sm" type="button" id="nextPage">Next</button></div></div>
+          </div>
+          <div id="reqKanban" class="panel-body" hidden><div class="kanban" id="kanban"></div></div>
+        </div>
+      </section>
+
+      <!-- Clients -->
+      <section id="view-clients" hidden>
+        <div class="page-head"><h1>Clients</h1><span class="muted" id="clientsCount"></span></div>
+        <div class="card panel">
+          <div class="filters">
+            <select id="cFilter" aria-label="Clients filter">
+              <option value="">All clients</option>
+              <option value="orders">With orders</option>
+              <option value="outstanding">With money outstanding</option>
+              <option value="noorder">Requests only, no order yet</option>
+            </select>
+            <select id="cSort" aria-label="Sort">
+              <option value="sales">Sort by sales</option>
+              <option value="recent">Sort by latest activity</option>
+              <option value="name">Sort by name</option>
+            </select>
+          </div>
+          <div class="table-wrap"><table><thead id="clientsHead"></thead><tbody id="clientsBody"></tbody></table></div>
         </div>
       </section>
 
       <!-- Payments -->
       <section id="view-payments" hidden>
         <div class="page-head"><h1>Payments</h1></div>
-        <div class="kpis" id="payKpis"></div>
+        <div class="kpis" id="payKpis" style="margin-bottom:16px"></div>
         <div class="card panel">
           <div class="filters">
             <select id="pFilter" aria-label="Payment filter">
               <option value="">All confirmed orders</option>
               <option value="dep_wait">Deposit to verify</option>
-              <option value="fin_wait">Final payment to verify</option>
+              <option value="unpaid">Awaiting deposit</option>
+              <option value="fin_wait">60% to verify</option>
               <option value="outstanding">Outstanding balance</option>
               <option value="paid">Fully paid</option>
             </select>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Request</th><th>Customer</th><th>Status</th><th class="num">Final price</th><th>40% deposit</th><th>60% balance</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead><tbody id="payBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Request</th><th>Client</th><th>Status</th><th>Payment</th><th class="num">Final price</th><th>40% deposit</th><th>60% balance</th><th class="num">Verified</th><th class="num">Outstanding</th></tr></thead><tbody id="payBody"></tbody></table></div>
         </div>
       </section>
 
@@ -280,6 +412,18 @@
           </form>
           <div class="table-wrap"><table style="min-width:640px"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Access</th><th class="num">Assigned open requests</th></tr></thead><tbody id="teamBody"></tbody></table></div>
         </div>
+        <div class="card panel">
+          <div class="panel-head"><h2>Who can do what</h2></div>
+          <div class="table-wrap"><table class="compact"><thead><tr><th></th><th>Administrator</th><th>Sourcing Agent</th><th>Operations &amp; Finance</th></tr></thead><tbody>
+            <tr><td>Sees requests</td><td>All</td><td>Assigned to them</td><td>From “Awaiting 40% deposit” onward</td></tr>
+            <tr><td>Messages the client</td><td>Yes</td><td>Yes, their requests</td><td>Yes, their orders</td></tr>
+            <tr><td>Quotation and early stages</td><td>Yes</td><td>Yes, up to “Awaiting 40% deposit”</td><td>No</td></tr>
+            <tr><td>Production to delivery stages</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Verify payments</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Costs and profit</td><td>Yes</td><td>No</td><td>Yes</td></tr>
+            <tr><td>Assign requests, manage team</td><td>Yes</td><td>No</td><td>No</td></tr>
+          </tbody></table></div>
+        </div>
       </section>
     </div>
   </div>
@@ -287,7 +431,7 @@
 
 <!-- Drawer -->
 <div class="drawer-backdrop" id="backdrop" hidden></div>
-<aside class="drawer" id="drawer" hidden aria-label="Request details">
+<aside class="drawer" id="drawer" hidden aria-label="Details">
   <div class="drawer-head" id="drawerHead"></div>
   <div class="drawer-body" id="drawerBody"></div>
 </aside>
@@ -301,18 +445,38 @@
   var $ = function (id) { return document.getElementById(id); };
   var fmt = new Intl.NumberFormat("en-US");
   var money = function (v) { return v == null ? "—" : "MAD " + fmt.format(Math.round(Number(v) * 100) / 100); };
+  var moneyShort = function (v) {
+    var n = Math.abs(v), s = n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(Math.round(n));
+    return (v < 0 ? "−" : "") + s;
+  };
+  var pct = function (v) { return v == null || !isFinite(v) ? "—" : (Math.round(v * 1000) / 10) + "%"; };
   var ROLE_LABEL = { admin: "Administrator", agent: "Sourcing Agent", ops_finance: "Operations & Finance" };
   var CATEGORY_LABELS = { gadget: "Gadget (standard)", connected: "Gadget with Bluetooth / WiFi", vibration: "Product with vibration", textile: "Textile & clothing", home: "Home & kitchen", beauty: "Beauty & accessories", other: "Other" };
   var SELLING = { starting: "Preparing to start", selling: "Already selling", scaling: "Scaling an established store" };
   var DEP_LABEL = { pending: "Pending", received: "Received", verified: "Verified" };
   var FIN_LABEL = { not_due: "Not due", pending: "Pending", received: "Received", verified: "Verified" };
+  var COSTS = [
+    ["product_cost_mad", "Product cost"], ["china_handling_mad", "China handling & inspection"],
+    ["air_freight_mad", "Air freight"], ["customs_duties_mad", "Customs & duties"],
+    ["local_delivery_mad", "Local delivery"], ["other_costs_mad", "Other costs"]
+  ];
+  var DELIVERY_TARGET_DAYS = 20;
   var PAGE_SIZE = 20;
+  var DAY = 86400000;
+  // Board columns: groups of stages.
+  var BOARD = [
+    { t: "New & review", from: 1, to: 4 }, { t: "Sourcing & quotation", from: 5, to: 7 },
+    { t: "Awaiting 40% deposit", from: 8, to: 8 }, { t: "Production & inspection", from: 9, to: 10 },
+    { t: "Shipping & customs", from: 11, to: 13 }, { t: "Awaiting 60% payment", from: 14, to: 14 },
+    { t: "Delivery", from: 15, to: 16 }, { t: "Completed", from: 17, to: 17 }, { t: "Closed", from: 99, to: 99 }
+  ];
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function msg(el, type, text) { el.innerHTML = text ? '<div class="alert alert-' + type + '">' + esc(text) + "</div>" : ""; }
   function toast(text, isError) {
     document.querySelectorAll(".toast").forEach(function (x) { x.remove(); });
     var t = document.createElement("div"); t.className = "toast" + (isError ? " error" : ""); t.textContent = text;
+    t.setAttribute("role", "status");
     document.body.appendChild(t); setTimeout(function () { t.remove(); }, 4000);
   }
   function friendly(err) {
@@ -328,6 +492,8 @@
   function dShort(iso) { return iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""; }
   function dTime(iso) { return iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""; }
   function waLink(n) { var d = String(n || "").replace(/\D/g, ""); return d ? "https://wa.me/" + d : ""; }
+  function monthKey(iso) { var d = new Date(iso); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function safeName(n) { return String(n || "file").toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-50); }
 
   if (!CFG.SUPABASE_URL || /YOUR-PROJECT/.test(CFG.SUPABASE_URL) || !window.supabase) {
     $("boot").hidden = true; $("setupWarning").hidden = false; return;
@@ -335,12 +501,40 @@
   var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 
   var S = {
-    user: null, role: null, me: null,
+    user: null, role: null, me: null, canMoney: false,
     statuses: {}, statusList: [], requests: [], staff: [], staffById: {},
-    view: "overview", page: 1, openId: null
+    costs: {}, reads: {}, unread: {}, lastClientMsg: {}, profiles: [],
+    view: "dashboard", page: 1, period: "month", reqView: "table",
+    openId: null, openClient: null, pendingFile: null
   };
   var rank = function (code) { return (S.statuses[code] || {}).rank || 0; };
   var label = function (code) { return (S.statuses[code] || {}).label || code; };
+
+  // ---------- Business helpers ----------
+  function isOrder(q) { return q.payment && q.payment.deposit_status === "verified" && q.status !== "not_qualified"; }
+  function orderDate(q) { return q.payment && q.payment.deposit_verified_at; }
+  function verified(p) {
+    if (!p) return 0;
+    var r = 0;
+    if (p.deposit_status === "verified") r += Number(p.deposit_amount_mad);
+    if (p.final_status === "verified") r += Number(p.balance_amount_mad);
+    return r;
+  }
+  function costOf(q) { var c = S.costs[q.id]; return c ? Number(c.total_cost_mad) : null; }
+  function profitOf(q) { var c = costOf(q); return c == null || !q.payment ? null : Number(q.payment.final_price_mad) - c; }
+  function payState(q) {
+    var p = q.payment;
+    if (!p) return null;
+    if (p.final_status === "verified") return { k: "paid", l: "Fully paid", c: "pill-green" };
+    if (p.final_status === "received") return { k: "fin_wait", l: "60% to verify", c: "pill-orange" };
+    if (p.deposit_status === "verified") return { k: "deposit_paid", l: "Deposit paid", c: "pill-blue" };
+    if (p.deposit_status === "received") return { k: "dep_wait", l: "Deposit to verify", c: "pill-orange" };
+    return { k: "unpaid", l: "Unpaid", c: "pill-amber" };
+  }
+  function payCell(q) { var s = payState(q); return s ? '<span class="pill ' + s.c + '">' + s.l + "</span>" : '<span class="muted">No quote</span>'; }
+  function daysSince(iso) { return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / DAY) : null; }
+  function isLate(q) { var r = rank(q.status); return r >= 9 && r <= 16 && orderDate(q) && daysSince(orderDate(q)) > DELIVERY_TARGET_DAYS; }
+  function clientName(q) { return q.client.full_name || q.client.email || "—"; }
 
   function statusPill(code) {
     var r = rank(code);
@@ -351,17 +545,11 @@
     var cls = status === "verified" ? "pill-green" : status === "received" ? "pill-blue" : status === "pending" ? "pill-orange" : "pill-new";
     return '<span class="pill ' + cls + '">' + esc(labels[status] || status) + "</span>";
   }
-  function received(p) {
-    if (!p) return 0;
-    var r = 0;
-    if (p.deposit_status !== "pending") r += Number(p.deposit_amount_mad);
-    if (p.final_status === "received" || p.final_status === "verified") r += Number(p.balance_amount_mad);
-    return r;
-  }
   function ownerCell(id) {
     var s = S.staffById[id];
-    return s ? '<span class="avatar sm" title="' + esc(s.name) + '">' + esc(initials(s.name, s.email)) + "</span>" : '<span class="muted">—</span>';
+    return s ? '<span class="avatar sm" title="' + esc(s.name || s.email) + '">' + esc(initials(s.name, s.email)) + "</span>" : '<span class="muted">—</span>';
   }
+  function unreadBadge(id) { var n = S.unread[id]; return n ? '<span class="unread" title="Unread client messages">' + n + " new</span>" : ""; }
 
   // Which status changes this role may make (the database enforces the same rules).
   function allowedStatuses(current) {
@@ -401,6 +589,7 @@
     ]).then(function (res) {
       S.role = res[0].data;
       if (!S.role) return showLogin(true);
+      S.canMoney = S.role === "admin" || S.role === "ops_finance";
       S.me = res[1].data || { full_name: "", email: user.email };
       S.statusList = res[2].data || [];
       S.statusList.forEach(function (s) { S.statuses[s.code] = s; });
@@ -410,36 +599,57 @@
       $("meAvatar").textContent = initials(S.me.full_name, S.me.email);
       $("navTeam").hidden = S.role !== "admin";
       $("navPayments").hidden = S.role === "agent";
-      $("todayLbl").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       var fs = $("fStatus");
       S.statusList.forEach(function (s) { var o = document.createElement("option"); o.value = s.code; o.textContent = s.label; fs.appendChild(o); });
+      var fc = $("fCategory");
+      Object.keys(CATEGORY_LABELS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = CATEGORY_LABELS[k]; fc.appendChild(o); });
       $("boot").hidden = true; $("loginView").hidden = true; $("appView").hidden = false;
       reload();
+      // Keep the data fresh while the CRM is open.
+      setInterval(function () { if (document.visibilityState === "visible") reload(); }, 120000);
     });
   }
 
   // ---------- Data ----------
   function reload() {
-    return Promise.all([
-      sb.from("requests")
-        .select("*, client:profiles!requests_client_id_fkey(full_name,email,whatsapp,city,business_name,store_link,selling_status), payment:payments(*), internal:request_internal(*)")
-        .order("created_at", { ascending: false }).range(0, 1999),
-      sb.from("staff").select("user_id, role, active, created_at, profile:profiles!staff_user_id_fkey(full_name,email)")
-    ]).then(function (res) {
-      if (res[0].error) return toast(friendly(res[0].error), true);
-      S.requests = (res[0].data || []).map(function (q) {
+    var jobs = {
+      requests: sb.from("requests")
+        .select("*, client:profiles!requests_client_id_fkey(full_name,email,whatsapp,city,business_name,store_link,selling_status,created_at), payment:payments(*), internal:request_internal(*)")
+        .order("created_at", { ascending: false }).range(0, 4999),
+      staff: sb.from("staff").select("user_id, role, active, created_at, profile:profiles!staff_user_id_fkey(full_name,email)"),
+      msgs: sb.from("request_messages").select("request_id, from_team, kind, created_at").eq("kind", "message").order("created_at", { ascending: false }).range(0, 9999),
+      reads: sb.from("message_reads").select("request_id, last_read_at")
+    };
+    if (S.canMoney) jobs.costs = sb.from("order_costs").select("*");
+    if (S.role === "admin") jobs.profiles = sb.from("profiles").select("id, full_name, email, whatsapp, city, business_name, store_link, selling_status, created_at").range(0, 9999);
+    var keys = Object.keys(jobs);
+    return Promise.all(keys.map(function (k) { return jobs[k]; })).then(function (arr) {
+      var res = {}; keys.forEach(function (k, i) { res[k] = arr[i]; });
+      if (res.requests.error) return toast(friendly(res.requests.error), true);
+      S.requests = (res.requests.data || []).map(function (q) {
         q.payment = Array.isArray(q.payment) ? q.payment[0] || null : q.payment;
         q.internal = Array.isArray(q.internal) ? q.internal[0] || null : q.internal;
         q.client = q.client || {};
         return q;
       });
-      S.staff = (res[1].data || []).map(function (s) {
+      S.staff = (res.staff.data || []).map(function (s) {
         return { id: s.user_id, role: s.role, active: s.active, name: (s.profile && s.profile.full_name) || "", email: (s.profile && s.profile.email) || "" };
       });
       S.staffById = {}; S.staff.forEach(function (s) { S.staffById[s.id] = s; });
+      S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
+      S.profiles = (res.profiles && res.profiles.data) || [];
+      S.reads = {}; ((res.reads && res.reads.data) || []).forEach(function (r) { S.reads[r.request_id] = r.last_read_at; });
+      S.unread = {}; S.lastClientMsg = {};
+      ((res.msgs && res.msgs.data) || []).forEach(function (m) {
+        if (m.from_team) return;
+        if (!S.lastClientMsg[m.request_id]) S.lastClientMsg[m.request_id] = m.created_at;
+        var rd = S.reads[m.request_id];
+        if (!rd || new Date(m.created_at) > new Date(rd)) S.unread[m.request_id] = (S.unread[m.request_id] || 0) + 1;
+      });
       buildFilterOptions();
       render();
       if (S.openId) renderDrawer(S.openId);
+      else if (S.openClient) renderClientDrawer(S.openClient);
     });
   }
   $("refreshBtn").onclick = function () { reload().then(function () { toast("Data refreshed."); }); };
@@ -461,106 +671,320 @@
   });
   $("menuBtn").onclick = function () { $("side").classList.add("open"); };
   $("side").addEventListener("click", function (e) { if (e.target === $("side")) $("side").classList.remove("open"); });
-  $("seeAllBtn").onclick = function () { go("requests"); };
   function go(v) {
     S.view = v;
-    ["overview", "requests", "payments", "team"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
-    document.querySelectorAll(".side nav button").forEach(function (b) { b.toggleAttribute("aria-current", b.dataset.view === v); if (b.dataset.view === v) b.setAttribute("aria-current", "page"); });
+    ["dashboard", "requests", "clients", "payments", "team"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    document.querySelectorAll(".side nav button").forEach(function (b) {
+      if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
     render();
     window.scrollTo({ top: 0 });
   }
-  $("globalSearch").addEventListener("input", function () { if (S.view !== "requests") go("requests"); S.page = 1; renderRequests(); });
+  $("globalSearch").addEventListener("input", function () {
+    if (S.view === "clients") return renderClients();
+    if (S.view !== "requests") go("requests");
+    S.page = 1; renderRequests();
+  });
 
   function render() {
     var nNew = S.requests.filter(function (q) { return q.status === "new_application"; }).length;
     $("countNew").hidden = !nNew; $("countNew").textContent = nNew;
-    if (S.view === "overview") renderOverview();
+    var nAtt = attentionItems().length;
+    $("countAttention").hidden = !nAtt; $("countAttention").textContent = nAtt;
+    if (S.view === "dashboard") renderDashboard();
     if (S.view === "requests") renderRequests();
+    if (S.view === "clients") renderClients();
     if (S.view === "payments") renderPayments();
     if (S.view === "team") renderTeam();
   }
 
   function rowHtml(q, cols) {
     var c = {
-      code: '<td><span class="code">' + esc(q.code) + "</span>" + (q.below_minimum ? '<span class="flag" title="Below MAD 5,000 and 100 units">Below min.</span>' : "") + "</td>",
-      client: "<td>" + esc(q.client.full_name || q.client.email || "—") + "</td>",
+      code: '<td><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + (q.below_minimum ? '<span class="flag" title="Below MAD 5,000 and 100 units">Below min.</span>' : "") + "</td>",
+      client: "<td>" + esc(clientName(q)) + "</td>",
       city: "<td>" + esc(q.delivery_city || q.client.city || "") + "</td>",
       product: "<td>" + esc(q.product_name) + '<br><small class="muted">' + esc(CATEGORY_LABELS[q.category] || q.category) + "</small></td>",
       qty: '<td class="num">' + fmt.format(q.quantity) + "</td>",
       status: "<td>" + statusPill(q.status) + "</td>",
+      pay: "<td>" + payCell(q) + "</td>",
       owner: "<td>" + ownerCell(q.assigned_to) + "</td>",
       quote: '<td class="num">' + (q.quote_amount_mad ? money(q.quote_amount_mad) : '<span class="muted">—</span>') + "</td>",
-      next: "<td>" + (q.internal && q.internal.next_action ? esc(q.internal.next_action) + (q.internal.next_action_date ? '<br><small class="muted">' + dShort(q.internal.next_action_date) + "</small>" : "") : '<span class="muted">—</span>') + "</td>",
       created: '<td style="white-space:nowrap">' + dShort(q.created_at) + "</td>"
     };
     return '<tr data-id="' + esc(q.id) + '"' + (q.id === S.openId ? ' class="selected"' : "") + ">" + cols.map(function (k) { return c[k]; }).join("") + "</tr>";
   }
-  function bindRows(tbody) {
-    tbody.querySelectorAll("tr[data-id]").forEach(function (tr) { tr.onclick = function () { openDrawer(tr.dataset.id); }; });
+  function bindRows(root) {
+    root.querySelectorAll("[data-id]").forEach(function (el) { el.onclick = function () { openDrawer(el.dataset.id); }; });
   }
   function emptyRow(cols, text) { return '<tr><td colspan="' + cols + '" class="empty">' + esc(text) + "</td></tr>"; }
 
-  // ---------- Overview ----------
-  function renderOverview() {
-    var R = S.requests;
-    var cnt = function (f) { return R.filter(f).length; };
-    var newApps = cnt(function (q) { return q.status === "new_application"; });
-    var below = cnt(function (q) { return q.status === "new_application" && q.below_minimum; });
-    var toContact = cnt(function (q) { return rank(q.status) >= 1 && rank(q.status) <= 3; });
-    var quotes = cnt(function (q) { var r = rank(q.status); return r >= 5 && r <= 7; });
-    var active = cnt(function (q) { var r = rank(q.status); return r >= 9 && r <= 16; });
-    var payWait = R.filter(function (q) { var p = q.payment; return p && ((q.status === "awaiting_deposit" && p.deposit_status !== "verified") || (p.final_status === "pending" || p.final_status === "received")); });
-    var payWaitSum = payWait.reduce(function (a, q) { var p = q.payment; return a + (p.deposit_status !== "verified" ? Number(p.deposit_amount_mad) : Number(p.balance_amount_mad)); }, 0);
-    var ready = cnt(function (q) { return q.status === "ready_for_delivery" || q.status === "out_for_delivery"; });
-    var month = new Date(); month.setDate(1); month.setHours(0, 0, 0, 0);
-    var doneMonth = cnt(function (q) { return q.status === "completed" && new Date(q.updated_at) >= month; });
-
-    var ico = {
-      new: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg>',
-      phone: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-4-7.5L21 3v5h-5"/></svg>',
-      quote: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
-      box: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
-      pay: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
-      truck: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 5h14v11H1zM15 9h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="18" r="2"/></svg>',
-      done: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>'
+  // ---------- Dashboard ----------
+  document.querySelectorAll("#periodSeg button").forEach(function (b) {
+    b.onclick = function () {
+      S.period = b.dataset.p;
+      document.querySelectorAll("#periodSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      renderDashboard();
     };
-    var cards = [
-      { k: "new", l: "New applications", v: newApps, s: below ? below + " below minimum" : "Waiting for review", f: { status: "new_application" } },
-      { k: "phone", l: "Awaiting review or contact", v: toContact, s: "Same-day WhatsApp reply", f: { status: "open" } },
-      { k: "quote", l: "Quotations in progress", v: quotes, s: "Feasibility to confirmation", f: {} },
-      { k: "box", l: "Active orders", v: active, s: "Production to delivery", f: {} },
-      { k: "pay", l: "Payments to verify", v: payWait.length, s: money(payWaitSum), orange: true, view: "payments" },
-      { k: "truck", l: "Ready or out for delivery", v: ready, s: "Final payment verified", f: {} },
-      { k: "done", l: "Completed this month", v: doneMonth, s: new Date().toLocaleDateString("en-GB", { month: "long" }), f: { status: "completed" } }
-    ].filter(function (c) { return !(c.view === "payments" && S.role === "agent"); });
-    $("kpis").innerHTML = cards.map(function (c, i) {
-      return '<button type="button" class="card kpi" data-i="' + i + '"><span class="ico">' + ico[c.k] + '</span><span><span class="lbl">' + esc(c.l) + '</span><span class="val" style="display:block">' + fmt.format(c.v) + '</span><span class="sub' + (c.orange ? " orange" : "") + '">' + esc(c.s) + "</span></span></button>";
+  });
+  function periodStart() {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    if (S.period === "month") { d.setDate(1); return d; }
+    if (S.period === "3m") { d.setDate(1); d.setMonth(d.getMonth() - 2); return d; }
+    if (S.period === "year") { return new Date(d.getFullYear(), 0, 1); }
+    return null;
+  }
+  function inPeriod(iso, from) { return iso && (!from || new Date(iso) >= from); }
+
+  function kpiHtml(cards) {
+    return cards.map(function (c, i) {
+      var tag = c.go ? "button" : "div";
+      return "<" + tag + (c.go ? ' type="button"' : "") + ' class="card kpi' + (c.hl ? " hl" : "") + '" data-i="' + i + '"><span class="lbl">' + esc(c.l) + '</span><span class="val">' + esc(c.v) + '</span><span class="sub' + (c.warn ? " warn" : "") + '">' + esc(c.s || "") + "</span></" + tag + ">";
     }).join("");
-    $("kpis").querySelectorAll(".kpi").forEach(function (b) {
+  }
+  function bindKpis(el, cards) {
+    el.querySelectorAll("button.kpi").forEach(function (b) {
       b.onclick = function () {
         var c = cards[+b.dataset.i];
-        if (c.view) return go(c.view);
-        clearFilters(); if (c.f && c.f.status) $("fStatus").value = c.f.status; go("requests");
+        if (c.go.view) return go(c.go.view);
+        clearFilters();
+        if (c.go.status) $("fStatus").value = c.go.status;
+        if (c.go.pay) $("fPay").value = c.go.pay;
+        if (c.go.unread) $("fUnread").checked = true;
+        go("requests");
       };
     });
+  }
 
-    var attention = R.filter(function (q) { var r = rank(q.status); return r <= 16 && (r <= 4 || r === 8 || r === 14 || (q.internal && q.internal.next_action_date)); })
-      .sort(function (a, b) {
-        var da = a.internal && a.internal.next_action_date, db = b.internal && b.internal.next_action_date;
-        if (da && db) return da < db ? -1 : 1; if (da) return -1; if (db) return 1;
-        return a.created_at < b.created_at ? 1 : -1;
-      }).slice(0, 10);
-    $("attentionBody").innerHTML = attention.length ? attention.map(function (q) { return rowHtml(q, ["code", "client", "city", "product", "status", "owner", "next", "created"]); }).join("") : emptyRow(8, "Nothing needs attention right now.");
+  function attentionItems() {
+    var today = new Date().toISOString().slice(0, 10), items = [];
+    S.requests.forEach(function (q) {
+      var r = rank(q.status), p = q.payment;
+      if (q.status === "completed" || q.status === "not_qualified") {
+        if (S.unread[q.id]) items.push({ q: q, w: 1, t: "New message from client", s: dTime(S.lastClientMsg[q.id]) });
+        return;
+      }
+      if (S.unread[q.id]) items.push({ q: q, w: 1, t: "New message from client", s: dTime(S.lastClientMsg[q.id]) });
+      if (S.canMoney && p && p.deposit_status === "received") items.push({ q: q, w: 2, t: "40% deposit received, to verify", s: money(p.deposit_amount_mad) });
+      if (S.canMoney && p && p.final_status === "received") items.push({ q: q, w: 2, t: "60% balance received, to verify", s: money(p.balance_amount_mad) });
+      if (r <= 3 && daysSince(q.created_at) >= 1) items.push({ q: q, w: 3, t: "No reply yet", s: "Received " + dTime(q.created_at) });
+      if (isLate(q)) items.push({ q: q, w: 4, t: "Late order", s: daysSince(orderDate(q)) + " days since deposit (target " + DELIVERY_TARGET_DAYS + ")" });
+      if (q.internal && q.internal.next_action_date && q.internal.next_action_date <= today)
+        items.push({ q: q, w: 5, t: "Next action due", s: (q.internal.next_action || "") + " · " + dShort(q.internal.next_action_date) });
+    });
+    return items.sort(function (a, b) { return a.w - b.w; });
+  }
+
+  function renderDashboard() {
+    var R = S.requests, from = periodStart();
+    var periodLbl = { month: "this month", "3m": "the last 3 months", year: "this year", all: "all time" }[S.period];
+    $("periodNote").textContent = "Requests counted by date received, sales by date the 40% deposit was verified, for " + periodLbl + ". Cancelled orders are excluded from sales and profit.";
+
+    var reqP = R.filter(function (q) { return inPeriod(q.created_at, from); });
+    var ordersP = R.filter(function (q) { return isOrder(q) && inPeriod(orderDate(q), from); });
+    var newApps = R.filter(function (q) { return q.status === "new_application"; }).length;
+    var toAnswer = R.filter(function (q) { return rank(q.status) <= 3; }).length;
+    var quoting = R.filter(function (q) { var r = rank(q.status); return r >= 5 && r <= 8; }).length;
+    var active = R.filter(function (q) { var r = rank(q.status); return r >= 9 && r <= 16; }).length;
+    var deliveredP = R.filter(function (q) { return q.status === "completed" && inPeriod(q.updated_at, from); }).length;
+    var conv = reqP.length ? reqP.filter(isOrder).length / reqP.length : null;
+
+    var kr = [
+      { l: "Requests received", v: fmt.format(reqP.length), s: "In the selected period", go: { status: "" } },
+      { l: "New to answer", v: fmt.format(toAnswer), s: newApps + " brand new", hl: toAnswer > 0, go: { status: "open" } },
+      { l: "Sourcing & quotation", v: fmt.format(quoting), s: "Feasibility to deposit", go: { status: "open" } },
+      { l: "Active orders", v: fmt.format(active), s: "Production to delivery", go: { status: "open" } },
+      { l: "Delivered", v: fmt.format(deliveredP), s: "In the selected period", go: { status: "completed" } },
+      { l: "Conversion", v: pct(conv), s: "Requests that became orders" }
+    ];
+    $("kpiRequests").innerHTML = kpiHtml(kr); bindKpis($("kpiRequests"), kr);
+
+    var sales = 0, collected = 0, costSum = 0, profitSum = 0, withCost = 0, salesWithCost = 0;
+    ordersP.forEach(function (q) {
+      sales += Number(q.payment.final_price_mad);
+      collected += verified(q.payment);
+      var pr = profitOf(q);
+      if (pr != null) { withCost++; costSum += costOf(q); profitSum += pr; salesWithCost += Number(q.payment.final_price_mad); }
+    });
+    var outstandingAll = 0, toVerify = 0;
+    R.forEach(function (q) {
+      if (isOrder(q)) outstandingAll += Number(q.payment.final_price_mad) - verified(q.payment);
+      var p = q.payment;
+      if (p && (p.deposit_status === "received" || p.final_status === "received")) toVerify++;
+    });
+    var km = [
+      { l: "Sales", v: money(sales), s: fmt.format(ordersP.length) + " confirmed orders" },
+      { l: "Collected", v: money(collected), s: "Verified payments on these orders" },
+      { l: "Outstanding now", v: money(outstandingAll), s: "All open orders", go: S.role === "agent" ? null : { view: "payments" } }
+    ];
+    if (S.canMoney) {
+      km.push({ l: "Costs", v: money(costSum), s: "Costs entered on " + withCost + " of " + ordersP.length + " orders", warn: withCost < ordersP.length });
+      km.push({ l: "Profit", v: money(profitSum), s: "Orders with costs entered" });
+      km.push({ l: "Average margin", v: pct(salesWithCost ? profitSum / salesWithCost : null), s: "Profit ÷ sales" });
+      km.push({ l: "Payments to verify", v: fmt.format(toVerify), s: "Proof received", hl: toVerify > 0, go: { view: "payments" } });
+    }
+    km.forEach(function (c) { if (!c.go) delete c.go; });
+    $("kpiMoney").innerHTML = kpiHtml(km); bindKpis($("kpiMoney"), km);
+
+    var done = R.filter(function (q) { return q.status === "completed" && orderDate(q) && inPeriod(q.updated_at, from); });
+    var avgDays = done.length ? done.reduce(function (a, q) { return a + (new Date(q.updated_at) - new Date(orderDate(q))) / DAY; }, 0) / done.length : null;
+    var late = R.filter(isLate).length;
+    var waitingDep = R.filter(function (q) { return q.status === "awaiting_deposit"; }).length;
+    var waitingFin = R.filter(function (q) { return q.status === "awaiting_final_payment"; }).length;
+    var unreadTotal = Object.keys(S.unread).reduce(function (a, k) { return a + S.unread[k]; }, 0);
+    var ko = [
+      { l: "Unread client messages", v: fmt.format(unreadTotal), s: Object.keys(S.unread).length + " conversations", hl: unreadTotal > 0, go: { unread: true } },
+      { l: "Awaiting 40% deposit", v: fmt.format(waitingDep), s: "Quotation accepted", go: { status: "awaiting_deposit" } },
+      { l: "Awaiting 60% payment", v: fmt.format(waitingFin), s: "Arrived in Morocco", go: { status: "awaiting_final_payment" } },
+      { l: "Average days to deliver", v: avgDays == null ? "—" : String(Math.round(avgDays * 10) / 10), s: "Deposit verified → delivered" },
+      { l: "Late orders", v: fmt.format(late), s: "Over " + DELIVERY_TARGET_DAYS + " days since deposit", hl: late > 0, warn: late > 0, go: { status: "open" } }
+    ];
+    $("kpiOps").innerHTML = kpiHtml(ko); bindKpis($("kpiOps"), ko);
+
+    var att = attentionItems();
+    $("attentionCount").textContent = att.length ? att.length + " items" : "";
+    $("attentionBody").innerHTML = att.length ? att.slice(0, 15).map(function (a) {
+      var q = a.q;
+      return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span></td><td>" + esc(clientName(q)) +
+        '</td><td class="reason">' + esc(a.t) + "<small>" + esc(a.s) + "</small></td><td>" + statusPill(q.status) + "</td><td>" + ownerCell(q.assigned_to) + "</td></tr>";
+    }).join("") : emptyRow(5, "Nothing needs attention right now.");
     bindRows($("attentionBody"));
+
+    renderMonthly();
+    renderPipeline();
+    renderAgents(from);
+  }
+
+  function last12() {
+    var out = [], d = new Date(); d.setDate(1);
+    for (var i = 11; i >= 0; i--) {
+      var m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      out.push({ key: m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0"), lbl: m.toLocaleDateString("en-GB", { month: "short" }), full: m.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), req: 0, orders: 0, sales: 0, profit: 0, salesWithCost: 0, withCost: 0 });
+    }
+    return out;
+  }
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    var p = Math.pow(10, Math.floor(Math.log10(v))), n = v / p;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
+  }
+
+  function renderMonthly() {
+    var months = last12(), byKey = {};
+    months.forEach(function (m) { byKey[m.key] = m; });
+    S.requests.forEach(function (q) {
+      var m = byKey[monthKey(q.created_at)]; if (m) m.req++;
+      if (isOrder(q)) {
+        var o = byKey[monthKey(orderDate(q))];
+        if (o) {
+          o.orders++; o.sales += Number(q.payment.final_price_mad);
+          var pr = profitOf(q);
+          if (pr != null) { o.profit += pr; o.withCost++; o.salesWithCost += Number(q.payment.final_price_mad); }
+        }
+      }
+    });
+    var showProfit = S.canMoney;
+    $("chartTitle").textContent = showProfit ? "Sales and profit, last 12 months (MAD)" : "Sales, last 12 months (MAD)";
+    $("chartLegend").innerHTML = showProfit
+      ? '<span><i style="background:var(--series-1)"></i>Sales</span><span><i style="background:var(--series-2)"></i>Profit (orders with costs entered)</span>'
+      : "";
+
+    // SVG grouped bars, one y-axis in MAD.
+    var W = 760, H = 250, padL = 52, padR = 12, padT = 12, padB = 30;
+    var maxV = 0, minV = 0;
+    months.forEach(function (m) { maxV = Math.max(maxV, m.sales, showProfit ? m.profit : 0); minV = Math.min(minV, showProfit ? m.profit : 0); });
+    // Round tick step (1, 2 or 5 × 10^n) so axis labels read 10k, 20k… rather than 12.5k.
+    var step = niceMax(Math.max(maxV, -minV, 1) / 4);
+    var top = Math.max(step, Math.ceil(maxV / step) * step), bottom = minV < 0 ? -Math.ceil(-minV / step) * step : 0;
+    var y = function (v) { return padT + (top - v) / (top - bottom) * (H - padT - padB); };
+    var plotW = W - padL - padR, gw = plotW / 12;
+    var nb = showProfit ? 2 : 1, bw = Math.min(18, (gw - 10) / nb), gap = 2;
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc($("chartTitle").textContent) + '. Exact values are in the table below.">';
+    var ticks = [];
+    for (var tv = bottom; tv <= top + step / 2; tv += step) ticks.push(tv);
+    ticks.forEach(function (t) {
+      svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="' + (t === 0 ? "#CBD5E1" : "var(--grid)") + '" stroke-width="1"/>' +
+        '<text x="' + (padL - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end" font-size="11" fill="#64748B">' + moneyShort(t) + "</text>";
+    });
+    function bar(x, v, color) {
+      if (!v) return "";
+      var y0 = y(0), y1 = y(v), h = Math.abs(y0 - y1), r = Math.min(4, h, bw / 2), top_ = Math.min(y0, y1);
+      if (v > 0) return '<path d="M' + x + "," + y0 + "V" + (top_ + r) + "Q" + x + "," + top_ + " " + (x + r) + "," + top_ + "H" + (x + bw - r) + "Q" + (x + bw) + "," + top_ + " " + (x + bw) + "," + (top_ + r) + "V" + y0 + 'Z" fill="' + color + '"/>';
+      var b = top_ + h;
+      return '<path d="M' + x + "," + y0 + "V" + (b - r) + "Q" + x + "," + b + " " + (x + r) + "," + b + "H" + (x + bw - r) + "Q" + (x + bw) + "," + b + " " + (x + bw) + "," + (b - r) + "V" + y0 + 'Z" fill="' + color + '"/>';
+    }
+    months.forEach(function (m, i) {
+      var gx = padL + i * gw, inner = nb * bw + (nb - 1) * gap, x0 = gx + (gw - inner) / 2;
+      svg += bar(x0, m.sales, "var(--series-1)");
+      if (showProfit) svg += bar(x0 + bw + gap, m.profit, "var(--series-2)");
+      svg += '<text x="' + (gx + gw / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="#64748B">' + esc(m.lbl) + "</text>";
+      svg += '<rect class="hit" data-m="' + i + '" x="' + gx + '" y="' + padT + '" width="' + gw + '" height="' + (H - padT - padB) + '" fill="transparent"/>';
+    });
+    svg += "</svg>";
+    var wrap = $("chartWrap");
+    wrap.innerHTML = svg + '<div class="tip" id="chartTip" hidden></div>';
+    var tip = $("chartTip");
+    wrap.querySelectorAll(".hit").forEach(function (h) {
+      h.addEventListener("mouseenter", function () { h.setAttribute("fill", "rgba(11,18,32,.04)"); });
+      h.addEventListener("mouseleave", function () { h.setAttribute("fill", "transparent"); tip.hidden = true; });
+      h.addEventListener("mousemove", function (e) {
+        var m = months[+h.dataset.m];
+        tip.innerHTML = "<b>" + esc(m.full) + "</b>" + '<i style="background:var(--series-1)"></i>Sales ' + money(m.sales) + "<br>" +
+          (showProfit ? '<i style="background:var(--series-2)"></i>Profit ' + money(m.profit) + (m.salesWithCost ? " · " + pct(m.profit / m.salesWithCost) : "") + "<br>" : "") +
+          fmt.format(m.orders) + " orders · " + fmt.format(m.req) + " requests";
+        tip.hidden = false;
+        var r = wrap.getBoundingClientRect(), x = e.clientX - r.left + wrap.scrollLeft + 14, yy = e.clientY - r.top + 10;
+        if (x + tip.offsetWidth > wrap.scrollWidth) x = x - tip.offsetWidth - 28;
+        tip.style.left = x + "px"; tip.style.top = yy + "px";
+      });
+    });
+
+    $("monthHead").innerHTML = "<tr><th>Month</th><th class='num'>Requests</th><th class='num'>Orders</th><th class='num'>Sales</th>" + (showProfit ? "<th class='num'>Profit</th><th class='num'>Margin</th>" : "") + "</tr>";
+    $("monthBody").innerHTML = months.slice().reverse().map(function (m) {
+      return "<tr><td>" + esc(m.full) + "</td><td class='num'>" + m.req + "</td><td class='num'>" + m.orders + "</td><td class='num'>" + (m.sales ? money(m.sales) : "—") + "</td>" +
+        (showProfit ? "<td class='num" + (m.profit < 0 ? " neg" : "") + "'>" + (m.withCost ? money(m.profit) : "—") + "</td><td class='num'>" + (m.salesWithCost ? pct(m.profit / m.salesWithCost) : "—") + "</td>" : "") + "</tr>";
+    }).join("");
+  }
+
+  function renderPipeline() {
+    $("pipeBody").innerHTML = BOARD.map(function (b) {
+      var list = S.requests.filter(function (q) { var r = rank(q.status); return r >= b.from && r <= b.to; });
+      var val = list.reduce(function (a, q) { return a + Number(q.quote_amount_mad || 0); }, 0);
+      return "<tr><td>" + esc(b.t) + "</td><td class='num'>" + list.length + "</td><td class='num'>" + (val ? money(val) : "—") + "</td></tr>";
+    }).join("");
+  }
+
+  function renderAgents(from) {
+    var show = S.role === "admin";
+    $("agentPanel").hidden = !show;
+    if (!show) return;
+    var rows = S.staff.filter(function (s) { return s.active && s.role !== "ops_finance"; }).map(function (s) {
+      var mine = S.requests.filter(function (q) { return q.assigned_to === s.id; });
+      var minePeriod = mine.filter(function (q) { return inPeriod(q.created_at, from); });
+      var open = mine.filter(function (q) { return q.status !== "completed" && q.status !== "not_qualified"; }).length;
+      var quoted = minePeriod.filter(function (q) { return q.quote_amount_mad; }).length;
+      var won = mine.filter(function (q) { return isOrder(q) && inPeriod(orderDate(q), from); });
+      var sales = won.reduce(function (a, q) { return a + Number(q.payment.final_price_mad); }, 0);
+      return { s: s, open: open, quoted: quoted, won: won.length, conv: minePeriod.length ? minePeriod.filter(isOrder).length / minePeriod.length : null, sales: sales };
+    }).sort(function (a, b) { return b.sales - a.sales; });
+    $("agentBody").innerHTML = rows.length ? rows.map(function (r) {
+      return "<tr><td><strong>" + esc(r.s.name || r.s.email) + "</strong></td><td>" + esc(ROLE_LABEL[r.s.role]) + "</td><td class='num'>" + r.open + "</td><td class='num'>" + r.quoted + "</td><td class='num'>" + r.won + "</td><td class='num'>" + pct(r.conv) + "</td><td class='num'>" + (r.sales ? money(r.sales) : "—") + "</td></tr>";
+    }).join("") : emptyRow(7, "No sourcing agents yet.");
   }
 
   // ---------- Requests ----------
-  ["fStatus", "fOwner", "fCity", "fPay", "fFrom", "fTo", "fBelow"].forEach(function (id) {
+  ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fFrom", "fTo", "fBelow", "fUnread"].forEach(function (id) {
     $(id).addEventListener("change", function () { S.page = 1; renderRequests(); });
   });
+  document.querySelectorAll("#reqViewSeg button").forEach(function (b) {
+    b.onclick = function () {
+      S.reqView = b.dataset.v;
+      document.querySelectorAll("#reqViewSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      renderRequests();
+    };
+  });
   function clearFilters() {
-    ["fStatus", "fOwner", "fCity", "fPay", "fFrom", "fTo"].forEach(function (id) { $(id).value = ""; });
-    $("fBelow").checked = false; $("globalSearch").value = ""; S.page = 1;
+    ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fFrom", "fTo"].forEach(function (id) { $(id).value = ""; });
+    $("fBelow").checked = false; $("fUnread").checked = false; $("globalSearch").value = ""; S.page = 1;
   }
   $("clearFilters").onclick = function () { clearFilters(); renderRequests(); };
   $("prevPage").onclick = function () { if (S.page > 1) { S.page--; renderRequests(); } };
@@ -568,23 +992,21 @@
 
   function filtered() {
     var term = $("globalSearch").value.trim().toLowerCase();
-    var st = $("fStatus").value, ow = $("fOwner").value, city = $("fCity").value, pay = $("fPay").value;
-    var from = $("fFrom").value, to = $("fTo").value, below = $("fBelow").checked;
+    var st = $("fStatus").value, ow = $("fOwner").value, city = $("fCity").value, cat = $("fCategory").value, pay = $("fPay").value;
+    var from = $("fFrom").value, to = $("fTo").value, below = $("fBelow").checked, unread = $("fUnread").checked;
     return S.requests.filter(function (q) {
       if (st === "open" && (q.status === "completed" || q.status === "not_qualified")) return false;
       if (st && st !== "open" && q.status !== st) return false;
       if (ow === "none" && q.assigned_to) return false;
       if (ow && ow !== "none" && q.assigned_to !== ow) return false;
       if (city && (q.delivery_city || q.client.city || "").trim() !== city) return false;
-      var p = q.payment;
-      if (pay === "dep_wait" && !(p && p.deposit_status !== "verified" && rank(q.status) >= 8)) return false;
-      if (pay === "dep_ok" && !(p && p.deposit_status === "verified")) return false;
-      if (pay === "fin_wait" && !(p && (p.final_status === "pending" || p.final_status === "received"))) return false;
-      if (pay === "fin_ok" && !(p && p.final_status === "verified")) return false;
+      if (cat && q.category !== cat) return false;
+      if (pay) { var ps = payState(q); if (!ps || ps.k !== pay) return false; }
       var day = q.created_at.slice(0, 10);
       if (from && day < from) return false;
       if (to && day > to) return false;
       if (below && !q.below_minimum) return false;
+      if (unread && !S.unread[q.id]) return false;
       if (term) {
         var hay = [q.code, q.product_name, q.client.full_name, q.client.email, q.client.whatsapp, q.delivery_city, q.client.city, q.client.business_name, label(q.status)].join(" ").toLowerCase();
         if (hay.indexOf(term) === -1) return false;
@@ -593,46 +1015,117 @@
     });
   }
   function renderRequests() {
-    var list = filtered(), pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    var list = filtered();
+    $("reqTable").hidden = S.reqView !== "table";
+    $("reqKanban").hidden = S.reqView !== "kanban";
+    if (S.reqView === "kanban") return renderKanban(list);
+    var pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (S.page > pages) S.page = pages;
     var slice = list.slice((S.page - 1) * PAGE_SIZE, S.page * PAGE_SIZE);
-    $("reqBody").innerHTML = slice.length ? slice.map(function (q) { return rowHtml(q, ["code", "client", "city", "product", "qty", "status", "owner", "quote", "created"]); }).join("") : emptyRow(9, S.requests.length ? "No request matches these filters." : "No requests yet.");
+    $("reqBody").innerHTML = slice.length ? slice.map(function (q) { return rowHtml(q, ["code", "client", "city", "product", "qty", "status", "pay", "owner", "quote", "created"]); }).join("") : emptyRow(10, S.requests.length ? "No request matches these filters." : "No requests yet.");
     bindRows($("reqBody"));
     $("pagerInfo").textContent = list.length ? "Showing " + ((S.page - 1) * PAGE_SIZE + 1) + "–" + Math.min(S.page * PAGE_SIZE, list.length) + " of " + list.length : "0 results";
     $("prevPage").disabled = S.page <= 1; $("nextPage").disabled = S.page >= pages;
+  }
+  function renderKanban(list) {
+    var cols = BOARD.filter(function (b) {
+      if (S.role === "agent") return b.from <= 8 || b.from === 99;
+      if (S.role === "ops_finance") return b.from >= 8;
+      return true;
+    });
+    $("kanban").innerHTML = cols.map(function (b) {
+      var items = list.filter(function (q) { var r = rank(q.status); return r >= b.from && r <= b.to; });
+      return '<div class="kcol"><h3>' + esc(b.t) + "<span>" + items.length + '</span></h3><div class="kcards">' +
+        (items.length ? items.map(function (q) {
+          return '<button type="button" class="kcard" data-id="' + esc(q.id) + '"><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) +
+            '<div class="t">' + esc(q.product_name) + '</div><div class="m">' + esc(clientName(q)) + " · " + fmt.format(q.quantity) + " units</div>" +
+            '<div class="b">' + (b.from >= 8 && b.from <= 17 ? payCell(q) : statusPill(q.status)) + ownerCell(q.assigned_to) + "</div></button>";
+        }).join("") : '<div class="kempty">Nothing here</div>') + "</div></div>";
+    }).join("");
+    bindRows($("kanban"));
+  }
+
+  // ---------- Clients ----------
+  $("cFilter").addEventListener("change", renderClients);
+  $("cSort").addEventListener("change", renderClients);
+  function clientsData() {
+    var staffIds = {}; S.staff.forEach(function (s) { staffIds[s.id] = 1; });
+    var map = {};
+    function ensure(id, prof) {
+      if (!map[id]) map[id] = { id: id, p: prof || {}, reqs: [], orders: 0, sales: 0, collected: 0, profit: 0, withCost: 0, first: null, last: null, lastActivity: null };
+      return map[id];
+    }
+    S.profiles.forEach(function (p) { if (!staffIds[p.id]) ensure(p.id, p).lastActivity = p.created_at; });
+    S.requests.forEach(function (q) {
+      var c = ensure(q.client_id, q.client);
+      if (!c.p.full_name && q.client.full_name) c.p = q.client;
+      c.reqs.push(q);
+      if (!c.lastActivity || q.updated_at > c.lastActivity) c.lastActivity = q.updated_at;
+      if (isOrder(q)) {
+        c.orders++; c.sales += Number(q.payment.final_price_mad); c.collected += verified(q.payment);
+        var pr = profitOf(q); if (pr != null) { c.profit += pr; c.withCost++; }
+        var od = orderDate(q);
+        if (!c.first || od < c.first) c.first = od;
+        if (!c.last || od > c.last) c.last = od;
+      }
+    });
+    return Object.keys(map).map(function (k) { return map[k]; });
+  }
+  function renderClients() {
+    var term = $("globalSearch").value.trim().toLowerCase(), f = $("cFilter").value, sort = $("cSort").value;
+    var list = clientsData().filter(function (c) {
+      if (f === "orders" && !c.orders) return false;
+      if (f === "outstanding" && !(c.sales - c.collected > 0)) return false;
+      if (f === "noorder" && (c.orders || !c.reqs.length)) return false;
+      if (term) {
+        var hay = [c.p.full_name, c.p.email, c.p.whatsapp, c.p.city, c.p.business_name].join(" ").toLowerCase();
+        if (hay.indexOf(term) === -1) return false;
+      }
+      return true;
+    }).sort(function (a, b) {
+      if (sort === "name") return (a.p.full_name || a.p.email || "").localeCompare(b.p.full_name || b.p.email || "");
+      if (sort === "recent") return (b.lastActivity || "") < (a.lastActivity || "") ? -1 : 1;
+      return b.sales - a.sales;
+    });
+    $("clientsCount").textContent = list.length + " clients";
+    $("clientsHead").innerHTML = "<tr><th>Client</th><th>WhatsApp</th><th>City</th><th class='num'>Requests</th><th class='num'>Orders</th><th class='num'>Sales</th><th class='num'>Collected</th><th class='num'>Outstanding</th>" + (S.canMoney ? "<th class='num'>Profit</th>" : "") + "<th>Last order</th></tr>";
+    $("clientsBody").innerHTML = list.length ? list.map(function (c) {
+      var out = c.sales - c.collected;
+      return '<tr data-client="' + esc(c.id) + '"><td><strong>' + esc(c.p.full_name || c.p.email || "—") + "</strong>" + (c.p.business_name ? '<br><small class="muted">' + esc(c.p.business_name) + "</small>" : "") + "</td><td>" + esc(c.p.whatsapp || "") + "</td><td>" + esc(c.p.city || "") +
+        "</td><td class='num'>" + c.reqs.length + "</td><td class='num'>" + c.orders + "</td><td class='num'>" + (c.sales ? money(c.sales) : "—") + "</td><td class='num'>" + (c.collected ? money(c.collected) : "—") + "</td><td class='num'>" + (out > 0 ? "<strong>" + money(out) + "</strong>" : "—") + "</td>" +
+        (S.canMoney ? "<td class='num" + (c.profit < 0 ? " neg" : "") + "'>" + (c.withCost ? money(c.profit) : "—") + "</td>" : "") + "<td style='white-space:nowrap'>" + (c.last ? dShort(c.last) : "—") + "</td></tr>";
+    }).join("") : emptyRow(S.canMoney ? 10 : 9, "No clients match.");
+    $("clientsBody").querySelectorAll("[data-client]").forEach(function (tr) { tr.onclick = function () { openClient(tr.dataset.client); }; });
   }
 
   // ---------- Payments ----------
   $("pFilter").addEventListener("change", renderPayments);
   function renderPayments() {
     var rows = S.requests.filter(function (q) { return q.payment && rank(q.status) >= 8 && q.status !== "not_qualified"; });
-    var totalQuoted = 0, totalRecv = 0, depWait = 0, finWait = 0;
+    var total = 0, ver = 0, depWait = 0, finWait = 0;
     rows.forEach(function (q) {
-      var p = q.payment; totalQuoted += Number(p.final_price_mad); totalRecv += received(p);
-      if (p.deposit_status !== "verified") depWait++;
-      if (p.final_status === "pending" || p.final_status === "received") finWait++;
+      var p = q.payment; total += Number(p.final_price_mad); ver += verified(p);
+      if (p.deposit_status === "received") depWait++;
+      if (p.final_status === "received") finWait++;
     });
-    $("payKpis").innerHTML = [
-      ["Confirmed order value", money(totalQuoted)], ["Received", money(totalRecv)],
-      ["Outstanding", money(totalQuoted - totalRecv)], ["To verify", depWait + " deposits · " + finWait + " final"]
-    ].map(function (k) { return '<div class="card kpi" style="cursor:default"><span><span class="lbl">' + k[0] + '</span><span class="val" style="display:block;font-size:20px">' + esc(k[1]) + "</span></span></div>"; }).join("");
-
+    $("payKpis").innerHTML = kpiHtml([
+      { l: "Confirmed order value", v: money(total), s: rows.length + " orders" }, { l: "Verified", v: money(ver), s: "Money in the account" },
+      { l: "Outstanding", v: money(total - ver), s: "Still to collect" }, { l: "To verify", v: depWait + finWait + "", s: depWait + " deposits · " + finWait + " balances", hl: depWait + finWait > 0 }
+    ]);
     var f = $("pFilter").value;
     rows = rows.filter(function (q) {
-      var p = q.payment, out = Number(p.final_price_mad) - received(p);
-      if (f === "dep_wait") return p.deposit_status !== "verified";
-      if (f === "fin_wait") return p.final_status === "pending" || p.final_status === "received";
+      var p = q.payment, ps = payState(q).k, out = Number(p.final_price_mad) - verified(p);
+      if (f === "dep_wait" || f === "fin_wait" || f === "unpaid" || f === "paid") return ps === f;
       if (f === "outstanding") return out > 0;
-      if (f === "paid") return p.deposit_status === "verified" && p.final_status === "verified";
       return true;
     });
     $("payBody").innerHTML = rows.length ? rows.map(function (q) {
-      var p = q.payment, rec = received(p);
-      return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span></td><td>" + esc(q.client.full_name || q.client.email) + "</td><td>" + statusPill(q.status) +
+      var p = q.payment, v = verified(p);
+      return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span></td><td>" + esc(clientName(q)) + "</td><td>" + statusPill(q.status) + "</td><td>" + payCell(q) +
         '</td><td class="num">' + money(p.final_price_mad) + "</td><td>" + money(p.deposit_amount_mad) + "<br>" + payPill(p.deposit_status, DEP_LABEL) +
         "</td><td>" + money(p.balance_amount_mad) + "<br>" + payPill(p.final_status, FIN_LABEL) +
-        '</td><td class="num">' + money(rec) + '</td><td class="num"><strong>' + money(Number(p.final_price_mad) - rec) + "</strong></td></tr>";
-    }).join("") : emptyRow(8, "No confirmed orders here yet.");
+        '</td><td class="num">' + money(v) + '</td><td class="num"><strong>' + money(Number(p.final_price_mad) - v) + "</strong></td></tr>";
+    }).join("") : emptyRow(9, "No confirmed orders here yet.");
     bindRows($("payBody"));
   }
 
@@ -643,7 +1136,7 @@
     $("teamBody").innerHTML = S.staff.length ? S.staff.map(function (s) {
       var self = s.id === S.user.id;
       return "<tr><td><strong>" + esc(s.name || "—") + (self ? ' <span class="muted">(you)</span>' : "") + "</strong></td><td>" + esc(s.email) + "</td>" +
-        '<td><select data-role="' + esc(s.id) + '"' + (self ? " disabled" : "") + ">" +
+        '<td><select data-role="' + esc(s.id) + '" aria-label="Role"' + (self ? " disabled" : "") + ">" +
         Object.keys(ROLE_LABEL).map(function (r) { return '<option value="' + r + '"' + (r === s.role ? " selected" : "") + ">" + ROLE_LABEL[r] + "</option>"; }).join("") + "</select></td>" +
         "<td>" + (self ? '<span class="pill pill-green">Active</span>' : '<button type="button" class="btn btn-sm ' + (s.active ? "btn-danger" : "btn-secondary") + '" data-toggle="' + esc(s.id) + '">' + (s.active ? "Disable access" : "Restore access") + "</button>") + "</td>" +
         '<td class="num">' + (openCount[s.id] || 0) + "</td></tr>";
@@ -681,13 +1174,24 @@
   $("backdrop").onclick = closeDrawer;
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("drawer").hidden) closeDrawer(); });
   function closeDrawer() {
-    S.openId = null; $("drawer").hidden = true; $("backdrop").hidden = true;
+    S.openId = null; S.openClient = null; S.pendingFile = null;
+    $("drawer").hidden = true; $("backdrop").hidden = true;
     document.querySelectorAll("tr.selected").forEach(function (tr) { tr.classList.remove("selected"); });
   }
   function openDrawer(id) {
-    S.openId = id; $("drawer").hidden = false; $("backdrop").hidden = false;
+    S.openId = id; S.openClient = null; S.pendingFile = null;
+    $("drawer").hidden = false; $("backdrop").hidden = false;
     document.querySelectorAll("tr[data-id]").forEach(function (tr) { tr.classList.toggle("selected", tr.dataset.id === id); });
     renderDrawer(id);
+    markRead(id);
+  }
+  function openClient(id) {
+    S.openClient = id; S.openId = null;
+    $("drawer").hidden = false; $("backdrop").hidden = false;
+    renderClientDrawer(id);
+  }
+  function closeBtn() {
+    return '<button type="button" class="x" id="closeDrawer" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
   }
 
   function act(promise, okText) {
@@ -697,28 +1201,68 @@
       return reload().then(function () { return true; });
     });
   }
+  function markRead(id) {
+    sb.from("message_reads").upsert({ request_id: id }, { onConflict: "request_id,user_id" }).then(function (r) {
+      if (r.error) return;
+      S.reads[id] = new Date().toISOString();
+      if (S.unread[id]) { delete S.unread[id]; render(); }
+    });
+  }
+
+  function renderClientDrawer(id) {
+    var c = clientsData().find(function (x) { return x.id === id; });
+    if (!c) return closeDrawer();
+    var p = c.p, out = c.sales - c.collected;
+    $("drawerHead").innerHTML = "<div><h2>" + esc(p.full_name || p.email || "Client") + '</h2><small class="muted">' + esc([p.business_name, p.city].filter(Boolean).join(" · ")) + "</small></div>" + closeBtn();
+    $("closeDrawer").onclick = closeDrawer;
+    var dd = function (k, v, wide) { return v ? '<div' + (wide ? ' class="wide"' : "") + "><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
+    var h = '<div class="sec"><div class="actions-row">' +
+      (p.whatsapp ? '<a class="btn btn-primary btn-sm" href="' + esc(waLink(p.whatsapp)) + '" target="_blank" rel="noopener">WhatsApp ' + esc(p.whatsapp) + "</a>" : "") +
+      (p.email ? '<a class="btn btn-secondary btn-sm" href="mailto:' + esc(p.email) + '">Email</a>' : "") + "</div></div>";
+    h += '<div class="sec"><h3>Totals</h3><div class="totals">' +
+      "<span>Requests<strong>" + c.reqs.length + "</strong></span><span>Orders<strong>" + c.orders + "</strong></span>" +
+      "<span>Sales<strong>" + money(c.sales) + "</strong></span><span>Collected<strong>" + money(c.collected) + "</strong></span>" +
+      "<span>Outstanding<strong>" + money(out) + "</strong></span>" +
+      (S.canMoney ? '<span>Profit<strong class="' + (c.profit < 0 ? "neg" : "") + '">' + (c.withCost ? money(c.profit) : "—") + "</strong></span>" : "") + "</div>" +
+      '<p class="hint" style="margin-top:10px">' + (c.first ? "First order " + dShort(c.first) + " · last order " + dShort(c.last) : "No confirmed order yet") + "</p></div>";
+    h += '<div class="sec"><h3>Profile</h3><dl class="dl">' + dd("Email", esc(p.email)) + dd("WhatsApp", esc(p.whatsapp)) + dd("City", esc(p.city)) +
+      dd("Selling status", esc(SELLING[p.selling_status] || "")) + dd("Business", esc(p.business_name)) +
+      dd("Store link", p.store_link ? '<a href="' + esc(p.store_link) + '" target="_blank" rel="noopener nofollow">Open</a>' : "") +
+      dd("Client since", p.created_at ? dShort(p.created_at) : "") + "</dl></div>";
+    h += '<div class="sec"><h3>Requests and orders</h3>' + (c.reqs.length ? '<div class="table-wrap"><table class="compact" style="min-width:480px"><thead><tr><th>Request</th><th>Product</th><th>Status</th><th>Payment</th><th class="num">Quote</th></tr></thead><tbody id="clientReqs">' +
+      c.reqs.map(function (q) { return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + "</td><td>" + esc(q.product_name) + "</td><td>" + statusPill(q.status) + "</td><td>" + payCell(q) + "</td><td class='num'>" + (q.quote_amount_mad ? money(q.quote_amount_mad) : "—") + "</td></tr>"; }).join("") +
+      "</tbody></table></div>" : '<p class="muted">No request yet.</p>') + "</div>";
+    $("drawerBody").innerHTML = h;
+    if ($("clientReqs")) bindRows($("clientReqs"));
+  }
 
   function renderDrawer(id) {
     var q = S.requests.find(function (x) { return x.id === id; });
     if (!q) { closeDrawer(); return; }
     var c = q.client, p = q.payment, it = q.internal || {};
     var r = rank(q.status), canQuote = (S.role === "admin" || S.role === "agent") && !(p && p.deposit_status === "verified" && S.role !== "admin");
-    var canPay = S.role === "admin" || S.role === "ops_finance";
+    var canPay = S.canMoney;
     var allowed = allowedStatuses(q.status);
 
-    $("drawerHead").innerHTML = '<div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>' + esc(q.code) + "</h2>" + statusPill(q.status) +
-      (q.below_minimum ? '<span class="flag">Below minimum</span>' : "") + '</div><div style="margin-top:6px"><strong>' + esc(c.full_name || "—") + '</strong> <span class="muted">· ' + esc(q.delivery_city || c.city || "") +
-      '</span></div><small class="muted">Requested on ' + dTime(q.created_at) + "</small></div>" +
-      '<button type="button" class="x" id="closeDrawer" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+    $("drawerHead").innerHTML = '<div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>' + esc(q.code) + "</h2>" + statusPill(q.status) + payCell(q) +
+      (q.below_minimum ? '<span class="flag">Below minimum</span>' : "") + '</div><div style="margin-top:6px"><button type="button" class="link" id="dClientLink" style="font-weight:700">' + esc(c.full_name || "—") + '</button> <span class="muted">· ' + esc(q.delivery_city || c.city || "") +
+      '</span></div><small class="muted">Requested on ' + dTime(q.created_at) + "</small></div>" + closeBtn();
     $("closeDrawer").onclick = closeDrawer;
+    $("dClientLink").onclick = function () { openClient(q.client_id); };
 
     var h = "";
-    // Contact
     h += '<div class="sec"><div class="actions-row">' +
       (c.whatsapp ? '<a class="btn btn-primary btn-sm" href="' + esc(waLink(c.whatsapp)) + '" target="_blank" rel="noopener">WhatsApp ' + esc(c.whatsapp) + "</a>" : "") +
       (c.email ? '<a class="btn btn-secondary btn-sm" href="mailto:' + esc(c.email) + '">Email</a>' : "") + "</div></div>";
 
-    // Status + owner + next action
+    // Conversation
+    h += '<div class="sec"><h3>Conversation with the client</h3><div class="chat" id="dChat" aria-live="polite"><div class="muted">Loading…</div></div>' +
+      '<div class="compose"><div class="field" style="margin-bottom:8px"><label class="sr" for="dMsg">Message to the client</label><textarea id="dMsg" maxlength="5000" placeholder="Write an update or answer for the client…"></textarea></div>' +
+      '<div class="actions-row"><span><label class="link" style="display:inline;font-weight:600;margin:0">Attach a file<input type="file" id="dMsgFile" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label> <span id="dMsgFileName"></span></span>' +
+      '<button class="btn btn-primary btn-sm" type="button" id="dMsgSend">Send to client</button></div>' +
+      '<p class="hint">The client sees this in their account. Use internal notes for anything private.</p></div></div>';
+
+    // Progress
     h += '<div class="sec"><h3>Progress</h3>';
     if (allowed.length) {
       h += '<div class="row-inline" style="margin-bottom:12px"><div class="field"><label for="dStatus">Status</label><select id="dStatus">' +
@@ -735,9 +1279,10 @@
       var o = S.staffById[q.assigned_to];
       h += '<p class="readonly">Assigned to: ' + esc(o ? (o.name || o.email) : "Unassigned") + "</p>";
     }
-    h += '<div class="row-inline"><div class="field" style="flex:2"><label for="dNext">Next action</label><input id="dNext" maxlength="200" value="' + esc(it.next_action || "") + '" placeholder="e.g. Send quotation on WhatsApp"></div>' +
+    h += '<div class="row-inline"><div class="field" style="flex:2"><label for="dNext">Next action</label><input id="dNext" maxlength="200" value="' + esc(it.next_action || "") + '" placeholder="e.g. Send quotation"></div>' +
       '<div class="field"><label for="dNextDate">Due</label><input id="dNextDate" type="date" value="' + esc(it.next_action_date || "") + '"></div>' +
-      '<button class="btn btn-secondary" type="button" id="saveNext">Save</button></div></div>';
+      '<button class="btn btn-secondary" type="button" id="saveNext">Save</button></div>' +
+      (isLate(q) ? '<div class="alert alert-warn" style="margin-top:12px">Late: ' + daysSince(orderDate(q)) + " days since the deposit (target " + DELIVERY_TARGET_DAYS + " days).</div>" : "") + "</div>";
 
     // Quotation & payments
     h += '<div class="sec"><h3>Final door-to-door quotation</h3>';
@@ -751,9 +1296,19 @@
     if (p) {
       h += '<div style="margin-top:14px">' + payBlock("deposit", "40% deposit", p.deposit_amount_mad, p.deposit_status, DEP_LABEL, p.deposit_date, p.deposit_reference, p.deposit_proof_path, p.deposit_verified_by, p.deposit_verified_at, canPay) +
         payBlock("final", "60% balance", p.balance_amount_mad, p.final_status, FIN_LABEL, p.final_date, p.final_reference, p.final_proof_path, p.final_verified_by, p.final_verified_at, canPay) +
-        '<div class="totals"><span>Received<strong>' + money(received(p)) + "</strong></span><span>Outstanding<strong>" + money(Number(p.final_price_mad) - received(p)) + "</strong></span></div></div>";
+        '<div class="totals"><span>Verified<strong>' + money(verified(p)) + "</strong></span><span>Outstanding<strong>" + money(Number(p.final_price_mad) - verified(p)) + "</strong></span></div></div>";
     }
     h += "</div>";
+
+    // Costs & profit
+    if (S.canMoney && p) {
+      var cs = S.costs[q.id] || {};
+      h += '<div class="sec"><h3>Costs and profit <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:500">Admin and Ops &amp; Finance only</span></h3><div class="cost-grid">' +
+        COSTS.map(function (k) { return '<div class="field"><label for="c_' + k[0] + '">' + k[1] + ' (MAD)</label><input id="c_' + k[0] + '" class="cost-in" type="number" min="0" step="1" inputmode="numeric" value="' + esc(cs[k[0]] != null ? Number(cs[k[0]]) : "") + '"></div>'; }).join("") +
+        '<div class="field" style="grid-column:1/-1"><label for="c_notes">Cost notes</label><input id="c_notes" maxlength="2000" value="' + esc(cs.notes || "") + '" placeholder="Supplier, invoice numbers…"></div></div>' +
+        '<div class="pay-foot" style="margin-top:12px"><div class="totals" id="costTotals"></div><button class="btn btn-primary btn-sm" type="button" id="saveCosts">Save costs</button></div>' +
+        (cs.updated_at ? '<p class="hint">Last updated ' + dTime(cs.updated_at) + (S.staffById[cs.updated_by] ? " by " + esc(S.staffById[cs.updated_by].name || S.staffById[cs.updated_by].email) : "") + "</p>" : "") + "</div>";
+    }
 
     // Product
     var dd = function (k, v, wide) { return v || v === 0 ? '<div' + (wide ? ' class="wide"' : "") + "><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
@@ -774,19 +1329,11 @@
       dd("Client notes", esc(q.client_notes), true) +
       '</dl><div class="thumbs" id="dFiles" style="margin-top:12px"></div></div>';
 
-    // Client
-    h += '<div class="sec"><h3>Customer</h3><dl class="dl">' +
-      dd("Name", esc(c.full_name)) + dd("City", esc(c.city)) + dd("WhatsApp", esc(c.whatsapp)) + dd("Email", esc(c.email)) +
-      dd("Business", esc(c.business_name)) + dd("Selling status", esc(SELLING[c.selling_status] || "")) +
-      dd("Store link", c.store_link ? '<a href="' + esc(c.store_link) + '" target="_blank" rel="noopener nofollow">Open</a>' : "") +
-      dd("Other requests", fmt.format(S.requests.filter(function (x) { return x.client_id === q.client_id && x.id !== q.id; }).length)) + "</dl></div>";
-
     // Notes
     h += '<div class="sec"><h3>Internal notes</h3><div class="notes" id="dNotes"><div class="muted">Loading…</div></div>' +
-      '<div class="field" style="margin-bottom:8px"><textarea id="dNoteText" maxlength="5000" placeholder="Add a private note or log a customer contact…" style="min-height:76px"></textarea></div>' +
-      '<div class="actions-row"><button class="btn btn-secondary btn-sm" type="button" id="addNote">Add note</button><button class="btn btn-secondary btn-sm" type="button" id="addContact">Log customer contact</button></div></div>';
+      '<div class="field" style="margin-bottom:8px"><label class="sr" for="dNoteText">Internal note</label><textarea id="dNoteText" maxlength="5000" placeholder="Add a private note or log a contact. The client never sees this." style="min-height:76px"></textarea></div>' +
+      '<div class="actions-row"><button class="btn btn-secondary btn-sm" type="button" id="addNote">Add note</button><button class="btn btn-secondary btn-sm" type="button" id="addContact">Log client contact</button></div></div>';
 
-    // Activity
     h += '<div class="sec"><h3>Activity</h3><ul class="timeline" id="dEvents"><li class="muted">Loading…</li></ul></div>';
     $("drawerBody").innerHTML = h;
 
@@ -794,7 +1341,7 @@
     if ($("saveStatus")) $("saveStatus").onclick = function () {
       var v = $("dStatus").value; if (v === q.status) return;
       if (v === "not_qualified" && !confirm("Close this request as not qualified or cancelled?")) return;
-      act(sb.from("requests").update({ status: v }).eq("id", q.id), "Status updated.");
+      act(sb.from("requests").update({ status: v }).eq("id", q.id), "Status updated. The client sees the new stage.");
     };
     if ($("saveOwner")) $("saveOwner").onclick = function () {
       act(sb.from("requests").update({ assigned_to: $("dOwner").value || null }).eq("id", q.id), "Assignment saved.");
@@ -808,10 +1355,85 @@
       act(sb.from("requests").update({ quote_amount_mad: v }).eq("id", q.id), "Quotation saved. Deposit: " + money(Math.round(v * 40) / 100));
     };
     if (p && canPay) ["deposit", "final"].forEach(bindPay.bind(null, q));
+    if ($("saveCosts")) bindCosts(q);
     $("addNote").onclick = function () { addNote(q.id, "note"); };
     $("addContact").onclick = function () { addNote(q.id, "contact"); };
+    bindCompose(q);
 
     loadDrawerExtras(q);
+  }
+
+  function bindCosts(q) {
+    function totals() {
+      var t = 0; COSTS.forEach(function (k) { t += Number($("c_" + k[0]).value || 0); });
+      var price = Number(q.payment.final_price_mad), pr = price - t;
+      $("costTotals").innerHTML = "<span>Total cost<strong>" + money(t) + '</strong></span><span>Profit<strong class="' + (pr < 0 ? "neg" : "") + '">' + money(pr) + "</strong></span><span>Margin<strong>" + pct(price ? pr / price : null) + "</strong></span>";
+    }
+    document.querySelectorAll(".cost-in").forEach(function (i) { i.addEventListener("input", totals); });
+    totals();
+    $("saveCosts").onclick = function () {
+      var row = { request_id: q.id, notes: $("c_notes").value.trim() || null };
+      var bad = false;
+      COSTS.forEach(function (k) { var v = $("c_" + k[0]).value; row[k[0]] = v === "" ? 0 : Number(v); if (!(row[k[0]] >= 0)) bad = true; });
+      if (bad) return toast("Costs cannot be negative.", true);
+      act(sb.from("order_costs").upsert(row, { onConflict: "request_id" }), "Costs saved.");
+    };
+  }
+
+  function bindCompose(q) {
+    $("dMsgFile").onchange = function () {
+      var f = this.files && this.files[0]; this.value = "";
+      if (!f) return;
+      if (f.size > 10 * 1024 * 1024) return toast("The file is larger than 10 MB.", true);
+      S.pendingFile = f;
+      $("dMsgFileName").innerHTML = '<span class="file-chip">' + esc(f.name) + ' <button type="button" class="link" id="dMsgFileRm" aria-label="Remove file">×</button></span>';
+      $("dMsgFileRm").onclick = function () { S.pendingFile = null; $("dMsgFileName").innerHTML = ""; };
+    };
+    $("dMsgSend").onclick = function () {
+      var body = $("dMsg").value.trim(), f = S.pendingFile, btn = this;
+      if (!body && !f) return toast("Write a message or attach a file.", true);
+      btn.disabled = true; btn.textContent = "Sending…";
+      var done = function () { btn.disabled = false; btn.textContent = "Send to client"; };
+      var send = function (path) {
+        return sb.from("request_messages").insert({ request_id: q.id, body: body || ("File: " + f.name), attachment_path: path || null, attachment_name: path ? f.name : null }).then(function (r) {
+          done();
+          if (r.error) return toast(friendly(r.error), true);
+          $("dMsg").value = ""; S.pendingFile = null; $("dMsgFileName").innerHTML = "";
+          toast("Message sent to the client.");
+          loadChat(q); markRead(q.id);
+        });
+      };
+      if (!f) return send(null);
+      var path = "staff/" + q.id + "/msg-" + Date.now() + "-" + safeName(f.name);
+      sb.storage.from("request-files").upload(path, f, { contentType: f.type }).then(function (u) {
+        if (u.error) { done(); return toast(friendly(u.error), true); }
+        send(path);
+      });
+    };
+  }
+
+  function loadChat(q) {
+    sb.from("request_messages").select("id, kind, from_team, body, attachment_path, attachment_name, created_at, author:profiles(full_name,email)").eq("request_id", q.id).order("created_at").then(function (r) {
+      var box = $("dChat"); if (!box) return;
+      if (r.error) { box.innerHTML = '<div class="muted">' + esc(friendly(r.error)) + "</div>"; return; }
+      var list = r.data || [];
+      box.innerHTML = list.length ? list.map(function (m) {
+        if (m.kind === "update") return '<div class="bubble update">' + esc(m.body) + " · " + esc(dTime(m.created_at)) + "</div>";
+        var who = m.from_team ? ((m.author && (m.author.full_name || m.author.email)) || "Team") : (q.client.full_name || "Client");
+        return '<div class="bubble ' + (m.from_team ? "team" : "client") + '"><p>' + esc(m.body) + "</p>" +
+          (m.attachment_path ? '<button type="button" class="att" data-file="' + esc(m.attachment_path) + '">📎 ' + esc(m.attachment_name || "Attachment") + "</button>" : "") +
+          '<div class="meta">' + esc(who) + " · " + esc(dTime(m.created_at)) + "</div></div>";
+      }).join("") : '<div class="muted">No messages yet. Your first message appears in the client\'s account.</div>';
+      box.scrollTop = box.scrollHeight;
+      box.querySelectorAll("[data-file]").forEach(function (b) {
+        b.onclick = function () {
+          sb.storage.from("request-files").createSignedUrl(b.dataset.file, 600).then(function (u) {
+            if (u.error) return toast(friendly(u.error), true);
+            window.open(u.data.signedUrl, "_blank", "noopener");
+          });
+        };
+      });
+    });
   }
 
   function payBlock(kind, title, amount, status, labels, date, ref, proof, by, at, canPay) {
@@ -847,7 +1469,7 @@
     $(kind + "Proof").onchange = function () {
       var f = this.files && this.files[0]; if (!f) return;
       if (f.size > 10 * 1024 * 1024) return toast("The file is larger than 10 MB.", true);
-      var path = "staff/" + q.id + "/" + kind + "-" + Date.now() + "-" + f.name.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-50);
+      var path = "staff/" + q.id + "/" + kind + "-" + Date.now() + "-" + safeName(f.name);
       toast("Uploading…");
       sb.storage.from("request-files").upload(path, f, { contentType: f.type }).then(function (u) {
         if (u.error) return toast(friendly(u.error), true);
@@ -865,7 +1487,7 @@
     if (!t) return toast("Write the note first.", true);
     sb.from("request_notes").insert({ request_id: id, kind: kind, body: t }).then(function (r) {
       if (r.error) return toast(friendly(r.error), true);
-      $("dNoteText").value = ""; toast(kind === "contact" ? "Customer contact logged." : "Note added.");
+      $("dNoteText").value = ""; toast(kind === "contact" ? "Client contact logged." : "Note added.");
       var q = S.requests.find(function (x) { return x.id === id; }); if (q) loadDrawerExtras(q);
     });
   }
@@ -879,7 +1501,10 @@
       case "assigned": return d.to ? "Assigned to " + nm(d.to) : "Unassigned";
       case "quote_updated": return "Quotation set to " + money(d.to);
       case "note_added": return "Internal note added";
-      case "customer_contacted": return "Customer contact logged";
+      case "customer_contacted": return "Client contact logged";
+      case "message_to_client": return "Message sent to the client";
+      case "message_from_client": return "Message from the client";
+      case "costs_updated": return "Costs updated (total " + money(d.total) + ")";
       default:
         var m = e.action.match(/^(deposit|final_payment)_(.+)$/);
         if (m) return (m[1] === "deposit" ? "40% deposit" : "60% balance") + " marked " + (DEP_LABEL[m[2]] || FIN_LABEL[m[2]] || m[2]).toLowerCase() + (d.amount ? " (" + money(d.amount) + ")" : "");
@@ -888,6 +1513,7 @@
   }
 
   function loadDrawerExtras(q) {
+    loadChat(q);
     sb.from("request_files").select("path, file_name, kind").eq("request_id", q.id).then(function (r) {
       var files = (r.data || []).filter(function (f) { return f.kind === "product_image"; });
       var box = $("dFiles"); if (!box || !files.length) return;
@@ -909,10 +1535,10 @@
       var box = $("dNotes"); if (!box) return;
       var notes = r.data || [];
       box.innerHTML = notes.length ? notes.map(function (n) {
-        return '<div class="note"><div class="note-meta">' + (n.kind === "contact" ? "Customer contact · " : "") + esc((n.author && (n.author.full_name || n.author.email)) || "") + " · " + dTime(n.created_at) + "</div><p>" + esc(n.body) + "</p></div>";
+        return '<div class="note"><div class="note-meta">' + (n.kind === "contact" ? "Client contact · " : "") + esc((n.author && (n.author.full_name || n.author.email)) || "") + " · " + dTime(n.created_at) + "</div><p>" + esc(n.body) + "</p></div>";
       }).join("") : '<div class="muted">No notes yet.</div>';
     });
-    sb.from("request_events").select("action, details, created_at, actor:profiles(full_name,email)").eq("request_id", q.id).order("created_at", { ascending: false }).limit(50).then(function (r) {
+    sb.from("request_events").select("action, details, created_at, actor:profiles(full_name,email)").eq("request_id", q.id).order("created_at", { ascending: false }).limit(60).then(function (r) {
       var box = $("dEvents"); if (!box) return;
       var ev = r.data || [];
       box.innerHTML = ev.length ? ev.map(function (e) {
