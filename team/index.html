@@ -342,6 +342,11 @@
               <option value="fin_wait">60% to verify</option>
               <option value="paid">Fully paid</option>
             </select>
+            <select id="fReply" aria-label="Reply">
+              <option value="">All replies</option>
+              <option value="needs">Needs a reply</option>
+              <option value="answered">Answered</option>
+            </select>
             <input type="date" id="fFrom" aria-label="From date">
             <input type="date" id="fTo" aria-label="To date">
             <label class="check"><input type="checkbox" id="fUnread"> Unread messages</label>
@@ -349,7 +354,7 @@
             <button class="btn btn-ghost btn-sm" type="button" id="clearFilters">Clear</button>
           </div>
           <div id="reqTable">
-            <div class="table-wrap"><table><thead><tr><th>Request</th><th>Client</th><th>City</th><th>Product</th><th class="num">Qty</th><th>Status</th><th>Payment</th><th>Owner</th><th class="num">Quote</th><th>Created</th></tr></thead><tbody id="reqBody"></tbody></table></div>
+            <div class="table-wrap"><table><thead><tr><th>Request</th><th>Client</th><th>City</th><th>Product</th><th class="num">Qty</th><th>Status</th><th>Reply</th><th>Payment</th><th>Owner</th><th class="num">Quote</th><th>Created</th></tr></thead><tbody id="reqBody"></tbody></table></div>
             <div class="pager"><span id="pagerInfo"></span><div class="btns"><button class="btn btn-secondary btn-sm" type="button" id="prevPage">Previous</button><button class="btn btn-secondary btn-sm" type="button" id="nextPage">Next</button></div></div>
           </div>
           <div id="reqKanban" class="panel-body" hidden><div class="kanban" id="kanban"></div></div>
@@ -503,7 +508,7 @@
   var S = {
     user: null, role: null, me: null, canMoney: false,
     statuses: {}, statusList: [], requests: [], staff: [], staffById: {},
-    costs: {}, reads: {}, unread: {}, lastClientMsg: {}, profiles: [],
+    costs: {}, reads: {}, unread: {}, lastClientMsg: {}, lastTeamMsg: {}, profiles: [],
     view: "dashboard", page: 1, period: "month", reqView: "table",
     openId: null, openClient: null, pendingFile: null
   };
@@ -548,6 +553,23 @@
   function ownerCell(id) {
     var s = S.staffById[id];
     return s ? '<span class="avatar sm" title="' + esc(s.name || s.email) + '">' + esc(initials(s.name, s.email)) + "</span>" : '<span class="muted">—</span>';
+  }
+  // Has the team answered the client? "new": nobody has replied yet (no team message and still before
+  // "Contacted"); "waiting": the client wrote after the team's last message. Closed requests: null.
+  function replyState(q) {
+    if (q.status === "completed" || q.status === "not_qualified") return null;
+    var c = S.lastClientMsg[q.id], t = S.lastTeamMsg[q.id];
+    if (c && (!t || new Date(c) > new Date(t))) return "waiting";
+    if (!t && rank(q.status) <= 3) return "new";
+    return "answered";
+  }
+  function needsReply(q) { var r = replyState(q); return r === "new" || r === "waiting"; }
+  function replyCell(q) {
+    var r = replyState(q);
+    if (r === "new") return '<span class="pill pill-orange">Not answered</span>';
+    if (r === "waiting") return '<span class="pill pill-orange">Client waiting</span>';
+    if (r === "answered") return '<span class="pill pill-green">Answered</span>';
+    return '<span class="muted">—</span>';
   }
   function unreadBadge(id) { var n = S.unread[id]; return n ? '<span class="unread" title="Unread client messages">' + n + " new</span>" : ""; }
 
@@ -639,9 +661,10 @@
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
       S.profiles = (res.profiles && res.profiles.data) || [];
       S.reads = {}; ((res.reads && res.reads.data) || []).forEach(function (r) { S.reads[r.request_id] = r.last_read_at; });
-      S.unread = {}; S.lastClientMsg = {};
+      S.unread = {}; S.lastClientMsg = {}; S.lastTeamMsg = {};
       ((res.msgs && res.msgs.data) || []).forEach(function (m) {
-        if (m.from_team) return;
+        // Messages arrive newest first, so the first one seen per request is the latest.
+        if (m.from_team) { if (!S.lastTeamMsg[m.request_id]) S.lastTeamMsg[m.request_id] = m.created_at; return; }
         if (!S.lastClientMsg[m.request_id]) S.lastClientMsg[m.request_id] = m.created_at;
         var rd = S.reads[m.request_id];
         if (!rd || new Date(m.created_at) > new Date(rd)) S.unread[m.request_id] = (S.unread[m.request_id] || 0) + 1;
@@ -706,6 +729,7 @@
       product: "<td>" + esc(q.product_name) + '<br><small class="muted">' + esc(CATEGORY_LABELS[q.category] || q.category) + "</small></td>",
       qty: '<td class="num">' + fmt.format(q.quantity) + "</td>",
       status: "<td>" + statusPill(q.status) + "</td>",
+      reply: "<td>" + replyCell(q) + "</td>",
       pay: "<td>" + payCell(q) + "</td>",
       owner: "<td>" + ownerCell(q.assigned_to) + "</td>",
       quote: '<td class="num">' + (q.quote_amount_mad ? money(q.quote_amount_mad) : '<span class="muted">—</span>') + "</td>",
@@ -750,6 +774,7 @@
         if (c.go.status) $("fStatus").value = c.go.status;
         if (c.go.pay) $("fPay").value = c.go.pay;
         if (c.go.unread) $("fUnread").checked = true;
+        if (c.go.reply) $("fReply").value = c.go.reply;
         go("requests");
       };
     });
@@ -766,7 +791,7 @@
       if (S.unread[q.id]) items.push({ q: q, w: 1, t: "New message from client", s: dTime(S.lastClientMsg[q.id]) });
       if (S.canMoney && p && p.deposit_status === "received") items.push({ q: q, w: 2, t: "40% deposit received, to verify", s: money(p.deposit_amount_mad) });
       if (S.canMoney && p && p.final_status === "received") items.push({ q: q, w: 2, t: "60% balance received, to verify", s: money(p.balance_amount_mad) });
-      if (r <= 3 && daysSince(q.created_at) >= 1) items.push({ q: q, w: 3, t: "No reply yet", s: "Received " + dTime(q.created_at) });
+      if (replyState(q) === "new") items.push({ q: q, w: 3, t: "Not answered yet", s: "Received " + dTime(q.created_at) });
       if (isLate(q)) items.push({ q: q, w: 4, t: "Late order", s: daysSince(orderDate(q)) + " days since deposit (target " + DELIVERY_TARGET_DAYS + ")" });
       if (q.internal && q.internal.next_action_date && q.internal.next_action_date <= today)
         items.push({ q: q, w: 5, t: "Next action due", s: (q.internal.next_action || "") + " · " + dShort(q.internal.next_action_date) });
@@ -782,7 +807,8 @@
     var reqP = R.filter(function (q) { return inPeriod(q.created_at, from); });
     var ordersP = R.filter(function (q) { return isOrder(q) && inPeriod(orderDate(q), from); });
     var newApps = R.filter(function (q) { return q.status === "new_application"; }).length;
-    var toAnswer = R.filter(function (q) { return rank(q.status) <= 3; }).length;
+    var toAnswer = R.filter(needsReply).length;
+    var answered = R.filter(function (q) { return replyState(q) === "answered"; }).length;
     var quoting = R.filter(function (q) { var r = rank(q.status); return r >= 5 && r <= 8; }).length;
     var active = R.filter(function (q) { var r = rank(q.status); return r >= 9 && r <= 16; }).length;
     var deliveredP = R.filter(function (q) { return q.status === "completed" && inPeriod(q.updated_at, from); }).length;
@@ -790,7 +816,7 @@
 
     var kr = [
       { l: "Requests received", v: fmt.format(reqP.length), s: "In the selected period", go: { status: "" } },
-      { l: "New to answer", v: fmt.format(toAnswer), s: newApps + " brand new", hl: toAnswer > 0, go: { status: "open" } },
+      { l: "Not answered", v: fmt.format(toAnswer), s: answered + " answered · " + newApps + " brand new", hl: toAnswer > 0, go: { reply: "needs" } },
       { l: "Sourcing & quotation", v: fmt.format(quoting), s: "Feasibility to deposit", go: { status: "open" } },
       { l: "Active orders", v: fmt.format(active), s: "Production to delivery", go: { status: "open" } },
       { l: "Delivered", v: fmt.format(deliveredP), s: "In the selected period", go: { status: "completed" } },
@@ -972,7 +998,7 @@
   }
 
   // ---------- Requests ----------
-  ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fFrom", "fTo", "fBelow", "fUnread"].forEach(function (id) {
+  ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fReply", "fFrom", "fTo", "fBelow", "fUnread"].forEach(function (id) {
     $(id).addEventListener("change", function () { S.page = 1; renderRequests(); });
   });
   document.querySelectorAll("#reqViewSeg button").forEach(function (b) {
@@ -983,7 +1009,7 @@
     };
   });
   function clearFilters() {
-    ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fFrom", "fTo"].forEach(function (id) { $(id).value = ""; });
+    ["fStatus", "fOwner", "fCity", "fCategory", "fPay", "fReply", "fFrom", "fTo"].forEach(function (id) { $(id).value = ""; });
     $("fBelow").checked = false; $("fUnread").checked = false; $("globalSearch").value = ""; S.page = 1;
   }
   $("clearFilters").onclick = function () { clearFilters(); renderRequests(); };
@@ -992,7 +1018,7 @@
 
   function filtered() {
     var term = $("globalSearch").value.trim().toLowerCase();
-    var st = $("fStatus").value, ow = $("fOwner").value, city = $("fCity").value, cat = $("fCategory").value, pay = $("fPay").value;
+    var st = $("fStatus").value, ow = $("fOwner").value, city = $("fCity").value, cat = $("fCategory").value, pay = $("fPay").value, reply = $("fReply").value;
     var from = $("fFrom").value, to = $("fTo").value, below = $("fBelow").checked, unread = $("fUnread").checked;
     return S.requests.filter(function (q) {
       if (st === "open" && (q.status === "completed" || q.status === "not_qualified")) return false;
@@ -1007,6 +1033,8 @@
       if (to && day > to) return false;
       if (below && !q.below_minimum) return false;
       if (unread && !S.unread[q.id]) return false;
+      if (reply === "needs" && !needsReply(q)) return false;
+      if (reply === "answered" && replyState(q) !== "answered") return false;
       if (term) {
         var hay = [q.code, q.product_name, q.client.full_name, q.client.email, q.client.whatsapp, q.delivery_city, q.client.city, q.client.business_name, label(q.status)].join(" ").toLowerCase();
         if (hay.indexOf(term) === -1) return false;
@@ -1022,7 +1050,7 @@
     var pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (S.page > pages) S.page = pages;
     var slice = list.slice((S.page - 1) * PAGE_SIZE, S.page * PAGE_SIZE);
-    $("reqBody").innerHTML = slice.length ? slice.map(function (q) { return rowHtml(q, ["code", "client", "city", "product", "qty", "status", "pay", "owner", "quote", "created"]); }).join("") : emptyRow(10, S.requests.length ? "No request matches these filters." : "No requests yet.");
+    $("reqBody").innerHTML = slice.length ? slice.map(function (q) { return rowHtml(q, ["code", "client", "city", "product", "qty", "status", "reply", "pay", "owner", "quote", "created"]); }).join("") : emptyRow(11, S.requests.length ? "No request matches these filters." : "No requests yet.");
     bindRows($("reqBody"));
     $("pagerInfo").textContent = list.length ? "Showing " + ((S.page - 1) * PAGE_SIZE + 1) + "–" + Math.min(S.page * PAGE_SIZE, list.length) + " of " + list.length : "0 results";
     $("prevPage").disabled = S.page <= 1; $("nextPage").disabled = S.page >= pages;
@@ -1037,7 +1065,7 @@
       var items = list.filter(function (q) { var r = rank(q.status); return r >= b.from && r <= b.to; });
       return '<div class="kcol"><h3>' + esc(b.t) + "<span>" + items.length + '</span></h3><div class="kcards">' +
         (items.length ? items.map(function (q) {
-          return '<button type="button" class="kcard" data-id="' + esc(q.id) + '"><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) +
+          return '<button type="button" class="kcard" data-id="' + esc(q.id) + '"><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + (needsReply(q) ? '<span class="flag">Needs reply</span>' : "") +
             '<div class="t">' + esc(q.product_name) + '</div><div class="m">' + esc(clientName(q)) + " · " + fmt.format(q.quantity) + " units</div>" +
             '<div class="b">' + (b.from >= 8 && b.from <= 17 ? payCell(q) : statusPill(q.status)) + ownerCell(q.assigned_to) + "</div></button>";
         }).join("") : '<div class="kempty">Nothing here</div>') + "</div></div>";

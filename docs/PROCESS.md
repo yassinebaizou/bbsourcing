@@ -49,6 +49,8 @@ Inside the client account there must be:
 - **Messages** per request: the client can ask a question about a request; the team answers there.
 
 ### 2.1 Status visible to the client
+
+*Done:* client-facing stage names updated to this list (migration `20261024022909_client_stage_names_v2`).
 Every status the team sets in the CRM is **shown to the client**, in plain words, so they always
 know where their product is. Examples:
 - In review
@@ -133,16 +135,16 @@ filters; clients view with totals and profit; costs & profit per request; 40/60 
 proof; assignment, notes, activity log; team management; noindex on `/team` and `/account`.
 
 **Still to build**, in this order:
-1. **Homepage form (1.1)**: "Get my price" must **scroll down to a request form on the homepage**
+1. ✅ *Done.* **Homepage form (1.1)**: "Get my price" must **scroll down to a request form on the homepage**
    (product + personal information), not leave the page. At submit, the visitor creates the account
    (same `pending_request` flow as `/account`), then lands in their account with the request visible.
-2. **"Guest estimation" button in the top navigation bar** (1.2), opening `/estimate`.
-3. **"Get estimation" inside the client account** (2): a visible button/tab, next to
+2. ✅ *Done.* **"Guest estimation" button in the top navigation bar** (1.2), opening `/estimate`.
+3. ✅ *Done.* **"Get estimation" inside the client account** (2): a visible button/tab, next to
    "Get my quote", so clients can test prices without sending a request.
 4. **Restock (3)**: when a request arrives for a product this client already sourced, flag it as
    Restock automatically and prefill the quotation with the previous final price; the team adjusts
    it only if shipping costs changed. (Matching rule: see open question 1.)
-5. **Answered / not answered** (4.2): make sure the requests list and dashboard show clearly which
+5. ✅ *Done* (CRM "Reply" column, filter, dashboard "Not answered"). **Answered / not answered** (4.2): make sure the requests list and dashboard show clearly which
    requests have a client message with no team reply yet.
 6. **Orders page (4.3)**: a dedicated Orders view listing every confirmed order (linked to its
    request) with selling price, costs, profit and payment state; today costs & profit live only in

@@ -23,7 +23,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 
 | Path | What |
 |---|---|
-| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). The `#request` box is a plain GET form to `/account?source=home&link=…&qty=…` (the Google Sheet form is retired) |
+| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). Header: **Guest estimation** (→ `/estimate`) and **Get my price** (→ `#request`). `#request` is the full 3-step request form (product → you & timing → account); the account is created at submit and the request travels in `pending_request` (same as `/account`); logged-in visitors insert directly. Supabase is loaded on the homepage for this |
 | `estimate/index.html` | Public price estimator → "Request my exact quote" opens `/account` prefilled |
 | `account/index.html` | Client portal. Visitors without a session get the request form directly (guest mode); step 4 creates the account and the request travels in signup metadata `pending_request`, inserted by the `handle_new_user` trigger (works before email confirmation). Also: log in, reset password, my requests + tracking + unread badges, two-way conversation per request, profile |
 | `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management; request drawer with client conversation, status, assignment, next action, quotation, 40/60 payments with proof, costs & profit, notes, activity |
@@ -90,6 +90,10 @@ client/team message stamping, attachment folder checks, read markers, stage-chan
 costs refused for client and agent, other client and unassigned agent see nothing.
 
 ## To do next (in this order)
+
+The owner's target process is **`docs/PROCESS.md`** (it wins over the code). Its section 5 lists what is
+still to build; the items below are the infrastructure ones.
+
 
 0. **Read `docs/PROCESS.md` first.** It is the owner's target process. Its section 5 lists what is
    already built and what is still missing (homepage form, Guest estimation, estimator in the
