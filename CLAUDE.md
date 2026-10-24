@@ -91,6 +91,12 @@ costs refused for client and agent, other client and unassigned agent see nothin
 
 ## To do next (in this order)
 
+0. **Read `docs/PROCESS.md` first.** It is the owner's target process. Its section 5 lists what is
+   already built and what is still missing (homepage form, Guest estimation, estimator in the
+   account, restock, answered/unanswered, Orders page, invitations, notifications). It overrides
+   this file where they differ. Ask Yassine the open questions in its section 6 before building
+   the parts they affect.
+
 1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
 2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
    request, conversation and payment-tracking data, product images, and how to delete an account.
