@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>My Account | DDPSourcing</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/ui.css">
+<style>
+  .top{background:var(--navy);color:var(--white)}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
+  .top-right{display:flex;align-items:center;gap:6px;font-size:14px;color:#CBD5E1}
+  .top-right a,.top-right button{color:#CBD5E1;text-decoration:none;background:none;border:0;cursor:pointer;font-size:14px;font-weight:500;padding:8px}
+  .top-right a:hover,.top-right button:hover{color:var(--white)}
+  .hello{display:none}
+  @media (min-width:600px){.hello{display:inline}}
+  .wrap{max-width:960px;margin:0 auto}
+  main{padding:24px 16px 64px}
+
+  /* Auth */
+  .auth{max-width:460px;margin:8px auto 0}
+  .auth h1{font-size:26px;line-height:1.2;margin:0 0 6px}
+  .auth .lead{color:var(--muted);margin:0 0 20px}
+  .tabs{display:flex;background:#EEF1F5;border-radius:10px;padding:4px;margin-bottom:20px}
+  .tabs button{flex:1;border:0;background:none;padding:10px;border-radius:8px;font-weight:600;color:var(--slate);cursor:pointer}
+  .tabs button[aria-selected=true]{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(11,18,32,.1)}
+  .auth .card{padding:22px}
+  .auth-foot{text-align:center;margin-top:14px;font-size:14px}
+
+  /* App nav */
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .page-head h1{font-size:24px;margin:0}
+  .subnav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:22px;overflow-x:auto}
+  .subnav button{border:0;background:none;padding:12px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+  .subnav button[aria-selected=true]{color:var(--navy);border-bottom-color:var(--orange)}
+
+  /* Requests list */
+  .req-list{display:grid;gap:12px}
+  .req{padding:16px 18px;cursor:pointer;text-align:left;width:100%;border:1px solid var(--line);font:inherit;color:inherit;transition:border-color .15s}
+  .req:hover{border-color:var(--line-2)}
+  .req-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+  .req-code{font-weight:700;color:var(--orange-dark);font-size:13.5px}
+  .req-name{font-weight:700;font-size:16px;margin:2px 0 4px}
+  .req-meta{color:var(--muted);font-size:13.5px}
+  .progress{display:flex;gap:4px;margin-top:14px}
+  .progress span{flex:1;height:5px;border-radius:3px;background:var(--line)}
+  .progress span.done{background:var(--green)}
+  .progress span.now{background:var(--orange)}
+  .progress-labels{display:none;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px;gap:4px}
+  @media (min-width:600px){.progress-labels{display:flex}}
+  .progress-labels span{flex:1;text-align:center}
+  .progress-labels span:first-child{text-align:left}
+  .progress-labels span:last-child{text-align:right}
+
+  /* Detail */
+  .detail .card{padding:20px}
+  .next-step{display:flex;gap:12px;align-items:flex-start;background:var(--navy);color:var(--white);border-radius:var(--radius);padding:18px;margin:16px 0}
+  .next-step strong{display:block;margin-bottom:2px}
+  .next-step p{margin:0;color:#CBD5E1;font-size:14px}
+  .dl{display:grid;grid-template-columns:1fr;gap:12px 24px;margin:0}
+  @media (min-width:600px){.dl{grid-template-columns:1fr 1fr}}
+  .dl dt{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .dl dd{margin:2px 0 0;word-break:break-word}
+  .thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .thumbs img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+  .section-title{font-size:15px;margin:22px 0 12px}
+
+  /* Request form */
+  .steps{display:flex;gap:8px;margin-bottom:20px}
+  .steps div{flex:1;font-size:13px;font-weight:600;color:var(--muted);padding-top:10px;border-top:4px solid var(--line)}
+  .steps div.active{color:var(--navy);border-top-color:var(--orange)}
+  .steps div.done{color:var(--green);border-top-color:var(--green)}
+  .form-card{padding:22px}
+  .form-card h2{font-size:19px;margin:0 0 4px}
+  .form-card .sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+  .form-actions{display:flex;justify-content:space-between;gap:10px;margin-top:8px}
+  .radio-row{display:flex;gap:10px;flex-wrap:wrap}
+  .radio-row label{flex:1;min-width:140px;display:flex;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:10px;padding:12px;cursor:pointer;font-weight:500;margin:0}
+  .radio-row input{width:18px;height:18px;accent-color:var(--orange);flex:0 0 18px;padding:0}
+  .radio-row label:has(input:checked){border-color:var(--orange);background:var(--orange-soft)}
+  .with-unit{position:relative}
+  .with-unit input{padding-right:64px}
+  .with-unit .unit{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:13.5px;font-weight:600;color:var(--muted);pointer-events:none}
+  .estimate-box{background:var(--orange-soft);border:1px solid #FFD3B0;border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:16px;color:#7A3500}
+  .files-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .files-list span{font-size:12.5px;background:#EEF1F5;border-radius:6px;padding:4px 8px}
+  .done-card{padding:32px 22px;text-align:center}
+  .done-card .check-big{width:56px;height:56px;border-radius:50%;background:var(--green);margin:0 auto 14px;display:flex;align-items:center;justify-content:center}
+  .done-card h2{margin:0 0 8px}
+  .done-card p{color:var(--slate);max-width:460px;margin:0 auto 18px}
+  .profile-card{padding:22px;max-width:640px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="/">DDP<small>SOURCING</small></a>
+    <div class="top-right">
+      <span class="hello" id="hello"></span>
+      <a href="/team" id="crmLink" hidden>Team CRM</a>
+      <a href="/estimate">Price estimator</a>
+      <button type="button" id="logoutBtn" hidden>Log out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="alert alert-warn" id="setupWarning" hidden>
+      Setup needed: add your Supabase URL and anon key in <strong>/assets/config.js</strong>.
+    </div>
+
+    <div class="loading" id="boot"><div class="spinner"></div> Loading your account…</div>
+
+    <!-- ============ AUTH ============ -->
+    <section class="auth" id="authView" hidden>
+      <h1 id="authTitle">Your sourcing account</h1>
+      <p class="lead" id="authLead">Create a free account to send sourcing requests and follow every order.</p>
+      <div class="alert alert-info" id="prefillNotice" hidden>Your product details are saved. Create your account or log in to send this request.</div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tabSignup" aria-selected="true">Create account</button>
+        <button type="button" role="tab" id="tabLogin" aria-selected="false">Log in</button>
+      </div>
+
+      <div class="card">
+        <div id="authMsg"></div>
+
+        <form id="signupForm" novalidate>
+          <div class="field"><label for="su_name">Full name</label><input id="su_name" autocomplete="name" required></div>
+          <div class="field"><label for="su_email">Email</label><input id="su_email" type="email" autocomplete="email" required></div>
+          <div class="field">
+            <label for="su_whatsapp">WhatsApp number</label>
+            <input id="su_whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="+212 6 12 34 56 78" required>
+            <p class="hint">We contact you on WhatsApp about your requests.</p>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="su_city">City</label><input id="su_city" autocomplete="address-level2" required></div>
+            <div class="field">
+              <label for="su_status">Selling status</label>
+              <select id="su_status" required>
+                <option value="">Select</option>
+                <option value="starting">Preparing to start</option>
+                <option value="selling">Already selling</option>
+                <option value="scaling">Scaling an established store</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label for="su_business">Business or store name <span class="opt">(optional)</span></label><input id="su_business"></div>
+          <div class="field"><label for="su_password">Password</label><input id="su_password" type="password" autocomplete="new-password" minlength="8" required><p class="hint">At least 8 characters.</p></div>
+          <button class="btn btn-primary btn-block" type="submit">Create my account</button>
+        </form>
+
+        <form id="loginForm" novalidate hidden>
+          <div class="field"><label for="li_email">Email</label><input id="li_email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="li_password">Password</label><input id="li_password" type="password" autocomplete="current-password" required></div>
+          <button class="btn btn-primary btn-block" type="submit">Log in</button>
+          <p class="auth-foot"><button type="button" class="link" id="forgotBtn">Forgot your password?</button></p>
+        </form>
+
+        <form id="forgotForm" novalidate hidden>
+          <p class="muted" style="margin-top:0">Enter your email and we will send you a link to choose a new password.</p>
+          <div class="field"><label for="fp_email">Email</label><input id="fp_email" type="email" autocomplete="email" required></div>
+          <button class="btn btn-primary btn-block" type="submit">Send reset link</button>
+          <p class="auth-foot"><button type="button" class="link" id="backToLogin">Back to log in</button></p>
+        </form>
+
+        <form id="resetForm" novalidate hidden>
+          <div class="field"><label for="rp_password">New password</label><input id="rp_password" type="password" autocomplete="new-password" minlength="8" required><p class="hint">At least 8 characters.</p></div>
+          <button class="btn btn-primary btn-block" type="submit">Save new password</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ APP ============ -->
+    <section id="appView" hidden>
+      <div class="page-head">
+        <h1 id="pageTitle">My requests</h1>
+        <button class="btn btn-primary" type="button" id="newReqTop">New sourcing request</button>
+      </div>
+      <nav class="subnav" role="tablist">
+        <button type="button" role="tab" data-tab="requests" aria-selected="true">My requests</button>
+        <button type="button" role="tab" data-tab="new" aria-selected="false">New request</button>
+        <button type="button" role="tab" data-tab="profile" aria-selected="false">My profile</button>
+      </nav>
+
+      <!-- Requests -->
+      <div id="tab-requests">
+        <div id="reqList" class="req-list"></div>
+      </div>
+
+      <!-- Detail -->
+      <div id="tab-detail" class="detail" hidden></div>
+
+      <!-- New request -->
+      <div id="tab-new" hidden>
+        <div class="steps" id="steps">
+          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Budget and timing</div>
+        </div>
+        <form class="card form-card" id="reqForm" novalidate>
+          <div id="reqMsg"></div>
+
+          <div data-step="1">
+            <h2>Your product</h2>
+            <p class="sub">Tell us what you want to source. A link or photos help us a lot.</p>
+            <div class="estimate-box" id="estimateBox" hidden></div>
+            <div class="field"><label for="f_name">Product name or short description</label><input id="f_name" maxlength="200" placeholder="e.g. Wireless earbuds with charging case" required></div>
+            <div class="field">
+              <label for="f_category">Product category</label>
+              <select id="f_category" required>
+                <option value="">Select a category</option>
+                <option value="gadget">Gadget (standard)</option>
+                <option value="connected">Gadget with Bluetooth / WiFi</option>
+                <option value="vibration">Product with vibration</option>
+                <option value="textile">Textile &amp; clothing</option>
+                <option value="home">Home &amp; kitchen</option>
+                <option value="beauty">Beauty &amp; accessories</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field"><label for="f_link">Product link <span class="opt">(optional)</span></label><input id="f_link" type="url" placeholder="https://www.alibaba.com/…"></div>
+            <div class="grid-2">
+              <div class="field"><label for="f_usd">Alibaba price per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_usd" type="number" inputmode="decimal" min="0" step="0.01"><span class="unit">USD</span></div></div>
+              <div class="field"><label for="f_weight">Weight per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_weight" type="number" inputmode="numeric" min="0" step="1"><span class="unit">grams</span></div></div>
+            </div>
+            <div class="field">
+              <label for="f_images">Product images <span class="opt">(optional, encouraged)</span></label>
+              <input id="f_images" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+              <p class="hint">Up to 5 images, JPG, PNG or WEBP, 5 MB each.</p>
+              <div class="files-list" id="filesList"></div>
+            </div>
+            <div class="field"><label for="f_specs">Specifications, variations or packaging needs <span class="opt">(optional)</span></label><textarea id="f_specs" maxlength="3000" placeholder="Colors, sizes, materials, branding, packaging…"></textarea></div>
+          </div>
+
+          <div data-step="2" hidden>
+            <h2>Your order</h2>
+            <p class="sub">Minimum order: MAD 5,000 or 100 units. Below the minimum? You can still send it, and our team will review it.</p>
+            <div class="grid-2">
+              <div class="field"><label for="f_qty">Desired quantity</label><div class="with-unit"><input id="f_qty" type="number" inputmode="numeric" min="1" step="1" required><span class="unit">units</span></div></div>
+              <div class="field"><label for="f_value">Estimated total product value</label><div class="with-unit"><input id="f_value" type="number" inputmode="decimal" min="0" step="1" required><span class="unit">MAD</span></div><p class="hint" id="valueHint">Quantity × unit price, before shipping.</p></div>
+            </div>
+            <div class="alert alert-warn" id="minWarn" hidden>This request is below the minimum order (MAD 5,000 or 100 units). You can still send it; our team will review it individually.</div>
+            <div class="grid-2">
+              <div class="field"><label for="f_target">Target cost per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_target" type="number" inputmode="decimal" min="0" step="0.01"><span class="unit">MAD</span></div></div>
+              <div class="field"><label for="f_city">Delivery city</label><input id="f_city" required></div>
+            </div>
+            <div class="field">
+              <span class="label">Order type</span>
+              <div class="radio-row">
+                <label><input type="radio" name="f_type" value="new" checked> New product</label>
+                <label><input type="radio" name="f_type" value="restock"> Restock</label>
+              </div>
+            </div>
+          </div>
+
+          <div data-step="3" hidden>
+            <h2>Budget and timing</h2>
+            <p class="sub">This helps us prepare the right quotation.</p>
+            <div class="grid-2">
+              <div class="field">
+                <label for="f_budget">Estimated sourcing budget</label>
+                <select id="f_budget" required>
+                  <option value="">Select a range</option>
+                  <option>Below MAD 5,000</option>
+                  <option>MAD 5,000 – 10,000</option>
+                  <option>MAD 10,000 – 25,000</option>
+                  <option>MAD 25,000 – 50,000</option>
+                  <option>MAD 50,000 – 100,000</option>
+                  <option>Over MAD 100,000</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="f_urgency">Desired arrival</label>
+                <select id="f_urgency" required>
+                  <option value="">Select</option>
+                  <option>As soon as possible</option>
+                  <option>Within 1 month</option>
+                  <option>Within 2 months</option>
+                  <option>Flexible</option>
+                </select>
+              </div>
+            </div>
+            <div class="field"><label for="f_notes">Additional notes <span class="opt">(optional)</span></label><textarea id="f_notes" maxlength="3000"></textarea></div>
+            <label class="check"><input type="checkbox" id="f_consent"> <span>I agree to be contacted on WhatsApp about this request.</span></label>
+            <label class="check"><input type="checkbox" id="f_privacy"> <span>I accept the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+            <p class="hint">Your information is used only to review your request and contact you about our sourcing service.</p>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-secondary" type="button" id="prevBtn" hidden>Back</button>
+            <span></span>
+            <button class="btn btn-primary" type="button" id="nextBtn">Continue</button>
+            <button class="btn btn-primary" type="submit" id="sendBtn" hidden>Send my sourcing request</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Sent -->
+      <div id="tab-sent" hidden>
+        <div class="card done-card">
+          <div class="check-big"><svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true"><path d="M2 10l7 7L24 2" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h2>Your sourcing request has been received.</h2>
+          <p>Reference <strong id="sentCode"></strong>. Our team will review it and contact you on WhatsApp within the same business day. Requests sent outside Monday–Friday, 10:00 AM–6:00 PM Morocco time are handled on the next business day.</p>
+          <div class="alert alert-warn" id="sentFileWarn" hidden style="text-align:left"></div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-primary" type="button" id="viewRequestsBtn">View my requests</button>
+            <button class="btn btn-secondary" type="button" id="anotherBtn">Send another request</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile -->
+      <div id="tab-profile" hidden>
+        <form class="card profile-card" id="profileForm" novalidate>
+          <div id="profileMsg"></div>
+          <div class="field"><label for="p_name">Full name</label><input id="p_name" required></div>
+          <div class="field"><label>Email</label><input id="p_email" disabled></div>
+          <div class="field"><label for="p_whatsapp">WhatsApp number</label><input id="p_whatsapp" type="tel" required></div>
+          <div class="grid-2">
+            <div class="field"><label for="p_city">City</label><input id="p_city" required></div>
+            <div class="field">
+              <label for="p_status">Selling status</label>
+              <select id="p_status">
+                <option value="">Select</option>
+                <option value="starting">Preparing to start</option>
+                <option value="selling">Already selling</option>
+                <option value="scaling">Scaling an established store</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label for="p_business">Business or store name <span class="opt">(optional)</span></label><input id="p_business"></div>
+          <div class="field"><label for="p_link">Store, website or social media link <span class="opt">(optional)</span></label><input id="p_link" type="url"></div>
+          <button class="btn btn-primary" type="submit">Save profile</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="/assets/config.js"></script>
+<script src="/assets/vendor/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CFG = window.DDP_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = new Intl.NumberFormat("en-US");
+  var CATEGORY_LABELS = {
+    gadget: "Gadget (standard)", connected: "Gadget with Bluetooth / WiFi", vibration: "Product with vibration",
+    textile: "Textile & clothing", home: "Home & kitchen", beauty: "Beauty & accessories", other: "Other"
+  };
+  var MILESTONES = ["Received", "Quotation", "Production", "Shipping", "Final payment", "Delivered"];
+  var MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
+  var PREFILL_KEY = "ddp_prefill";
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function msg(el, type, text) { el.innerHTML = text ? '<div class="alert alert-' + type + '">' + esc(text) + "</div>" : ""; }
+  function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function load(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function friendly(err) {
+    var m = (err && (err.message || err.error_description)) || "Something went wrong. Please try again.";
+    if (/Invalid login credentials/i.test(m)) return "Wrong email or password.";
+    if (/Email not confirmed/i.test(m)) return "Please confirm your email first. Check your inbox for our confirmation link.";
+    if (/already registered|already been registered/i.test(m)) return "An account already exists with this email. Log in instead.";
+    if (/rate limit|too many/i.test(m)) return "Too many attempts. Please wait a few minutes and try again.";
+    if (/Failed to fetch|NetworkError/i.test(m)) return "Connection problem. Check your internet and try again.";
+    return m;
+  }
+  function normWhatsapp(v) {
+    var s = String(v || "").replace(/[\s\-().]/g, "");
+    if (/^00/.test(s)) s = "+" + s.slice(2);
+    if (/^0[5-7]\d{8}$/.test(s)) s = "+212" + s.slice(1);
+    if (/^212\d{9}$/.test(s)) s = "+" + s;
+    return /^\+\d{9,15}$/.test(s) ? s : null;
+  }
+  function stageIndex(rank) {
+    if (rank <= 4) return 0; if (rank <= 8) return 1; if (rank <= 10) return 2;
+    if (rank <= 13) return 3; if (rank === 14) return 4; return 5;
+  }
+  function nextStep(status, rank) {
+    if (status === "not_qualified") return ["This request is closed", "Contact us on WhatsApp if you have any question about it."];
+    if (rank <= 4) return ["We are reviewing your request", "Our team will contact you on WhatsApp within the same business day."];
+    if (rank <= 6) return ["Your product can be sourced", "We are preparing your final door-to-door quotation."];
+    if (rank === 7) return ["Your quotation is ready", "We shared your final door-to-door price on WhatsApp. Reply there to confirm."];
+    if (rank === 8) return ["Pay the 40% deposit to start", "Our team shared the payment details on WhatsApp. Your order starts once the deposit is confirmed."];
+    if (rank === 9) return ["Your order is being prepared", "Your deposit is confirmed and the order is placed with the supplier."];
+    if (rank === 10) return ["Quality inspection", "We are checking your products against the agreed specifications."];
+    if (rank <= 12) return ["On its way by express air", "Your order is in transit and customs clearance is handled by our team."];
+    if (rank === 13) return ["Arrived in Morocco", "Your order has arrived. We will ask for the final payment before delivery."];
+    if (rank === 14) return ["Pay the remaining 60%", "Our team shared the details on WhatsApp. Delivery is scheduled once the payment is confirmed."];
+    if (rank <= 16) return ["Out for delivery", "Your products are on their way to your address."];
+    return ["Delivered", "Your order has been delivered. Thank you for working with us."];
+  }
+  function toast(text, isError) {
+    document.querySelectorAll(".toast").forEach(function (x) { x.remove(); });
+    var t = document.createElement("div");
+    t.className = "toast" + (isError ? " error" : "");
+    t.textContent = text;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3500);
+  }
+
+  // ---------- Setup ----------
+  if (!CFG.SUPABASE_URL || /YOUR-PROJECT/.test(CFG.SUPABASE_URL) || !window.supabase) {
+    $("boot").hidden = true;
+    $("setupWarning").hidden = false;
+    return;
+  }
+  var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: false };
+
+  // Estimator → account: keep the product details until the request is sent.
+  (function capturePrefill() {
+    var q = new URLSearchParams(location.search);
+    var link = q.get("link") || "";
+    if (link && !/^https?:\/\/\S+$/i.test(link)) link = "";
+    if (q.get("source") === "estimator" || q.get("category") || link) {
+      store(PREFILL_KEY, {
+        category: q.get("category") || "",
+        priceUsd: q.get("priceUsd") || "",
+        weightGrams: q.get("weightGrams") || "",
+        link: link
+      });
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
+  })();
+
+  // ---------- Views ----------
+  function show(view) {
+    $("boot").hidden = true;
+    $("authView").hidden = view !== "auth";
+    $("appView").hidden = view !== "app";
+    $("logoutBtn").hidden = view !== "app";
+  }
+  function authMode(mode) {
+    ["signupForm", "loginForm", "forgotForm", "resetForm"].forEach(function (id) { $(id).hidden = true; });
+    $(mode + "Form").hidden = false;
+    $("tabSignup").setAttribute("aria-selected", mode === "signup");
+    $("tabLogin").setAttribute("aria-selected", mode === "login" || mode === "forgot");
+    document.querySelector(".tabs").hidden = mode === "reset";
+    $("authTitle").textContent = mode === "reset" ? "Choose a new password" : mode === "login" ? "Welcome back" : "Your sourcing account";
+    $("authLead").hidden = mode === "reset";
+    msg($("authMsg"));
+  }
+  function tab(name) {
+    ["requests", "new", "profile", "detail", "sent"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
+    document.querySelectorAll(".subnav button").forEach(function (b) {
+      b.setAttribute("aria-selected", b.dataset.tab === name || (name === "detail" && b.dataset.tab === "requests"));
+    });
+    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "New sourcing request", sent: "Request sent", profile: "My profile" }[name];
+    $("newReqTop").hidden = name === "new" || name === "sent";
+    window.scrollTo({ top: 0 });
+  }
+
+  $("tabSignup").onclick = function () { authMode("signup"); };
+  $("tabLogin").onclick = function () { authMode("login"); };
+  $("forgotBtn").onclick = function () { $("fp_email").value = $("li_email").value; authMode("forgot"); };
+  $("backToLogin").onclick = function () { authMode("login"); };
+  document.querySelectorAll(".subnav button").forEach(function (b) {
+    b.onclick = function () { openTab(b.dataset.tab); };
+  });
+  $("newReqTop").onclick = function () { openTab("new"); };
+  $("viewRequestsBtn").onclick = function () { openTab("requests"); };
+  $("anotherBtn").onclick = function () { openTab("new"); };
+  $("logoutBtn").onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
+
+  function openTab(name) {
+    if (name === "new") resetRequestForm();
+    if (name === "profile") fillProfile();
+    if (name === "requests") loadRequests();
+    tab(name);
+  }
+
+  // ---------- Auth ----------
+  function busy(form, on, label) {
+    var b = form.querySelector('button[type="submit"]');
+    if (on) { b.dataset.label = b.textContent; b.textContent = label || "Please wait…"; b.disabled = true; }
+    else { b.textContent = b.dataset.label || b.textContent; b.disabled = false; }
+  }
+
+  $("signupForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = this, name = $("su_name").value.trim(), email = $("su_email").value.trim();
+    var wa = normWhatsapp($("su_whatsapp").value), city = $("su_city").value.trim();
+    var status = $("su_status").value, pw = $("su_password").value;
+    if (!name || !email || !city || !status) return msg($("authMsg"), "error", "Please fill in all required fields.");
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg($("authMsg"), "error", "Please enter a valid email address.");
+    if (!wa) return msg($("authMsg"), "error", "Please enter a valid WhatsApp number, for example +212 6 12 34 56 78.");
+    if (pw.length < 8) return msg($("authMsg"), "error", "Your password needs at least 8 characters.");
+    busy(f, true, "Creating your account…");
+    sb.auth.signUp({
+      email: email, password: pw,
+      options: {
+        emailRedirectTo: location.origin + "/account",
+        data: { full_name: name, whatsapp: wa, city: city, selling_status: status, business_name: $("su_business").value.trim() }
+      }
+    }).then(function (r) {
+      busy(f, false);
+      if (r.error) return msg($("authMsg"), "error", friendly(r.error));
+      if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0)
+        return msg($("authMsg"), "error", "An account already exists with this email. Log in instead.");
+      if (!r.data.session) {
+        f.reset();
+        authMode("login");
+        $("li_email").value = email;
+        msg($("authMsg"), "success", "Almost done! We sent a confirmation link to " + email + ". Open it to activate your account, then log in here.");
+      }
+    });
+  });
+
+  $("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = this, email = $("li_email").value.trim(), pw = $("li_password").value;
+    if (!email || !pw) return msg($("authMsg"), "error", "Enter your email and password.");
+    busy(f, true, "Logging in…");
+    sb.auth.signInWithPassword({ email: email, password: pw }).then(function (r) {
+      busy(f, false);
+      if (r.error) msg($("authMsg"), "error", friendly(r.error));
+    });
+  });
+
+  $("forgotForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = this, email = $("fp_email").value.trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg($("authMsg"), "error", "Please enter a valid email address.");
+    busy(f, true, "Sending…");
+    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/account" }).then(function (r) {
+      busy(f, false);
+      if (r.error) return msg($("authMsg"), "error", friendly(r.error));
+      msg($("authMsg"), "success", "If an account exists for " + email + ", you will receive a reset link in a few minutes.");
+    });
+  });
+
+  $("resetForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = this, pw = $("rp_password").value;
+    if (pw.length < 8) return msg($("authMsg"), "error", "Your password needs at least 8 characters.");
+    busy(f, true, "Saving…");
+    sb.auth.updateUser({ password: pw }).then(function (r) {
+      busy(f, false);
+      if (r.error) return msg($("authMsg"), "error", friendly(r.error));
+      state.recovering = false;
+      toast("Your new password is saved.");
+      enterApp(r.data.user);
+    });
+  });
+
+  // ---------- App ----------
+  function enterApp(user) {
+    if (state.user && state.user.id === user.id && !$("appView").hidden) return;
+    state.user = user;
+    Promise.all([
+      sb.from("profiles").select("*").eq("id", user.id).single(),
+      sb.from("request_statuses").select("*"),
+      sb.rpc("staff_role")
+    ]).then(function (res) {
+      state.profile = res[0].data || { full_name: "", email: user.email };
+      (res[1].data || []).forEach(function (s) { state.statuses[s.code] = s; });
+      $("crmLink").hidden = !res[2].data;
+      $("hello").textContent = state.profile.full_name ? "Hi, " + state.profile.full_name.split(" ")[0] : "";
+      show("app");
+      if (load(PREFILL_KEY)) openTab("new"); else openTab("requests");
+    });
+  }
+
+  function loadRequests() {
+    var list = $("reqList");
+    list.innerHTML = '<div class="loading"><div class="spinner"></div> Loading your requests…</div>';
+    sb.from("requests")
+      .select("id, code, product_name, category, quantity, estimated_value_mad, status, created_at, below_minimum")
+      .order("created_at", { ascending: false })
+      .then(function (r) {
+        if (r.error) { list.innerHTML = ""; return msg(list, "error", friendly(r.error)); }
+        state.requests = r.data || [];
+        if (!state.requests.length) {
+          list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Send us the product you want to import and we will source it for you.</p><button class="btn btn-primary" type="button" id="emptyNew">Send my first request</button></div>';
+          $("emptyNew").onclick = function () { openTab("new"); };
+          return;
+        }
+        list.innerHTML = state.requests.map(function (q) {
+          var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
+          return '<button type="button" class="card req" data-id="' + esc(q.id) + '">' +
+            '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
+            '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
+            pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) + '</button>';
+        }).join("");
+        list.querySelectorAll(".req").forEach(function (b) { b.onclick = function () { openDetail(b.dataset.id); }; });
+      });
+  }
+
+  function pill(code, st) {
+    var cls = code === "not_qualified" ? "pill-red" : st.rank >= 17 ? "pill-green" : (st.rank === 8 || st.rank === 14 || st.rank === 7) ? "pill-orange" : st.rank >= 9 ? "pill-blue" : "pill-new";
+    return '<span class="pill ' + cls + '">' + esc(st.client_stage) + "</span>";
+  }
+  function progressBar(code, rank) {
+    if (code === "not_qualified") return "";
+    var cur = stageIndex(rank), done = rank >= 17;
+    return '<div class="progress" aria-hidden="true">' + MILESTONES.map(function (m, i) {
+      return '<span class="' + (done || i < cur ? "done" : i === cur ? "now" : "") + '"></span>';
+    }).join("") + '</div><div class="progress-labels">' + MILESTONES.map(function (m) { return "<span>" + m + "</span>"; }).join("") + "</div>";
+  }
+
+  function openDetail(id) {
+    var box = $("tab-detail");
+    tab("detail");
+    box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    Promise.all([
+      sb.from("requests").select("*").eq("id", id).single(),
+      sb.from("request_files").select("path, file_name").eq("request_id", id)
+    ]).then(function (res) {
+      if (res[0].error) { box.innerHTML = ""; return msg(box, "error", friendly(res[0].error)); }
+      var q = res[0].data, files = res[1].data || [];
+      var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
+      var ns = nextStep(q.status, st.rank);
+      var row = function (k, v) { return v || v === 0 ? "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
+      box.innerHTML =
+        '<button type="button" class="btn btn-ghost" id="backList">← All requests</button>' +
+        '<div class="card" style="margin-top:8px"><div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
+        '<div class="req-meta">Sent on ' + new Date(q.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "</div></div>" + pill(q.status, st) + "</div>" +
+        progressBar(q.status, st.rank) +
+        '<div class="next-step"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 22px;margin-top:1px"><circle cx="12" cy="12" r="10" fill="#FF6B00"/><path d="M12 7v6M12 16.5v.5" stroke="#0B1220" stroke-width="2.4" stroke-linecap="round"/></svg><div><strong>' + esc(ns[0]) + "</strong><p>" + esc(ns[1]) + "</p></div></div>" +
+        (q.below_minimum && st.rank <= 4 ? '<div class="alert alert-warn">This request is below the minimum order (MAD 5,000 or 100 units). Our team will review it individually.</div>' : "") +
+        '<h3 class="section-title">What you sent us</h3><dl class="dl">' +
+        row("Category", esc(CATEGORY_LABELS[q.category] || q.category)) +
+        row("Quantity", fmt.format(q.quantity) + " units") +
+        row("Estimated product value", "MAD " + fmt.format(q.estimated_value_mad)) +
+        row("Target cost per unit", q.target_unit_cost_mad ? "MAD " + fmt.format(q.target_unit_cost_mad) : "") +
+        row("Alibaba price per unit", q.alibaba_price_usd ? "USD " + q.alibaba_price_usd : "") +
+        row("Weight per unit", q.unit_weight_g ? fmt.format(q.unit_weight_g) + " g" : "") +
+        row("Order type", q.order_type === "restock" ? "Restock" : "New product") +
+        row("Delivery city", esc(q.delivery_city)) +
+        row("Budget", esc(q.budget_range)) +
+        row("Desired arrival", esc(q.urgency)) +
+        row("Product link", q.product_link ? '<a href="' + esc(q.product_link) + '" target="_blank" rel="noopener nofollow">Open link</a>' : "") +
+        row("Specifications", esc(q.specifications)) +
+        row("Notes", esc(q.client_notes)) +
+        "</dl>" + (files.length ? '<h3 class="section-title">Images</h3><div class="thumbs" id="thumbs"></div>' : "") + "</div>";
+      $("backList").onclick = function () { openTab("requests"); };
+      if (files.length) {
+        sb.storage.from("request-files").createSignedUrls(files.map(function (f) { return f.path; }), 3600).then(function (r) {
+          $("thumbs").innerHTML = (r.data || []).filter(function (x) { return x.signedUrl; }).map(function (x) {
+            return '<a href="' + esc(x.signedUrl) + '" target="_blank" rel="noopener"><img src="' + esc(x.signedUrl) + '" alt="Product image"></a>';
+          }).join("");
+        });
+      }
+    });
+  }
+
+  // ---------- New request ----------
+  var stepEls = function () { return document.querySelectorAll("#reqForm [data-step]"); };
+  var valueTouched = false;
+
+  function resetRequestForm() {
+    $("reqForm").reset();
+    state.files = []; valueTouched = false;
+    $("filesList").innerHTML = "";
+    msg($("reqMsg"));
+    $("f_city").value = (state.profile && state.profile.city) || "";
+    var p = load(PREFILL_KEY);
+    $("estimateBox").hidden = true;
+    if (p) {
+      if (CATEGORY_LABELS[p.category]) $("f_category").value = p.category;
+      if (p.priceUsd) $("f_usd").value = p.priceUsd;
+      if (p.weightGrams) $("f_weight").value = p.weightGrams;
+      if (p.link) $("f_link").value = p.link;
+      refreshEstimate();
+    }
+    goStep(1);
+  }
+
+  function refreshEstimate() {
+    var cat = $("f_category").value, usd = parseFloat($("f_usd").value), g = parseFloat($("f_weight").value);
+    state.estimate = null;
+    if (!cat || !(usd > 0) || !(g >= 1)) { $("estimateBox").hidden = true; return; }
+    fetch("/api/estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ category: cat, priceUsd: usd, weightGrams: g }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.pricePerUnit) return;
+        state.estimate = j.pricePerUnit;
+        $("estimateBox").hidden = false;
+        $("estimateBox").innerHTML = "Estimated price: <strong>≈ " + fmt.format(j.pricePerUnit) + " MAD per unit</strong>, delivered to your door. Your exact price comes in your quotation.";
+      }).catch(function () {});
+  }
+  ["f_category", "f_usd", "f_weight"].forEach(function (id) { $(id).addEventListener("change", refreshEstimate); });
+
+  function suggestValue() {
+    var qty = parseInt($("f_qty").value, 10), usd = parseFloat($("f_usd").value);
+    if (!valueTouched && qty > 0 && usd > 0) $("f_value").value = Math.round(qty * usd * 10);
+    checkMinimum();
+  }
+  function checkMinimum() {
+    var qty = parseInt($("f_qty").value, 10), val = parseFloat($("f_value").value);
+    $("minWarn").hidden = !(qty > 0 && val >= 0 && qty < 100 && val < 5000);
+  }
+  $("f_qty").addEventListener("input", suggestValue);
+  $("f_value").addEventListener("input", function () { valueTouched = true; checkMinimum(); });
+
+  $("f_images").addEventListener("change", function () {
+    var picked = Array.prototype.slice.call(this.files || []);
+    var errors = [];
+    picked.forEach(function (f) {
+      if (state.files.length >= MAX_FILES) return errors.push("Maximum " + MAX_FILES + " images.");
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return errors.push(f.name + ": only JPG, PNG or WEBP.");
+      if (f.size > MAX_SIZE) return errors.push(f.name + ": larger than 5 MB.");
+      state.files.push(f);
+    });
+    this.value = "";
+    $("filesList").innerHTML = state.files.map(function (f, i) {
+      return '<span>' + esc(f.name) + ' <button type="button" class="link" data-rm="' + i + '" aria-label="Remove">×</button></span>';
+    }).join("");
+    $("filesList").querySelectorAll("[data-rm]").forEach(function (b) {
+      b.onclick = function () { state.files.splice(+b.dataset.rm, 1); $("f_images").dispatchEvent(new Event("change")); };
+    });
+    if (errors.length) toast(errors[0], true);
+  });
+
+  function goStep(n) {
+    state.step = n;
+    stepEls().forEach(function (el) { el.hidden = +el.dataset.step !== n; });
+    document.querySelectorAll("#steps div").forEach(function (d, i) {
+      d.className = i + 1 < n ? "done" : i + 1 === n ? "active" : "";
+    });
+    $("prevBtn").hidden = n === 1;
+    $("nextBtn").hidden = n === 3;
+    $("sendBtn").hidden = n !== 3;
+    msg($("reqMsg"));
+  }
+
+  function req(id, test) {
+    var el = $(id), ok = test ? test(el.value) : el.value.trim() !== "";
+    el.closest(".field").classList.toggle("invalid", !ok);
+    return ok;
+  }
+  function validateStep(n) {
+    var ok = true;
+    if (n === 1) {
+      ok = req("f_name", function (v) { return v.trim().length >= 2; }) & req("f_category");
+      if ($("f_link").value.trim()) ok = req("f_link", function (v) { return /^https?:\/\/\S+$/i.test(v.trim()); }) & ok;
+    }
+    if (n === 2) {
+      ok = req("f_qty", function (v) { return parseInt(v, 10) > 0; }) & req("f_value", function (v) { return v !== "" && parseFloat(v) >= 0; }) & req("f_city");
+    }
+    if (n === 3) {
+      ok = req("f_budget") & req("f_urgency");
+      if (ok && (!$("f_consent").checked || !$("f_privacy").checked)) {
+        msg($("reqMsg"), "error", "Please accept WhatsApp contact and the Privacy Policy to send your request.");
+        return false;
+      }
+    }
+    if (!ok) msg($("reqMsg"), "error", "Please complete the highlighted fields.");
+    return !!ok;
+  }
+
+  ["input", "change"].forEach(function (ev) {
+    $("reqForm").addEventListener(ev, function (e) {
+      var f = e.target.closest && e.target.closest(".field");
+      if (f) f.classList.remove("invalid");
+    });
+  });
+  $("nextBtn").onclick = function () { if (validateStep(state.step)) goStep(state.step + 1); };
+  $("prevBtn").onclick = function () { goStep(state.step - 1); };
+
+  $("reqForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!validateStep(3)) return;
+    var num = function (id) { var v = $(id).value; return v === "" ? null : Number(v); };
+    var row = {
+      product_name: $("f_name").value.trim(),
+      category: $("f_category").value,
+      product_link: $("f_link").value.trim() || null,
+      alibaba_price_usd: num("f_usd"),
+      unit_weight_g: num("f_weight"),
+      estimator_price_mad: state.estimate || null,
+      specifications: $("f_specs").value.trim() || null,
+      quantity: parseInt($("f_qty").value, 10),
+      estimated_value_mad: Number($("f_value").value),
+      target_unit_cost_mad: num("f_target"),
+      delivery_city: $("f_city").value.trim(),
+      order_type: document.querySelector('input[name="f_type"]:checked').value,
+      budget_range: $("f_budget").value,
+      urgency: $("f_urgency").value,
+      client_notes: $("f_notes").value.trim() || null,
+      consent_whatsapp: true,
+      privacy_accepted: true
+    };
+    var btn = $("sendBtn");
+    btn.disabled = true; btn.textContent = "Sending…";
+    sb.from("requests").insert(row).select("id, code").single().then(function (r) {
+      if (r.error) {
+        btn.disabled = false; btn.textContent = "Send my sourcing request";
+        return msg($("reqMsg"), "error", friendly(r.error));
+      }
+      var created = r.data;
+      return uploadFiles(created.id).then(function (failed) {
+        btn.disabled = false; btn.textContent = "Send my sourcing request";
+        store(PREFILL_KEY, null);
+        $("sentCode").textContent = created.code;
+        $("sentFileWarn").hidden = !failed;
+        if (failed) $("sentFileWarn").textContent = failed + " image(s) could not be uploaded. Your request is saved; you can send the images to our team on WhatsApp.";
+        tab("sent");
+      });
+    });
+  });
+
+  function uploadFiles(requestId) {
+    var failed = 0;
+    return state.files.reduce(function (p, f, i) {
+      return p.then(function () {
+        var safe = f.name.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-60);
+        var path = state.user.id + "/" + requestId + "/" + Date.now() + "-" + i + "-" + safe;
+        return sb.storage.from("request-files").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+          if (u.error) { failed++; return; }
+          return sb.from("request_files").insert({ request_id: requestId, path: path, file_name: f.name, kind: "product_image" })
+            .then(function (x) { if (x.error) failed++; });
+        });
+      });
+    }, Promise.resolve()).then(function () { return failed; });
+  }
+
+  // ---------- Profile ----------
+  function fillProfile() {
+    var p = state.profile || {};
+    $("p_name").value = p.full_name || "";
+    $("p_email").value = p.email || (state.user && state.user.email) || "";
+    $("p_whatsapp").value = p.whatsapp || "";
+    $("p_city").value = p.city || "";
+    $("p_status").value = p.selling_status || "";
+    $("p_business").value = p.business_name || "";
+    $("p_link").value = p.store_link || "";
+    msg($("profileMsg"));
+  }
+  $("profileForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var wa = normWhatsapp($("p_whatsapp").value);
+    if (!$("p_name").value.trim() || !$("p_city").value.trim()) return msg($("profileMsg"), "error", "Name and city are required.");
+    if (!wa) return msg($("profileMsg"), "error", "Please enter a valid WhatsApp number, for example +212 6 12 34 56 78.");
+    var link = $("p_link").value.trim();
+    if (link && !/^https?:\/\/\S+$/i.test(link)) return msg($("profileMsg"), "error", "The store link must start with https://");
+    var f = this;
+    busy(f, true, "Saving…");
+    var upd = {
+      full_name: $("p_name").value.trim(), whatsapp: wa, city: $("p_city").value.trim(),
+      selling_status: $("p_status").value || null, business_name: $("p_business").value.trim() || null, store_link: link || null
+    };
+    sb.from("profiles").update(upd).eq("id", state.user.id).select().single().then(function (r) {
+      busy(f, false);
+      if (r.error) return msg($("profileMsg"), "error", friendly(r.error));
+      state.profile = r.data;
+      $("p_whatsapp").value = wa;
+      $("hello").textContent = "Hi, " + r.data.full_name.split(" ")[0];
+      msg($("profileMsg"), "success", "Your profile is saved.");
+    });
+  });
+
+  // ---------- Start ----------
+  sb.auth.onAuthStateChange(function (event, session) {
+    if (event === "PASSWORD_RECOVERY") { state.recovering = true; show("auth"); authMode("reset"); return; }
+    if (state.recovering) return;
+    if (session && session.user) enterApp(session.user);
+    else if (event === "SIGNED_OUT") { state.user = null; show("auth"); authMode("login"); }
+  });
+
+  sb.auth.getSession().then(function (r) {
+    var session = r.data && r.data.session;
+    if (state.recovering) return;
+    if (session) return enterApp(session.user);
+    show("auth");
+    var hasPrefill = !!load(PREFILL_KEY);
+    $("prefillNotice").hidden = !hasPrefill;
+    authMode(/type=signup|error_description/.test(location.hash) ? "login" : "signup");
+    if (/error_description/.test(location.hash)) {
+      var d = decodeURIComponent((location.hash.match(/error_description=([^&]+)/) || [])[1] || "").replace(/\+/g, " ");
+      msg($("authMsg"), "error", d || "This link is no longer valid. Please try again.");
+    }
+  });
+})();
+</script>
+</body>
+</html>
