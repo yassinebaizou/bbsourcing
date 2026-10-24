@@ -83,16 +83,17 @@ The pages were tested end to end against a local Postgres + PostgREST with Supab
 (client signup from estimator → request with image → admin assigns → agent contacts and quotes
 24,000 → deposit 9,600 / balance 14,400 → Ops verifies with proof → client sees "Order in production";
 every forbidden action refused). For new work, test against the real project with test accounts,
-or a Supabase branch; don't leave test data in production.
+or a Supabase branch; don't leave test data in production. CRM v2 (migration `20261024015046`) was
+tested on the live project inside one transaction that ends with `raise exception` so it rolls back:
+signup with `pending_request` creates the request (malformed one: signup still works, no request),
+client/team message stamping, attachment folder checks, read markers, stage-change update messages,
+costs refused for client and agent, other client and unassigned agent see nothing.
 
 ## To do next (in this order)
 
-1. **Apply `supabase/migrations/20261025000000_crm_v2_messages_costs_guest_requests.sql`** to the live
-   project *before* merging the CRM v2 pages to `main` (the new pages need its tables), then rename the
-   file to the version Supabase assigns, run the security advisor, and test every role with test accounts.
-2. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
-3. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
+1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
+2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
    request, conversation and payment-tracking data, product images, and how to delete an account.
-4. **Team alert on new request / new client message**: Supabase Database Webhook or Edge Function →
+3. **Team alert on new request / new client message**: Supabase Database Webhook or Edge Function →
    email (and later WhatsApp) to the team. Secrets via `create_edge_function_secret`, never in code.
-5. Nice to have: export requests/payments to CSV from the CRM; client email when the team replies.
+4. Nice to have: export requests/payments to CSV from the CRM; client email when the team replies.
