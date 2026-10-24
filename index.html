@@ -68,6 +68,8 @@ p{margin:0}
 .nav a{color:#D5DBE5;text-decoration:none;font-size:15px;font-weight:500}
 .nav a:hover{color:#fff}
 .header-cta{min-height:46px;font-size:15px;padding:0 20px}
+.header-actions{display:flex;gap:10px}
+.nav-mobile{display:none}
 .menu-btn{display:none;background:none;border:1.5px solid var(--navy-soft);border-radius:10px;width:46px;height:46px;color:#fff;cursor:pointer;align-items:center;justify-content:center}
 @media (max-width:980px){
   .nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--navy);flex-direction:column;gap:0;padding:8px var(--gutter) 20px;border-bottom:1px solid var(--navy-line)}
@@ -75,6 +77,7 @@ p{margin:0}
   .nav a{padding:14px 0;border-bottom:1px solid var(--navy-line);font-size:17px}
   .menu-btn{display:inline-flex}
   .header-cta{display:none}
+  .nav .nav-mobile{display:block}
 }
 
 /* hero */
@@ -215,9 +218,9 @@ p{margin:0}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .full{grid-column:1/-1}
 .field label,.field legend{display:block;font-size:14px;font-weight:600;margin-bottom:8px}
-.field input[type=text],.field input[type=url],.field input[type=tel],.field input[type=number],.field textarea{width:100%;height:50px;border:1px solid var(--field);border-radius:var(--r-sm);padding:0 14px;font:16px var(--font);color:var(--navy);background:#fff}
+.field input[type=text],.field input[type=url],.field input[type=tel],.field input[type=number],.field input[type=email],.field input[type=password],.field select,.field textarea{width:100%;height:50px;border:1px solid var(--field);border-radius:var(--r-sm);padding:0 14px;font:16px var(--font);color:var(--navy);background:#fff}
 .field textarea{height:auto;padding:12px 14px;resize:vertical}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.2)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,.2)}
 .field [aria-invalid=true]{border-color:var(--red)!important}
 .link-box{display:flex;align-items:center;gap:10px;border:2px solid var(--orange);border-radius:12px;padding:0 14px;background:#fff}
 .link-box:focus-within{box-shadow:0 0 0 3px rgba(255,107,0,.2)}
@@ -238,6 +241,14 @@ fieldset.field{border:0;margin:0;padding:0}
 .form-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;border-top:1px solid var(--line);padding-top:24px;margin-top:28px;flex-wrap:wrap}
 .form-foot .spacer{font-size:14px;color:var(--muted)}
 .privacy-line{font-size:13px;color:var(--muted);margin-top:16px}
+.acct-tabs{display:flex;background:var(--cloud);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:22px}
+.acct-tabs button{flex:1;border:0;background:none;padding:11px;border-radius:9px;font:600 15px var(--font);color:var(--slate);cursor:pointer}
+.acct-tabs button[aria-selected=true]{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(11,18,32,.12)}
+.signed-in{background:var(--cloud);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;font-size:15px}
+.files-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.files-chips button{background:none;border:0;cursor:pointer;font-size:15px;line-height:1;color:var(--slate);padding:0 2px}
+.files-chips span{font-size:13px;background:var(--cloud);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.est-line{grid-column:1/-1;background:var(--orange-tint);border-radius:var(--r-sm);padding:12px 14px;font-size:14px}
 .done{text-align:center;padding:32px 8px;display:none}
 .done.show{display:block}
 .done .ok{width:72px;height:72px;border-radius:50%;background:var(--green);display:grid;place-items:center;margin:0 auto 18px}
@@ -316,8 +327,13 @@ fieldset.field{border:0;margin:0;padding:0}
       <a href="#shipments" data-section-link="shipments">Shipments</a>
       <a href="#reviews" data-section-link="reviews">Reviews</a>
       <a href="#faq">FAQ</a>
+      <a class="nav-mobile" href="/estimate">Guest estimation</a>
+      <a href="/account?login" id="navAccount">Log in</a>
     </nav>
-    <a class="btn btn-primary header-cta" href="#request">Get my price</a>
+    <div class="header-actions">
+      <a class="btn btn-ghost-dark header-cta" href="/estimate">Guest estimation</a>
+      <a class="btn btn-primary header-cta" href="#request">Get my price</a>
+    </div>
     <button class="menu-btn" id="menuBtn" aria-controls="nav" aria-expanded="false" aria-label="Open menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -505,28 +521,137 @@ fieldset.field{border:0;margin:0;padding:0}
     <div class="head">
       <p class="kicker">Free request, no obligation</p>
       <h2 class="h2">Request your final price.</h2>
-      <p class="lead">Paste the product link, tell us how many you need, and leave your WhatsApp. We reply the same business day with the final price per unit and the minimum quantity.</p>
+      <p class="lead">Paste the product link, tell us how many you need, and create your free account to send it. We reply the same business day with the final price per unit, and you follow everything from your account. Just testing an idea? Use the <a href="/estimate">guest estimation</a> instead.</p>
     </div>
     <div class="req-grid">
       <div class="card-form">
-        <form id="startForm" action="/account" method="get" novalidate>
-          <input type="hidden" name="source" value="home">
-          <div class="fields">
-            <div class="field full">
-              <label for="f-link">Product link</label>
-              <div class="link-box">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
-                <input id="f-link" name="link" type="url" inputmode="url" placeholder="Paste the link: Alibaba, 1688, AliExpress, Amazon, TikTok…" aria-describedby="linkHint">
+        <form id="reqForm" novalidate>
+          <div id="formBody">
+            <div class="progress-head"><span id="stepLabel">Your product</span><span id="stepCount">Step 1 of 3</span></div>
+            <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+
+            <fieldset id="step1" style="border:0;margin:0;padding:0">
+              <legend class="sr-only">Step 1: your product</legend>
+              <div class="fields">
+                <div class="field full">
+                  <label for="f-link">Product link</label>
+                  <div class="link-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+                    <input id="f-link" type="url" inputmode="url" placeholder="Paste the link: Alibaba, 1688, AliExpress, Amazon, TikTok…" aria-describedby="linkHint">
+                  </div>
+                  <p class="hint" id="linkHint">No link? Add photos below instead.</p>
+                </div>
+                <div class="field full"><label for="f-prod">Product name or short description <span aria-hidden="true">*</span></label><input id="f-prod" type="text" maxlength="200" placeholder="e.g. Wireless earbuds with charging case"></div>
+                <div class="field">
+                  <label for="f-cat">Category <span aria-hidden="true">*</span></label>
+                  <select id="f-cat">
+                    <option value="">Select a category</option>
+                    <option value="gadget">Gadget (standard)</option>
+                    <option value="connected">Gadget with Bluetooth / WiFi</option>
+                    <option value="vibration">Product with vibration</option>
+                    <option value="textile">Textile &amp; clothing</option>
+                    <option value="home">Home &amp; kitchen</option>
+                    <option value="beauty">Beauty &amp; accessories</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <fieldset class="field"><legend>Order type</legend>
+                  <div class="radios">
+                    <label><input type="radio" name="otype" value="new" checked> New product</label>
+                    <label><input type="radio" name="otype" value="restock"> Restock</label>
+                  </div>
+                </fieldset>
+                <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
+                <div class="field"><label for="f-value">Estimated product value, MAD <span aria-hidden="true">*</span></label><input id="f-value" type="number" min="0" inputmode="decimal" placeholder="e.g. 9000"><p class="hint">Quantity × unit price, before shipping. A rough number is fine.</p></div>
+                <div class="field"><label for="f-usd">Supplier price per unit, USD (optional)</label><input id="f-usd" type="number" min="0" step="0.01" inputmode="decimal"></div>
+                <div class="field"><label for="f-weight">Weight per unit, grams (optional)</label><input id="f-weight" type="number" min="0" step="1" inputmode="numeric"></div>
+                <div class="field full"><label for="f-img">Product photos (optional, up to 5)</label><input class="file" id="f-img" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="files-chips" id="filesChips"></div></div>
+                <div class="field full"><label for="f-specs">Colors, sizes, packaging, branding (optional)</label><textarea id="f-specs" rows="3" maxlength="3000"></textarea></div>
+                <p class="note full" id="minNote" hidden style="margin:0">This is below our minimum order (MAD 5,000 or 100 units). You can still send it and we will review it.</p>
               </div>
-              <p class="hint" id="linkHint">No link? Continue anyway, you can describe the product and add photos on the next page.</p>
+            </fieldset>
+
+            <fieldset id="step2" hidden style="border:0;margin:0;padding:0">
+              <legend class="sr-only">Step 2: you and your timing</legend>
+              <div class="fields">
+                <div class="field"><label for="f-name">Full name <span aria-hidden="true">*</span></label><input id="f-name" type="text" autocomplete="name" maxlength="120"></div>
+                <div class="field"><label for="f-wa">WhatsApp number <span aria-hidden="true">*</span></label><input id="f-wa" type="tel" autocomplete="tel" inputmode="tel" placeholder="+212 6 12 34 56 78"></div>
+                <div class="field"><label for="f-city">Delivery city <span aria-hidden="true">*</span></label><input id="f-city" type="text" autocomplete="address-level2" placeholder="Casablanca" maxlength="80"></div>
+                <div class="field">
+                  <label for="f-selling">Selling status <span aria-hidden="true">*</span></label>
+                  <select id="f-selling">
+                    <option value="">Select</option>
+                    <option value="starting">Preparing to start</option>
+                    <option value="selling">Already selling</option>
+                    <option value="scaling">Scaling an established store</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="f-budget">Sourcing budget <span aria-hidden="true">*</span></label>
+                  <select id="f-budget">
+                    <option value="">Select a range</option>
+                    <option>Below MAD 5,000</option>
+                    <option>MAD 5,000 – 10,000</option>
+                    <option>MAD 10,000 – 25,000</option>
+                    <option>MAD 25,000 – 50,000</option>
+                    <option>MAD 50,000 – 100,000</option>
+                    <option>Over MAD 100,000</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="f-urgency">Desired arrival <span aria-hidden="true">*</span></label>
+                  <select id="f-urgency">
+                    <option value="">Select</option>
+                    <option>As soon as possible</option>
+                    <option>Within 1 month</option>
+                    <option>Within 2 months</option>
+                    <option>Flexible</option>
+                  </select>
+                </div>
+                <div class="field full"><label for="f-store">Business or store name (optional)</label><input id="f-store" type="text" maxlength="200"></div>
+                <div class="field full"><label for="f-notes">Anything else we should know? (optional)</label><textarea id="f-notes" rows="2" maxlength="3000"></textarea></div>
+                <label class="check full"><input type="checkbox" id="consent-wa"> I agree to be contacted on WhatsApp about this request.</label>
+                <label class="check full"><input type="checkbox" id="consent-privacy"> <span>I accept the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset id="step3" hidden style="border:0;margin:0;padding:0">
+              <legend class="sr-only">Step 3: your account</legend>
+              <div id="signedIn" class="signed-in" hidden></div>
+              <div id="acctBox">
+                <p style="margin:0 0 16px;color:var(--slate)">Create your free account to send the request. You follow your quotation, payments and delivery there, and talk with our team.</p>
+                <div class="acct-tabs" role="tablist">
+                  <button type="button" role="tab" id="tabNew" aria-selected="true">Create my account</button>
+                  <button type="button" role="tab" id="tabLogin" aria-selected="false">I already have one</button>
+                </div>
+                <div class="fields" id="newAcct">
+                  <div class="field full"><label for="a-email">Email <span aria-hidden="true">*</span></label><input id="a-email" type="email" autocomplete="email"></div>
+                  <div class="field full"><label for="a-pass">Choose a password <span aria-hidden="true">*</span></label><input id="a-pass" type="password" autocomplete="new-password" minlength="8"><p class="hint">At least 8 characters.</p></div>
+                </div>
+                <div class="fields" id="oldAcct" hidden>
+                  <div class="field full"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="email"></div>
+                  <div class="field full"><label for="l-pass">Password</label><input id="l-pass" type="password" autocomplete="current-password"><p class="hint"><a href="/account?login">Forgot your password?</a></p></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="errors" id="errors" role="alert" tabindex="-1"></div>
+
+            <div class="form-foot">
+              <button type="button" class="btn btn-ghost" id="backBtn" hidden>Back</button>
+              <span class="spacer" id="timeHint">Takes about 2 minutes</span>
+              <button type="button" class="btn btn-primary" id="nextBtn">Continue</button>
+              <button type="submit" class="btn btn-primary" id="submitBtn" hidden>Send my request</button>
             </div>
-            <div class="field full"><label for="f-qty">Quantity you have in mind (optional)</label><input id="f-qty" name="qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
+            <p class="privacy-line">Your information is used only to review your request and contact you about our sourcing service.</p>
           </div>
-          <div class="form-foot">
-            <span class="spacer">Takes about 2 minutes</span>
-            <button type="submit" class="btn btn-primary">Get my final price</button>
+
+          <div class="done" id="done" tabindex="-1">
+            <div class="ok"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></div>
+            <h3 id="doneTitle">Your request has been received.</h3>
+            <p id="doneText"></p>
+            <div style="margin-top:22px"><a class="btn btn-primary" href="/account" id="doneBtn">Open my account</a></div>
           </div>
-          <p class="privacy-line">On the next page you describe your product, then create your free account to send it. You follow your quotation, payments and delivery from your account, and chat with our team there.</p>
         </form>
       </div>
 
@@ -609,6 +734,8 @@ fieldset.field{border:0;margin:0;padding:0}
   <p class="lightbox-hint">Press Esc or click anywhere to close</p>
 </div>
 
+<script src="/assets/config.js"></script>
+<script src="/assets/vendor/supabase.js"></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)
@@ -718,14 +845,250 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   }
   if (CONFIG.email) { const li = el('li'); li.appendChild(el('a', { href: 'mailto:' + CONFIG.email }, CONFIG.email)); contact.insertBefore(li, contact.lastElementChild); }
 
-  // ---------- Request starter ----------
-  // The full request is sent from /account. Drop an invalid link so it is not carried over.
-  $('startForm').addEventListener('submit', () => {
-    const link = $('f-link');
-    if (link.value.trim() && !/^https?:\/\/\S+$/i.test(link.value.trim())) link.value = '';
-    if (!link.value.trim()) link.disabled = true;
-    if (!$('f-qty').value) $('f-qty').disabled = true;
+  // ---------- Request form ----------
+  // The request is always sent under the client's account. A new visitor creates the account at
+  // step 3: the request travels in the signup metadata (pending_request) and the database creates it,
+  // even before the email is confirmed.
+  const DDP = window.DDP_CONFIG || {};
+  const sb = window.supabase && DDP.SUPABASE_URL ? window.supabase.createClient(DDP.SUPABASE_URL, DDP.SUPABASE_ANON_KEY) : null;
+  const MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
+  const LABELS = ['Your product', 'You and your timing', 'Your account'];
+  let step = 1, files = [], session = null, acctMode = 'new', valueTouched = false;
+
+  if (sb) sb.auth.getSession().then(({ data }) => {
+    session = data && data.session;
+    if (!session) return;
+    $('navAccount').textContent = 'My account'; $('navAccount').href = '/account';
+    sb.from('profiles').select('full_name, whatsapp, city, selling_status, business_name').eq('id', session.user.id).single().then(({ data: p }) => {
+      if (!p) return;
+      const fill = (id, v) => { if (v && !$(id).value) $(id).value = v; };
+      fill('f-name', p.full_name); fill('f-wa', p.whatsapp); fill('f-city', p.city); fill('f-selling', p.selling_status); fill('f-store', p.business_name);
+    });
   });
+
+  function normWa(v) {
+    let s = String(v || '').replace(/[\s\-().]/g, '');
+    if (/^00/.test(s)) s = '+' + s.slice(2);
+    if (/^0[5-7]\d{8}$/.test(s)) s = '+212' + s.slice(1);
+    if (/^[5-7]\d{8}$/.test(s)) s = '+212' + s;
+    if (/^212\d{9}$/.test(s)) s = '+' + s;
+    return /^\+\d{9,15}$/.test(s) ? s : null;
+  }
+  function friendly(err) {
+    const m = (err && (err.message || err.error_description)) || '';
+    if (/Invalid login credentials/i.test(m)) return 'Wrong email or password.';
+    if (/Email not confirmed/i.test(m)) return 'Please confirm your email first: open the link we sent you, then try again.';
+    if (/rate limit|too many/i.test(m)) return 'Too many attempts. Please wait a few minutes and try again.';
+    if (/password/i.test(m) && /least|short|weak/i.test(m)) return 'Please choose a stronger password (at least 8 characters).';
+    if (!m || /Failed to fetch|NetworkError|network/i.test(m)) return 'Your request could not be sent. Check your connection and try again, or contact us on WhatsApp.';
+    return m;
+  }
+  function validLink(v) { try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
+  function clearErrors() { $('errors').classList.remove('show'); $('errors').innerHTML = ''; document.querySelectorAll('#reqForm [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid')); }
+  function showErrors(list, fields = []) {
+    const box = $('errors'); box.innerHTML = '';
+    box.appendChild(el('strong', {}, list.length > 1 ? 'Please fix the following:' : 'Please fix this:'));
+    const ul = el('ul'); list.forEach((m) => ul.appendChild(el('li', {}, m))); box.appendChild(ul);
+    box.classList.add('show');
+    fields.forEach((id) => $(id) && $(id).setAttribute('aria-invalid', 'true'));
+    (fields.length && $(fields[0]) ? $(fields[0]) : box).focus();
+  }
+
+  function sendLabel() { return session ? 'Send my request' : acctMode === 'login' ? 'Log in and send my request' : 'Create my account and send'; }
+  function showStep(n) {
+    step = n;
+    [1, 2, 3].forEach((i) => { $('step' + i).hidden = i !== n; });
+    $('backBtn').hidden = n === 1; $('timeHint').hidden = n !== 1;
+    $('nextBtn').hidden = n === 3; $('submitBtn').hidden = n !== 3;
+    $('stepLabel').textContent = LABELS[n - 1];
+    $('stepCount').textContent = 'Step ' + n + ' of 3';
+    $('bar').style.width = Math.round(n / 3 * 100) + '%';
+    if (n === 3) {
+      $('signedIn').hidden = !session; $('acctBox').hidden = !!session;
+      if (session) $('signedIn').textContent = 'You are logged in as ' + session.user.email + '. The request will be sent under this account.';
+      $('submitBtn').textContent = sendLabel();
+    }
+    clearErrors();
+  }
+  function setAcct(mode) {
+    acctMode = mode;
+    $('newAcct').hidden = mode !== 'new'; $('oldAcct').hidden = mode !== 'login';
+    $('tabNew').setAttribute('aria-selected', mode === 'new'); $('tabLogin').setAttribute('aria-selected', mode === 'login');
+    $('submitBtn').textContent = sendLabel();
+    clearErrors();
+  }
+  $('tabNew').addEventListener('click', () => setAcct('new'));
+  $('tabLogin').addEventListener('click', () => setAcct('login'));
+
+  function checkMinimum() {
+    const q = Number($('f-qty').value), v = Number($('f-value').value);
+    $('minNote').hidden = !(q > 0 && $('f-value').value !== '' && q < 100 && v < 5000);
+  }
+  function suggestValue() {
+    const q = Number($('f-qty').value), usd = Number($('f-usd').value);
+    if (!valueTouched && q > 0 && usd > 0) $('f-value').value = Math.round(q * usd * 10);
+    checkMinimum();
+  }
+  $('f-qty').addEventListener('input', suggestValue);
+  $('f-usd').addEventListener('input', suggestValue);
+  $('f-value').addEventListener('input', () => { valueTouched = true; checkMinimum(); });
+
+  function renderFiles() {
+    const box = $('filesChips'); box.innerHTML = '';
+    files.forEach((f, i) => {
+      const chip = el('span', {}, f.name + ' ');
+      const rm = el('button', { type: 'button', class: 'link', 'aria-label': 'Remove ' + f.name }, '×');
+      rm.addEventListener('click', () => { files.splice(i, 1); renderFiles(); });
+      chip.appendChild(rm); box.appendChild(chip);
+    });
+  }
+  $('f-img').addEventListener('change', function () {
+    const errs = [];
+    Array.from(this.files || []).forEach((f) => {
+      if (files.length >= MAX_FILES) return errs.push('You can add up to ' + MAX_FILES + ' photos.');
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return errs.push(f.name + ': use a JPG, PNG or WEBP photo.');
+      if (f.size > MAX_SIZE) return errs.push(f.name + ' is larger than 5 MB.');
+      files.push(f);
+    });
+    this.value = '';
+    renderFiles();
+    if (errs.length) showErrors([errs[0]], ['f-img']); else clearErrors();
+  });
+
+  function validate(n) {
+    const errs = [], bad = [];
+    const need = (id, ok, m) => { if (!ok) { errs.push(m); bad.push(id); } };
+    if (n === 1) {
+      const link = $('f-link').value.trim();
+      need('f-link', !link || validLink(link), 'The product link should start with https://');
+      need('f-link', link || files.length, 'Add a product link or at least one photo.');
+      need('f-prod', $('f-prod').value.trim().length >= 2, 'Enter the product name or a short description.');
+      need('f-cat', $('f-cat').value, 'Choose a category.');
+      need('f-qty', Number($('f-qty').value) >= 1, 'Enter the quantity you need.');
+      need('f-value', $('f-value').value !== '' && Number($('f-value').value) >= 0, 'Enter the estimated product value in MAD.');
+    }
+    if (n === 2) {
+      need('f-name', $('f-name').value.trim().length >= 2, 'Enter your full name.');
+      need('f-wa', normWa($('f-wa').value), 'Enter a valid WhatsApp number, for example +212 6 12 34 56 78.');
+      need('f-city', $('f-city').value.trim(), 'Enter your delivery city.');
+      need('f-selling', $('f-selling').value, 'Choose your selling status.');
+      need('f-budget', $('f-budget').value, 'Choose your sourcing budget.');
+      need('f-urgency', $('f-urgency').value, 'Choose when you need the goods.');
+      need('consent-wa', $('consent-wa').checked, 'Agree to be contacted on WhatsApp so we can send your price.');
+      need('consent-privacy', $('consent-privacy').checked, 'Accept the Privacy Policy.');
+    }
+    if (n === 3 && !session) {
+      if (acctMode === 'new') {
+        need('a-email', /^\S+@\S+\.\S+$/.test($('a-email').value.trim()), 'Enter a valid email address.');
+        need('a-pass', $('a-pass').value.length >= 8, 'Choose a password with at least 8 characters.');
+      } else {
+        need('l-email', /^\S+@\S+\.\S+$/.test($('l-email').value.trim()), 'Enter your email address.');
+        need('l-pass', $('l-pass').value.length > 0, 'Enter your password.');
+      }
+    }
+    if (errs.length) { showErrors(errs, bad); return false; }
+    return true;
+  }
+
+  function buildRow() {
+    const num = (id) => ($(id).value === '' ? null : Number($(id).value));
+    return {
+      product_name: $('f-prod').value.trim(),
+      category: $('f-cat').value,
+      product_link: $('f-link').value.trim() || null,
+      quantity: parseInt($('f-qty').value, 10),
+      estimated_value_mad: Number($('f-value').value),
+      alibaba_price_usd: num('f-usd'),
+      unit_weight_g: num('f-weight'),
+      specifications: $('f-specs').value.trim() || null,
+      order_type: (document.querySelector('input[name="otype"]:checked') || {}).value || 'new',
+      budget_range: $('f-budget').value,
+      urgency: $('f-urgency').value,
+      client_notes: $('f-notes').value.trim() || null,
+      delivery_city: $('f-city').value.trim(),
+      consent_whatsapp: true,
+      privacy_accepted: true
+    };
+  }
+  async function uploadPhotos(requestId) {
+    let failed = 0;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const safe = f.name.toLowerCase().replace(/[^a-z0-9.\-_]+/g, '-').slice(-60);
+      const path = session.user.id + '/' + requestId + '/' + Date.now() + '-' + i + '-' + safe;
+      const up = await sb.storage.from('request-files').upload(path, f, { contentType: f.type, upsert: false });
+      if (up.error) { failed++; continue; }
+      const ins = await sb.from('request_files').insert({ request_id: requestId, path, file_name: f.name, kind: 'product_image' });
+      if (ins.error) failed++;
+    }
+    return failed;
+  }
+  function finish(kind, info) {
+    $('formBody').hidden = true; $('done').classList.add('show'); $('done').focus();
+    if (window.fbq) window.fbq('track', 'Lead');
+    if (kind === 'confirm') {
+      $('doneTitle').textContent = 'Check your email to finish.';
+      $('doneText').textContent = 'Your request is saved. We sent a confirmation link to ' + info.email + '. Open it to activate your account, then follow your request and talk with our team there. We will also contact you on WhatsApp the same business day.' +
+        (files.length ? ' Your photos were not uploaded yet: after you log in, open your request and send them in the conversation.' : '');
+      $('doneBtn').hidden = true;
+      return;
+    }
+    $('doneTitle').textContent = 'Your request has been received.';
+    $('doneText').textContent = 'Reference ' + info.code + '. We reply on WhatsApp the same business day. Taking you to your account…' +
+      (info.failed ? ' ' + info.failed + ' photo(s) could not be uploaded: send them in the conversation on your request.' : '');
+    setTimeout(() => { location.href = '/account'; }, info.failed ? 5000 : 2200);
+  }
+  async function insertAndFinish(row) {
+    const r = await sb.from('requests').insert(row).select('id, code').single();
+    if (r.error) throw r.error;
+    const failed = await uploadPhotos(r.data.id);
+    finish('signedin', { code: r.data.code, failed });
+  }
+
+  $('nextBtn').addEventListener('click', () => { if (validate(step)) { showStep(step + 1); window.scrollTo({ top: $('request').offsetTop - 80 }); } });
+  $('backBtn').addEventListener('click', () => showStep(step - 1));
+  $('reqForm').addEventListener('keydown', (e) => { if (e.key === 'Enter' && step < 3 && e.target.tagName === 'INPUT') { e.preventDefault(); $('nextBtn').click(); } });
+
+  $('reqForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (step !== 3) return;
+    for (const n of [1, 2]) if (!validate(n)) return showStep(n), validate(n);
+    if (!validate(3)) return;
+    if (!sb) return showErrors(['The request form is not available right now. Please try again in a few minutes, or contact us on WhatsApp.']);
+    const btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Sending…';
+    const row = buildRow();
+    const profile = { full_name: $('f-name').value.trim(), whatsapp: normWa($('f-wa').value), city: row.delivery_city, selling_status: $('f-selling').value, business_name: $('f-store').value.trim() };
+    try {
+      if (session) return await insertAndFinish(row);
+      if (acctMode === 'login') {
+        const r = await sb.auth.signInWithPassword({ email: $('l-email').value.trim(), password: $('l-pass').value });
+        if (r.error) throw r.error;
+        session = r.data.session;
+        return await insertAndFinish(row);
+      }
+      const email = $('a-email').value.trim();
+      const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row }) } });
+      if (r.error) throw r.error;
+      if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+        setAcct('login'); $('l-email').value = email;
+        throw new Error('An account already exists with this email. Enter your password to log in and send your request.');
+      }
+      if (!r.data.session) return finish('confirm', { email });
+      session = r.data.session;
+      const q = await sb.from('requests').select('id, code').order('created_at', { ascending: false }).limit(1);
+      sb.auth.updateUser({ data: { pending_request: null } }).catch(() => {});
+      if (q.data && q.data[0]) {
+        const failed = await uploadPhotos(q.data[0].id);
+        return finish('signedin', { code: q.data[0].code, failed });
+      }
+      await insertAndFinish(row);
+    } catch (err) {
+      showErrors([friendly(err)]);
+    } finally {
+      btn.disabled = false; btn.textContent = sendLabel();
+    }
+  });
+  showStep(1);
 })();
 
 // Lightbox: click any [data-zoom] trigger to view its full-size image.
