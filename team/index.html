@@ -726,7 +726,7 @@
       code: '<td><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + (q.below_minimum ? '<span class="flag" title="Below MAD 5,000 and 100 units">Below min.</span>' : "") + "</td>",
       client: "<td>" + esc(clientName(q)) + "</td>",
       city: "<td>" + esc(q.delivery_city || q.client.city || "") + "</td>",
-      product: "<td>" + esc(q.product_name) + '<br><small class="muted">' + esc(CATEGORY_LABELS[q.category] || q.category) + "</small></td>",
+      product: "<td>" + esc(q.product_name) + (q.category ? '<br><small class="muted">' + esc(CATEGORY_LABELS[q.category] || q.category) + "</small>" : "") + "</td>",
       qty: '<td class="num">' + fmt.format(q.quantity) + "</td>",
       status: "<td>" + statusPill(q.status) + "</td>",
       reply: "<td>" + replyCell(q) + "</td>",
@@ -1345,7 +1345,7 @@
       dd("Category", esc(CATEGORY_LABELS[q.category] || q.category)) +
       dd("Order type", q.order_type === "restock" ? "Restock" : "New product") +
       dd("Quantity", fmt.format(q.quantity) + " units") +
-      dd("Est. product value", money(q.estimated_value_mad)) +
+      dd("Est. product value", q.estimated_value_mad == null ? "" : money(q.estimated_value_mad)) +
       dd("Target cost / unit", q.target_unit_cost_mad ? money(q.target_unit_cost_mad) : "") +
       dd("Alibaba price / unit", q.alibaba_price_usd ? "USD " + q.alibaba_price_usd : "") +
       dd("Weight / unit", q.unit_weight_g ? fmt.format(q.unit_weight_g) + " g" : "") +
