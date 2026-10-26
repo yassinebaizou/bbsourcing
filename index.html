@@ -183,6 +183,9 @@ p{margin:0}
 .reviews{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 .review{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:30px;display:flex;flex-direction:column;gap:20px}
 .review blockquote{margin:0;font-size:17px;line-height:1.6;flex:1}
+.review h3{font-size:19px;font-weight:800;line-height:1.3;margin:0}
+.review h3 + blockquote{font-size:16px;margin-top:-10px}
+.review img.review-photo{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r-md)}
 .review video{border-radius:var(--r-md);width:100%;aspect-ratio:9/12;object-fit:cover;background:var(--navy)}
 .review footer{border-top:1px solid var(--line);padding-top:16px}
 .review footer b{display:block}
@@ -807,6 +810,38 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   // even before the email is confirmed.
   const DDP = window.DDP_CONFIG || {};
   const sb = window.supabase && DDP.SUPABASE_URL ? window.supabase.createClient(DDP.SUPABASE_URL, DDP.SUPABASE_ANON_KEY) : null;
+
+  // Reviews written by clients in their account and published by the team (CRM → Reviews).
+  if (sb) sb.rpc('published_reviews').then(async ({ data }) => {
+    const list = data || [];
+    if (!list.length) return;
+    const paths = list.map((r) => r.media_path).filter(Boolean);
+    const urls = {};
+    if (paths.length) {
+      const { data: signed } = await sb.storage.from('review-media').createSignedUrls(paths, 86400);
+      (signed || []).forEach((x) => { if (x.signedUrl) urls[x.path] = x.signedUrl; });
+    }
+    list.forEach((r) => {
+      const card = el('article', { class: 'review' });
+      const url = r.media_path && urls[r.media_path];
+      if (url && r.media_type === 'video') card.appendChild(el('video', { src: url, controls: '', preload: 'metadata', playsinline: '' }));
+      else if (url) {
+        const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': url, 'aria-label': 'Enlarge photo' });
+        btn.appendChild(el('img', { src: url, alt: r.headline, class: 'review-photo' }));
+        card.appendChild(btn);
+      }
+      card.appendChild(el('h3', {}, r.headline));
+      card.appendChild(el('blockquote', {}, '“' + r.body + '”'));
+      const f = el('footer');
+      f.appendChild(el('b', {}, r.display_name));
+      f.appendChild(el('span', {}, [r.store_name, r.city].filter(Boolean).join(', ')));
+      if (r.published_at) f.appendChild(el('time', { datetime: r.published_at.slice(0, 10) }, new Date(r.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })));
+      card.appendChild(f);
+      $('reviewList').appendChild(card);
+    });
+    $('reviews').hidden = false;
+    document.querySelectorAll('[data-section-link="reviews"]').forEach((a) => { a.hidden = false; });
+  }).catch(() => {});
   const MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
   const LABELS = ['Your product', 'You and your timing', 'Your account'];
   let step = 1, files = [], session = null, acctMode = null; // acctMode: null (email not checked yet), 'new' or 'login'
