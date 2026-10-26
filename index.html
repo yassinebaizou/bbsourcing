@@ -64,14 +64,17 @@ p{margin:0}
 .logo{display:flex;flex-direction:column;text-decoration:none;line-height:1}
 .logo b{font-size:28px;font-weight:900;letter-spacing:-.02em;color:#F7F8FA}
 .logo span{font-size:9.5px;font-weight:700;letter-spacing:.62em;color:var(--orange);margin-top:3px}
-.nav{display:flex;gap:28px}
-.nav a{color:#D5DBE5;text-decoration:none;font-size:15px;font-weight:500}
+.nav{display:flex;gap:24px}
+.nav a{color:#D5DBE5;text-decoration:none;font-size:15px;font-weight:500;white-space:nowrap}
 .nav a:hover{color:#fff}
 .header-cta{min-height:46px;font-size:15px;padding:0 20px}
-.header-actions{display:flex;gap:10px}
+.header-actions{display:flex;gap:10px;flex:none}
+.header-actions .btn{white-space:nowrap}
+.cta-help{font-size:14px;color:#AEB8C8;max-width:60ch;margin-top:16px}
+.cta-help b{color:#E2E8F0;font-weight:600}
 .nav-mobile{display:none}
 .menu-btn{display:none;background:none;border:1.5px solid var(--navy-soft);border-radius:10px;width:46px;height:46px;color:#fff;cursor:pointer;align-items:center;justify-content:center}
-@media (max-width:980px){
+@media (max-width:1100px){
   .nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--navy);flex-direction:column;gap:0;padding:8px var(--gutter) 20px;border-bottom:1px solid var(--navy-line)}
   .nav.open{display:flex}
   .nav a{padding:14px 0;border-bottom:1px solid var(--navy-line);font-size:17px}
@@ -324,15 +327,15 @@ fieldset.field{border:0;margin:0;padding:0}
       <a href="#ddp">What is DDP</a>
       <a href="#process">How it works</a>
       <a href="#included">What's included</a>
-      <a href="#shipments" data-section-link="shipments">Shipments</a>
-      <a href="#reviews" data-section-link="reviews">Reviews</a>
+      <a class="nav-mobile" href="#shipments" data-section-link="shipments">Shipments</a>
+      <a class="nav-mobile" href="#reviews" data-section-link="reviews">Reviews</a>
       <a href="#faq">FAQ</a>
-      <a class="nav-mobile" href="/estimate">Guest estimation</a>
+      <a class="nav-mobile" href="/estimate">Get estimated price</a>
       <a href="/account?login" id="navAccount">Log in</a>
     </nav>
     <div class="header-actions">
-      <a class="btn btn-ghost-dark header-cta" href="/estimate">Guest estimation</a>
-      <a class="btn btn-primary header-cta" href="#request">Get my price</a>
+      <a class="btn btn-ghost-dark header-cta" href="/estimate" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a>
+      <a class="btn btn-primary header-cta" href="#request">Submit sourcing request</a>
     </div>
     <button class="menu-btn" id="menuBtn" aria-controls="nav" aria-expanded="false" aria-label="Open menu">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -348,9 +351,10 @@ fieldset.field{border:0;margin:0;padding:0}
       <h1>Source from China. One final price. Delivered to your door.</h1>
       <p class="lead">Just send us the product link. We find a trusted supplier, give you the final price per unit, ship by express air, clear Moroccan customs for you, and deliver your stock to your door within 15 to 20 days.</p>
       <div class="hero-cta-row">
-        <a class="btn btn-primary btn-lg" href="#request">Get my price</a>
-        <a class="btn btn-ghost-dark btn-lg" href="/estimate">Try the price estimator</a>
+        <a class="btn btn-primary btn-lg" href="#request">Submit sourcing request</a>
+        <a class="btn btn-ghost-dark btn-lg" href="/estimate">Get estimated price</a>
       </div>
+      <p class="cta-help"><b>Get estimated price:</b> an instant price to test a product idea, nothing is sent to us. <b>Submit sourcing request:</b> you are sure about the product and want your final door-to-door quote from our team.</p>
     </div>
     <div class="route" aria-label="Your order from China to Morocco">
       <div class="route-top"><p>Your order, end to end</p><span class="pill">15–20 days</span></div>
@@ -521,7 +525,7 @@ fieldset.field{border:0;margin:0;padding:0}
     <div class="head">
       <p class="kicker">Free request, no obligation</p>
       <h2 class="h2">Request your final price.</h2>
-      <p class="lead">Paste the product link, tell us how many you need, and create your free account to send it. We reply the same business day with the final price per unit, and you follow everything from your account. Just testing an idea? Use the <a href="/estimate">guest estimation</a> instead.</p>
+      <p class="lead">Paste the product link, tell us how many you need, and create your free account to send it. We reply the same business day with the final price per unit, and you follow everything from your account. Just testing an idea? Use <a href="/estimate">Get estimated price</a> instead.</p>
     </div>
     <div class="req-grid">
       <div class="card-form">
@@ -721,7 +725,7 @@ fieldset.field{border:0;margin:0;padding:0}
 </footer>
 
 <div class="mobile-bar" id="mobileBar">
-  <a class="btn btn-primary" href="#request">Get my price</a>
+  <a class="btn btn-primary" href="#request">Submit sourcing request</a>
   <a class="btn wa-btn" id="mobileWa" href="#" hidden>WhatsApp</a>
 </div>
 <a class="wa-float" id="waFloat" href="#" target="_blank" rel="noopener" aria-label="Chat with us on WhatsApp" hidden>
