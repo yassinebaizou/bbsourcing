@@ -59,7 +59,11 @@ Tables: `profiles` (1 per auth user, created by trigger), `staff` (role `admin` 
 saved; deposit/balance are generated columns), `request_notes`, `request_files`,
 `request_events` (activity log, written only by triggers), `request_messages` (client ↔ team
 conversation; `kind='update'` rows are written by the status trigger when the client stage changes),
-`message_reads` (per-user last read), `order_costs` (admin + ops_finance only; profit = final price − total cost).
+`message_reads` (per-user last read), `order_costs` (admin + ops_finance only; profit = final price − total cost),
+`reviews` (client review: headline, text, one photo/video in the private `review-media` bucket, public name, consent;
+always `pending` on insert, only staff change `status` to approved/rejected; the homepage reads `published_reviews()` and
+signed URLs, allowed for anon only on approved media). Clients never see a review's status (account → Leave a review shows
+only a thank-you); the team publishes in CRM → Reviews.
 
 Who sees what:
 - **Client**: only their own requests, product images and conversation (team messages show as "DDPSourcing team"). No notes, payments, costs, events, internal fields.

@@ -219,6 +219,7 @@
         <button type="button" role="tab" data-tab="requests" aria-selected="true">My requests</button>
         <button type="button" role="tab" data-tab="new" aria-selected="false">Submit sourcing request</button>
         <button type="button" role="tab" data-tab="estimate" aria-selected="false">Get estimated price</button>
+        <button type="button" role="tab" data-tab="reviews" aria-selected="false">Leave a review</button>
         <button type="button" role="tab" data-tab="profile" aria-selected="false">My profile</button>
       </nav>
 
@@ -373,6 +374,36 @@
               <button class="btn btn-primary btn-block" type="button" id="estToRequest">Submit sourcing request for this product</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Reviews: the client never sees whether a review is published; the team decides in the CRM. -->
+      <div id="tab-reviews" hidden>
+        <form class="card form-card" id="reviewForm" novalidate style="max-width:720px">
+          <h2>Share your experience</h2>
+          <p class="sub">Tell other sellers how your order went. Our team reads every review before it appears on ddpsourcing.com.</p>
+          <div id="reviewMsg"></div>
+          <div class="field"><label for="rv_headline">Headline</label><input id="rv_headline" maxlength="120" placeholder="e.g. My stock arrived in 17 days, customs handled"></div>
+          <div class="field"><label for="rv_body">Your review</label><textarea id="rv_body" maxlength="2000" placeholder="What did you order? How was the quality, the delivery time, the communication?"></textarea></div>
+          <div class="field">
+            <label for="rv_media">Photo or video <span class="opt">(optional, encouraged)</span></label>
+            <input id="rv_media" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm">
+            <p class="hint">One photo (up to 10 MB) or one video (MP4 or MOV, up to 50 MB). An unboxing video or a photo of your products works best.</p>
+            <div class="files-list" id="rvFile"></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="rv_name">Name shown with your review</label><input id="rv_name" maxlength="80" placeholder="e.g. Sara B."></div>
+            <div class="field"><label for="rv_city">City <span class="opt">(optional)</span></label><input id="rv_city" maxlength="80"></div>
+          </div>
+          <div class="field"><label for="rv_store">Store name <span class="opt">(optional)</span></label><input id="rv_store" maxlength="120"></div>
+          <label class="check"><input type="checkbox" id="rv_consent"> <span>I agree that DDPSourcing publishes this review, with the name, city, store and photo or video above, on its website.</span></label>
+          <div class="form-actions"><span></span><button class="btn btn-primary" type="submit" id="rvSend">Send my review</button></div>
+        </form>
+        <div class="card done-card" id="reviewThanks" hidden style="max-width:720px">
+          <div class="check-big"><svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true"><path d="M2 10l7 7L24 2" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h2>Thank you for your review.</h2>
+          <p>We really appreciate you taking the time to share your experience.</p>
+          <button class="btn btn-secondary" type="button" id="reviewAgain">Write another review</button>
         </div>
       </div>
 
@@ -539,11 +570,11 @@
     msg($("authMsg"));
   }
   function tab(name) {
-    ["requests", "new", "estimate", "profile", "detail", "sent"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
+    ["requests", "new", "estimate", "reviews", "profile", "detail", "sent"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
     document.querySelectorAll(".subnav button").forEach(function (b) {
       b.setAttribute("aria-selected", b.dataset.tab === name || (name === "detail" && b.dataset.tab === "requests"));
     });
-    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Submit sourcing request", estimate: "Get estimated price", sent: "Request sent", profile: "My profile" }[name];
+    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Submit sourcing request", estimate: "Get estimated price", reviews: "Leave a review", sent: "Request sent", profile: "My profile" }[name];
     $("newReqTop").hidden = name === "new" || name === "sent";
     $("estTop").hidden = state.guest || name === "estimate";
     window.scrollTo({ top: 0 });
@@ -599,6 +630,7 @@
   function openTab(name) {
     if (name === "new") resetRequestForm();
     if (name === "profile") fillProfile();
+    if (name === "reviews") resetReviewForm();
     if (name === "requests") loadRequests();
     tab(name);
   }
@@ -1158,6 +1190,58 @@
       });
     }, Promise.resolve()).then(function () { return failed; });
   }
+
+  // ---------- Reviews ----------
+  var reviewFile = null;
+  function resetReviewForm() {
+    $("reviewForm").reset(); reviewFile = null; $("rvFile").innerHTML = ""; msg($("reviewMsg"));
+    $("reviewForm").hidden = false; $("reviewThanks").hidden = true;
+    var p = state.profile || {}, parts = String(p.full_name || "").trim().split(/\s+/);
+    $("rv_name").value = parts[0] ? parts[0] + (parts[1] ? " " + parts[1].charAt(0).toUpperCase() + "." : "") : "";
+    $("rv_city").value = p.city || ""; $("rv_store").value = p.business_name || "";
+  }
+  $("reviewAgain").onclick = resetReviewForm;
+  $("rv_media").addEventListener("change", function () {
+    var f = this.files && this.files[0]; this.value = "";
+    if (!f) return;
+    var isVideo = /^video\//.test(f.type), isImage = /^image\/(jpeg|png|webp)$/.test(f.type);
+    if (!isVideo && !isImage) return toast("Use a JPG, PNG or WEBP photo, or an MP4, MOV or WEBM video.", true);
+    if (isImage && f.size > 10 * 1024 * 1024) return toast("This photo is larger than 10 MB.", true);
+    if (isVideo && f.size > 50 * 1024 * 1024) return toast("This video is larger than 50 MB. Try a shorter clip.", true);
+    reviewFile = f;
+    $("rvFile").innerHTML = '<span>' + esc(f.name) + ' <button type="button" class="link" id="rvFileRm" aria-label="Remove file">×</button></span>';
+    $("rvFileRm").onclick = function () { reviewFile = null; $("rvFile").innerHTML = ""; };
+  });
+  $("reviewForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var ok = req("rv_headline", function (v) { return v.trim().length >= 3; }) &
+      req("rv_body", function (v) { return v.trim().length >= 10; }) &
+      req("rv_name", function (v) { return v.trim().length >= 2; });
+    if (!ok) return msg($("reviewMsg"), "error", "Add a headline, a few words about your experience, and the name to show.");
+    if (!$("rv_consent").checked) return msg($("reviewMsg"), "error", "Please tick the box so we can publish your review.");
+    var btn = $("rvSend"), f = reviewFile;
+    btn.disabled = true; btn.textContent = f ? "Uploading…" : "Sending…";
+    msg($("reviewMsg"));
+    var done = function () { btn.disabled = false; btn.textContent = "Send my review"; };
+    var send = function (path) {
+      return sb.from("reviews").insert({
+        headline: $("rv_headline").value.trim(), body: $("rv_body").value.trim(),
+        media_path: path, media_type: path ? (/^video\//.test(f.type) ? "video" : "image") : null,
+        display_name: $("rv_name").value.trim(), city: $("rv_city").value.trim() || null,
+        store_name: $("rv_store").value.trim() || null, publish_consent: true
+      }).then(function (r) {
+        done();
+        if (r.error) return msg($("reviewMsg"), "error", /3 reviews/.test(r.error.message) ? "Thank you! We already have several reviews from you to read. You can send another one a bit later." : friendly(r.error));
+        $("reviewForm").hidden = true; $("reviewThanks").hidden = false; window.scrollTo({ top: 0 });
+      });
+    };
+    if (!f) return send(null);
+    var path = state.user.id + "/" + Date.now() + "-" + safeName(f.name);
+    sb.storage.from("review-media").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+      if (u.error) { done(); return msg($("reviewMsg"), "error", "Your photo or video could not be uploaded. Check its size and your connection, then try again."); }
+      send(path);
+    });
+  });
 
   // ---------- Profile ----------
   function fillProfile() {

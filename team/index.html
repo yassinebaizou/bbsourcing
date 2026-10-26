@@ -86,6 +86,15 @@
 
   /* Panels & tables */
   .panel{overflow:hidden}
+  .rev-list{display:grid;gap:14px}
+  .rev{padding:18px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px}
+  @media (max-width:760px){.rev{grid-template-columns:1fr}}
+  .rev-media{background:#EEF1F5;border-radius:10px;min-height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:13px}
+  .rev-media img,.rev-media video{width:100%;max-height:320px;object-fit:cover;display:block}
+  .rev h3{font-size:16px;margin:0 0 6px}
+  .rev blockquote{margin:0 0 10px;white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.55}
+  .rev .who{font-size:13px;color:var(--muted)}
+  .rev .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .panel + .panel{margin-top:16px}
   .two-col{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
   @media (min-width:1200px){.two-col{grid-template-columns:3fr 2fr}}
@@ -248,6 +257,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Clients</button>
       <button type="button" data-view="payments" id="navPayments">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Payments</button>
+      <button type="button" data-view="reviews">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Reviews <span class="count" id="countReviews" hidden></span></button>
       <button type="button" data-view="team" id="navTeam" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg>Team</button>
     </nav>
@@ -399,6 +410,19 @@
           </div>
           <div class="table-wrap"><table><thead><tr><th>Request</th><th>Client</th><th>Status</th><th>Payment</th><th class="num">Final price</th><th>40% deposit</th><th>60% balance</th><th class="num">Verified</th><th class="num">Outstanding</th></tr></thead><tbody id="payBody"></tbody></table></div>
         </div>
+      </section>
+
+      <!-- Reviews -->
+      <section id="view-reviews" hidden>
+        <div class="page-head"><h1>Reviews</h1>
+          <div class="seg" id="revSeg" role="group" aria-label="Show">
+            <button type="button" data-r="pending" aria-pressed="true">To review</button>
+            <button type="button" data-r="approved" aria-pressed="false">Published</button>
+            <button type="button" data-r="rejected" aria-pressed="false">Not published</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:-6px 0 16px">Clients send reviews from their account. Published reviews appear in the Reviews section of the homepage. Clients are not told whether their review is published.</p>
+        <div class="rev-list" id="revList"></div>
       </section>
 
       <!-- Team -->
@@ -640,7 +664,8 @@
         .order("created_at", { ascending: false }).range(0, 4999),
       staff: sb.from("staff").select("user_id, role, active, created_at, profile:profiles!staff_user_id_fkey(full_name,email)"),
       msgs: sb.from("request_messages").select("request_id, from_team, kind, created_at").eq("kind", "message").order("created_at", { ascending: false }).range(0, 9999),
-      reads: sb.from("message_reads").select("request_id, last_read_at")
+      reads: sb.from("message_reads").select("request_id, last_read_at"),
+      reviews: sb.from("reviews").select("*, client:profiles!reviews_client_id_fkey(full_name,email)").order("created_at", { ascending: false }).range(0, 999)
     };
     if (S.canMoney) jobs.costs = sb.from("order_costs").select("*");
     if (S.role === "admin") jobs.profiles = sb.from("profiles").select("id, full_name, email, whatsapp, city, business_name, store_link, selling_status, created_at").range(0, 9999);
@@ -660,6 +685,7 @@
       S.staffById = {}; S.staff.forEach(function (s) { S.staffById[s.id] = s; });
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
       S.profiles = (res.profiles && res.profiles.data) || [];
+      S.reviews = (res.reviews && res.reviews.data) || [];
       S.reads = {}; ((res.reads && res.reads.data) || []).forEach(function (r) { S.reads[r.request_id] = r.last_read_at; });
       S.unread = {}; S.lastClientMsg = {}; S.lastTeamMsg = {};
       ((res.msgs && res.msgs.data) || []).forEach(function (m) {
@@ -696,7 +722,7 @@
   $("side").addEventListener("click", function (e) { if (e.target === $("side")) $("side").classList.remove("open"); });
   function go(v) {
     S.view = v;
-    ["dashboard", "requests", "clients", "payments", "team"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["dashboard", "requests", "clients", "payments", "reviews", "team"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     document.querySelectorAll(".side nav button").forEach(function (b) {
       if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -719,6 +745,9 @@
     if (S.view === "clients") renderClients();
     if (S.view === "payments") renderPayments();
     if (S.view === "team") renderTeam();
+    if (S.view === "reviews") renderReviews();
+    var nRev = (S.reviews || []).filter(function (r) { return r.status === "pending"; }).length;
+    $("countReviews").hidden = !nRev; $("countReviews").textContent = nRev;
   }
 
   function rowHtml(q, cols) {
@@ -1158,6 +1187,53 @@
   }
 
   // ---------- Team ----------
+  // ---------- Reviews ----------
+  S.revFilter = "pending";
+  document.querySelectorAll("#revSeg button").forEach(function (b) {
+    b.onclick = function () {
+      S.revFilter = b.dataset.r;
+      document.querySelectorAll("#revSeg button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+      renderReviews();
+    };
+  });
+  function renderReviews() {
+    var list = (S.reviews || []).filter(function (r) { return r.status === S.revFilter; });
+    var empty = { pending: "No review waiting. New reviews from clients appear here.", approved: "No published review yet.", rejected: "No review set aside." }[S.revFilter];
+    $("revList").innerHTML = list.length ? list.map(function (r) {
+      var client = (r.client && (r.client.full_name || r.client.email)) || "Client";
+      var acts = r.status === "pending"
+        ? '<button class="btn btn-primary btn-sm" type="button" data-rev="' + esc(r.id) + '" data-to="approved">Publish on the website</button><button class="btn btn-secondary btn-sm" type="button" data-rev="' + esc(r.id) + '" data-to="rejected">Don\'t publish</button>'
+        : r.status === "approved"
+          ? '<button class="btn btn-secondary btn-sm" type="button" data-rev="' + esc(r.id) + '" data-to="rejected">Remove from the website</button>'
+          : '<button class="btn btn-secondary btn-sm" type="button" data-rev="' + esc(r.id) + '" data-to="approved">Publish on the website</button>';
+      return '<article class="card rev"><div class="rev-media" data-media="' + esc(r.media_path || "") + '" data-type="' + esc(r.media_type || "") + '">' + (r.media_path ? "Loading…" : "No photo or video") + "</div>" +
+        "<div><h3>" + esc(r.headline) + "</h3><blockquote>" + esc(r.body) + "</blockquote>" +
+        '<div class="who"><strong>' + esc(r.display_name) + "</strong>" + esc([r.store_name, r.city].filter(Boolean).map(function (x) { return " · " + x; }).join("")) +
+        "<br>Sent by " + esc(client) + " on " + esc(dShort(r.created_at)) +
+        (r.reviewed_at ? " · " + (r.status === "approved" ? "published" : "set aside") + " on " + esc(dShort(r.reviewed_at)) : "") + "</div>" +
+        '<div class="acts">' + acts + "</div></div></article>";
+    }).join("") : '<div class="card empty">' + esc(empty) + "</div>";
+    var boxes = Array.prototype.slice.call($("revList").querySelectorAll("[data-media]")).filter(function (b) { return b.dataset.media; });
+    if (boxes.length) sb.storage.from("review-media").createSignedUrls(boxes.map(function (b) { return b.dataset.media; }), 3600).then(function (u) {
+      (u.data || []).forEach(function (x, i) {
+        var b = boxes[i]; if (!b || !x.signedUrl) { if (b) b.textContent = "File not available"; return; }
+        b.innerHTML = b.dataset.type === "video" ? '<video controls preload="metadata" playsinline src="' + esc(x.signedUrl) + '"></video>' : '<a href="' + esc(x.signedUrl) + '" target="_blank" rel="noopener"><img alt="Review photo" src="' + esc(x.signedUrl) + '"></a>';
+      });
+    });
+    $("revList").querySelectorAll("[data-rev]").forEach(function (b) {
+      b.onclick = function () {
+        b.disabled = true;
+        sb.from("reviews").update({ status: b.dataset.to }).eq("id", b.dataset.rev).select("id, status, reviewed_at").single().then(function (r) {
+          if (r.error) { b.disabled = false; return toast(friendly(r.error), true); }
+          var rv = S.reviews.find(function (x) { return x.id === r.data.id; });
+          if (rv) { rv.status = r.data.status; rv.reviewed_at = r.data.reviewed_at; }
+          toast(r.data.status === "approved" ? "Published on the website." : "The review is not shown on the website.");
+          render();
+        });
+      };
+    });
+  }
+
   function renderTeam() {
     var openCount = {};
     S.requests.forEach(function (q) { if (q.assigned_to && q.status !== "completed" && q.status !== "not_qualified") openCount[q.assigned_to] = (openCount[q.assigned_to] || 0) + 1; });
