@@ -23,7 +23,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 
 | Path | What |
 |---|---|
-| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). Header: **Get estimated price** (→ `/estimate`, instant indicative price, nothing sent to the team) and **Submit sourcing request** (→ `#request`, the real request). Use these two names everywhere, including the client account. `#request` is the full 3-step request form (product → you & timing → account); the account is created at submit and the request travels in `pending_request` (same as `/account`); logged-in visitors insert directly. Supabase is loaded on the homepage for this |
+| `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). Header: **Get estimated price** (→ `/estimate`, instant indicative price, nothing sent to the team) and **Submit sourcing request** (→ `#request`, the real request). Use these two names everywhere, including the client account. `#request` is the 3-step request form: product (link, name, order type, quantity, pictures, specs) → contact (name, WhatsApp, city, selling status; no budget or arrival date) → email, checked with `account_exists`: existing account = password + log in, request inserted under it; new = choose a password, account created at submit and the request travels in `pending_request` (same as `/account`); logged-in visitors insert directly. Supabase is loaded on the homepage for this |
 | `estimate/index.html` | Public price estimator → "Request my exact quote" opens `/account` prefilled |
 | `account/index.html` | Client portal. Visitors without a session get the request form directly (guest mode); step 4 creates the account and the request travels in signup metadata `pending_request`, inserted by the `handle_new_user` trigger (works before email confirmation). Also: log in, reset password, my requests + tracking + unread badges, two-way conversation per request, profile |
 | `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management; request drawer with client conversation, status, assignment, next action, quotation, 40/60 payments with proof, costs & profit, notes, activity |
@@ -73,6 +73,8 @@ Supabase's default grants were revoked; only needed privileges are granted back.
 or function, add its RLS policy **and** explicit grants, then run the Supabase security advisor.
 The 5 advisor warnings about SECURITY DEFINER functions callable by `authenticated`
 (`staff_role`, `staff_can_see`, `can_see_request`, `staff_can_see_request`, `add_staff`) are intentional.
+So are the 2 warnings for `account_exists(email)` (callable without login): the homepage request form uses it
+at step 3 to ask "your password" or "choose a password"; it returns only true/false, which signup already reveals.
 
 Team onboarding: the person signs up on `/account`, then an admin adds them in CRM → Team (RPC `add_staff`).
 First admin: insert into `public.staff` from the SQL editor (see `docs/SETUP.md`).
