@@ -719,7 +719,7 @@
           var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
           return '<button type="button" class="card req" data-id="' + esc(q.id) + '">' +
             '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
-            '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
+            '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + (q.category ? esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' : '') + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
             pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) +
             (state.unread[q.id] ? '<div class="unread">' + state.unread[q.id] + ' new from our team</div>' : "") + '</button>';
         }).join("");
@@ -762,7 +762,7 @@
         '<h3 class="section-title">What you sent us</h3><dl class="dl">' +
         row("Category", esc(CATEGORY_LABELS[q.category] || q.category)) +
         row("Quantity", fmt.format(q.quantity) + " units") +
-        row("Estimated product value", "MAD " + fmt.format(q.estimated_value_mad)) +
+        row("Estimated product value", q.estimated_value_mad == null ? "" : "MAD " + fmt.format(q.estimated_value_mad)) +
         row("Target cost per unit", q.target_unit_cost_mad ? "MAD " + fmt.format(q.target_unit_cost_mad) : "") +
         row("Alibaba price per unit", q.alibaba_price_usd ? "USD " + q.alibaba_price_usd : "") +
         row("Weight per unit", q.unit_weight_g ? fmt.format(q.unit_weight_g) + " g" : "") +

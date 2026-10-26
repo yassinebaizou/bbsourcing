@@ -213,7 +213,7 @@ p{margin:0}
 
 /* request form */
 .req-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:28px;align-items:start}
-.card-form{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(24px,4vw,40px)}
+.card-form{scroll-margin-top:96px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(24px,4vw,40px)}
 .progress-head{display:flex;justify-content:space-between;font-size:14px;font-weight:600;margin-bottom:10px}
 .progress-head span:last-child{color:var(--muted)}
 .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:28px}
@@ -520,7 +520,7 @@ fieldset.field{border:0;margin:0;padding:0}
   </div>
 </section>
 
-<section class="section" id="request">
+<section class="section" id="request-section">
   <div class="wrap">
     <div class="head">
       <p class="kicker">Free request, no obligation</p>
@@ -528,7 +528,7 @@ fieldset.field{border:0;margin:0;padding:0}
       <p class="lead">Paste the product link, tell us how many you need, and create your free account to send it. We reply the same business day with the final price per unit, and you follow everything from your account. Just testing an idea? Use <a href="/estimate">Get estimated price</a> instead.</p>
     </div>
     <div class="req-grid">
-      <div class="card-form">
+      <div class="card-form" id="request">
         <form id="reqForm" novalidate>
           <div id="formBody">
             <div class="progress-head"><span id="stepLabel">Your product</span><span id="stepCount">Step 1 of 3</span></div>
@@ -538,40 +538,23 @@ fieldset.field{border:0;margin:0;padding:0}
               <legend class="sr-only">Step 1: your product</legend>
               <div class="fields">
                 <div class="field full">
-                  <label for="f-link">Product link</label>
+                  <label for="f-link">Product link (Alibaba, 1688, AliExpress…)</label>
                   <div class="link-box">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
-                    <input id="f-link" type="url" inputmode="url" placeholder="Paste the link: Alibaba, 1688, AliExpress, Amazon, TikTok…" aria-describedby="linkHint">
+                    <input id="f-link" type="url" inputmode="url" placeholder="https://www.alibaba.com/product-detail/…" aria-describedby="linkHint">
                   </div>
-                  <p class="hint" id="linkHint">No link? Add photos below instead.</p>
+                  <p class="hint" id="linkHint">No link? Add product pictures below instead.</p>
                 </div>
                 <div class="field full"><label for="f-prod">Product name or short description <span aria-hidden="true">*</span></label><input id="f-prod" type="text" maxlength="200" placeholder="e.g. Wireless earbuds with charging case"></div>
-                <div class="field">
-                  <label for="f-cat">Category <span aria-hidden="true">*</span></label>
-                  <select id="f-cat">
-                    <option value="">Select a category</option>
-                    <option value="gadget">Gadget (standard)</option>
-                    <option value="connected">Gadget with Bluetooth / WiFi</option>
-                    <option value="vibration">Product with vibration</option>
-                    <option value="textile">Textile &amp; clothing</option>
-                    <option value="home">Home &amp; kitchen</option>
-                    <option value="beauty">Beauty &amp; accessories</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <fieldset class="field"><legend>Order type</legend>
+                <fieldset class="field"><legend>Order type <span aria-hidden="true">*</span></legend>
                   <div class="radios">
                     <label><input type="radio" name="otype" value="new" checked> New product</label>
                     <label><input type="radio" name="otype" value="restock"> Restock</label>
                   </div>
                 </fieldset>
                 <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
-                <div class="field"><label for="f-value">Estimated product value, MAD <span aria-hidden="true">*</span></label><input id="f-value" type="number" min="0" inputmode="decimal" placeholder="e.g. 9000"><p class="hint">Quantity × unit price, before shipping. A rough number is fine.</p></div>
-                <div class="field"><label for="f-usd">Supplier price per unit, USD (optional)</label><input id="f-usd" type="number" min="0" step="0.01" inputmode="decimal"></div>
-                <div class="field"><label for="f-weight">Weight per unit, grams (optional)</label><input id="f-weight" type="number" min="0" step="1" inputmode="numeric"></div>
-                <div class="field full"><label for="f-img">Product photos (optional, up to 5)</label><input class="file" id="f-img" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="files-chips" id="filesChips"></div></div>
-                <div class="field full"><label for="f-specs">Colors, sizes, packaging, branding (optional)</label><textarea id="f-specs" rows="3" maxlength="3000"></textarea></div>
-                <p class="note full" id="minNote" hidden style="margin:0">This is below our minimum order (MAD 5,000 or 100 units). You can still send it and we will review it.</p>
+                <div class="field full"><label for="f-img">Product pictures (up to 5)</label><input class="file" id="f-img" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="files-chips" id="filesChips"></div></div>
+                <div class="field full"><label for="f-specs">Specifications (optional)</label><textarea id="f-specs" rows="3" maxlength="3000" placeholder="Colors, sizes, materials, packaging, branding…"></textarea></div>
               </div>
             </fieldset>
 
@@ -804,7 +787,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       if (s.type === 'video') { const v = el('video', { src: s.src, controls: '', preload: 'metadata', playsinline: '' }); if (s.poster) v.setAttribute('poster', s.poster); fig.appendChild(v); }
       else {
         const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': s.full || s.src, 'aria-label': 'Enlarge photo' });
-        btn.appendChild(el('img', { src: s.src, alt: title || desc || 'Shipment received in Morocco', loading: 'lazy' }));
+        btn.appendChild(el('img', { src: s.src, alt: title || desc || 'Shipment received in Morocco' }));
         fig.appendChild(btn);
       }
       if (title || desc) {
@@ -825,7 +808,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       if (t.video) card.appendChild(el('video', { src: t.video, controls: '', preload: 'metadata', playsinline: '' }));
       else if (t.image) {
         const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': t.image, 'aria-label': 'Enlarge screenshot' });
-        btn.appendChild(el('img', { src: t.image, alt: t.alt || 'Client testimonial screenshot', loading: 'lazy' }));
+        btn.appendChild(el('img', { src: t.image, alt: t.alt || 'Client testimonial screenshot' }));
         card.appendChild(btn);
       }
       if (t.quote) card.appendChild(el('blockquote', {}, '“' + t.quote + '”'));
@@ -857,7 +840,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   const sb = window.supabase && DDP.SUPABASE_URL ? window.supabase.createClient(DDP.SUPABASE_URL, DDP.SUPABASE_ANON_KEY) : null;
   const MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
   const LABELS = ['Your product', 'You and your timing', 'Your account'];
-  let step = 1, files = [], session = null, acctMode = 'new', valueTouched = false;
+  let step = 1, files = [], session = null, acctMode = 'new';
 
   if (sb) sb.auth.getSession().then(({ data }) => {
     session = data && data.session;
@@ -924,19 +907,6 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   $('tabNew').addEventListener('click', () => setAcct('new'));
   $('tabLogin').addEventListener('click', () => setAcct('login'));
 
-  function checkMinimum() {
-    const q = Number($('f-qty').value), v = Number($('f-value').value);
-    $('minNote').hidden = !(q > 0 && $('f-value').value !== '' && q < 100 && v < 5000);
-  }
-  function suggestValue() {
-    const q = Number($('f-qty').value), usd = Number($('f-usd').value);
-    if (!valueTouched && q > 0 && usd > 0) $('f-value').value = Math.round(q * usd * 10);
-    checkMinimum();
-  }
-  $('f-qty').addEventListener('input', suggestValue);
-  $('f-usd').addEventListener('input', suggestValue);
-  $('f-value').addEventListener('input', () => { valueTouched = true; checkMinimum(); });
-
   function renderFiles() {
     const box = $('filesChips'); box.innerHTML = '';
     files.forEach((f, i) => {
@@ -965,11 +935,9 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (n === 1) {
       const link = $('f-link').value.trim();
       need('f-link', !link || validLink(link), 'The product link should start with https://');
-      need('f-link', link || files.length, 'Add a product link or at least one photo.');
+      need('f-link', link || files.length, 'Add the product link or at least one picture.');
       need('f-prod', $('f-prod').value.trim().length >= 2, 'Enter the product name or a short description.');
-      need('f-cat', $('f-cat').value, 'Choose a category.');
       need('f-qty', Number($('f-qty').value) >= 1, 'Enter the quantity you need.');
-      need('f-value', $('f-value').value !== '' && Number($('f-value').value) >= 0, 'Enter the estimated product value in MAD.');
     }
     if (n === 2) {
       need('f-name', $('f-name').value.trim().length >= 2, 'Enter your full name.');
@@ -995,15 +963,10 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   }
 
   function buildRow() {
-    const num = (id) => ($(id).value === '' ? null : Number($(id).value));
     return {
       product_name: $('f-prod').value.trim(),
-      category: $('f-cat').value,
       product_link: $('f-link').value.trim() || null,
       quantity: parseInt($('f-qty').value, 10),
-      estimated_value_mad: Number($('f-value').value),
-      alibaba_price_usd: num('f-usd'),
-      unit_weight_g: num('f-weight'),
       specifications: $('f-specs').value.trim() || null,
       order_type: (document.querySelector('input[name="otype"]:checked') || {}).value || 'new',
       budget_range: $('f-budget').value,
@@ -1049,7 +1012,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     finish('signedin', { code: r.data.code, failed });
   }
 
-  $('nextBtn').addEventListener('click', () => { if (validate(step)) { showStep(step + 1); window.scrollTo({ top: $('request').offsetTop - 80 }); } });
+  $('nextBtn').addEventListener('click', () => { if (validate(step)) { showStep(step + 1); $('request').scrollIntoView({ block: 'start' }); } });
   $('backBtn').addEventListener('click', () => showStep(step - 1));
   $('reqForm').addEventListener('keydown', (e) => { if (e.key === 'Enter' && step < 3 && e.target.tagName === 'INPUT') { e.preventDefault(); $('nextBtn').click(); } });
 
@@ -1092,6 +1055,23 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       btn.disabled = false; btn.textContent = sendLabel();
     }
   });
+  // "Submit sourcing request" lands on the form and puts the cursor in the first field.
+  const formTarget = () => $('request').getBoundingClientRect().top + window.scrollY - document.querySelector('.site-header').offsetHeight - 16;
+  document.querySelectorAll('a[href="#request"]').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: formTarget(), behavior: 'smooth' });
+    const atForm = step === 1 && !$('done').classList.contains('show');
+    let finished = false;
+    const land = () => {
+      if (finished) return;
+      finished = true;
+      // Content above can grow while scrolling (pictures loading): land exactly on the form.
+      if (Math.abs(window.scrollY - formTarget()) > 8) window.scrollTo({ top: formTarget(), behavior: 'instant' });
+      if (atForm) $('f-link').focus({ preventScroll: true });
+    };
+    window.addEventListener('scrollend', land, { once: true });
+    setTimeout(land, 1500);
+  }));
   showStep(1);
 })();
 
