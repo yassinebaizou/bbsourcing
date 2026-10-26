@@ -16,6 +16,11 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 - `assets/config.js` holds the Supabase URL + **publishable** key (safe to publish).
   Never commit a secret / service_role key.
 - `assets/vendor/supabase.js` = supabase-js v2.118.0 UMD build (self-hosted, `window.supabase`).
+- **Speed / security headers** (`vercel.json`): Content-Security-Policy allows only this site, Google Fonts and the
+  Supabase project. **If you add any external script, image, font or API, add its host to the CSP or it is blocked.**
+  Static files are cached (vendor 7 days, proof photos 30 days, ui.css/config.js 1 hour). The homepage loads
+  `supabase.js` lazily (`loadSupabase()`): after the page is shown or on the first focus in the request form.
+  Proof photos are WebP (`assets/proof/*.webp`, originals kept as .jpg), lazy-loaded with width/height set.
 - `api/estimate.js` = Vercel serverless function for the price estimator (pricing parameters
   stay server-side; do not move them to the browser).
 
@@ -79,6 +84,10 @@ The 5 advisor warnings about SECURITY DEFINER functions callable by `authenticat
 (`staff_role`, `staff_can_see`, `can_see_request`, `staff_can_see_request`, `add_staff`) are intentional.
 So are the 2 warnings for `account_exists(email)` (callable without login): the homepage request form uses it
 at step 3 to ask "your password" or "choose a password"; it returns only true/false, which signup already reveals.
+Same for `published_reviews()` and `review_media_published(name)` (callable without login): the homepage reads approved
+reviews and their media with them; they expose nothing about unapproved reviews or accounts.
+Links typed by clients (`requests.product_link`, `profiles.store_link`) must be http(s) (DB check constraints);
+pages only make a link clickable through `safeUrl()`. `request-files` accepts pictures and PDF, 10 MB max.
 
 Team onboarding: the person signs up on `/account`, then an admin adds them in CRM → Team (RPC `add_staff`).
 First admin: insert into `public.staff` from the SQL editor (see `docs/SETUP.md`).

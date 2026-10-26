@@ -12,7 +12,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap" rel="stylesheet">
 <style>
 :root{
   --navy:#0B1220; --navy-2:#111A2E; --navy-line:#1F2A40; --navy-soft:#2A3650;
@@ -694,8 +694,7 @@ fieldset.field{border:0;margin:0;padding:0}
   <p class="lightbox-hint">Press Esc or click anywhere to close</p>
 </div>
 
-<script src="/assets/config.js"></script>
-<script src="/assets/vendor/supabase.js"></script>
+<script src="/assets/config.js" defer></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)
@@ -713,8 +712,8 @@ const CONFIG = {
 // `full` is an optional larger version opened by the click-to-zoom lightbox.
 // While this list is empty, the "Shipments" section stays hidden.
 const SHIPMENTS = [
-  { type: 'image', src: 'assets/proof/shipment-casablanca-01-card.jpg', full: 'assets/proof/shipment-casablanca-01.jpg', caption: 'Client order collected in Casablanca||Five DHL express air parcels, customs cleared, loaded for door delivery.' },
-  { type: 'image', src: 'assets/proof/shipment-dhl-casablanca-02-card.jpg', full: 'assets/proof/shipment-dhl-casablanca-02.jpg', caption: 'Collected at the DHL hub, Casablanca||Customs-checked parcels straight from China, ready for door delivery.' }
+  { type: 'image', src: 'assets/proof/shipment-casablanca-01-card.webp', full: 'assets/proof/shipment-casablanca-01.webp', w: 800, h: 600, caption: 'Client order collected in Casablanca||Five DHL express air parcels, customs cleared, loaded for door delivery.' },
+  { type: 'image', src: 'assets/proof/shipment-dhl-casablanca-02-card.webp', full: 'assets/proof/shipment-dhl-casablanca-02.webp', w: 800, h: 600, caption: 'Collected at the DHL hub, Casablanca||Customs-checked parcels straight from China, ready for door delivery.' }
 ];
 
 // Real, verified customer reviews only (with the customer's permission).
@@ -725,7 +724,9 @@ const SHIPMENTS = [
 // TODO: replace name with the client's real name once she confirms in writing she agrees to be named publicly.
 const TESTIMONIALS = [
   {
-    image: 'assets/proof/client-feedback-01.jpg',
+    image: 'assets/proof/client-feedback-01-card.webp',
+    full: 'assets/proof/client-feedback-01.webp',
+    w: 800, h: 430,
     alt: 'WhatsApp testimonial, 16 August 2026. Client: "It was good, Hamdolah je suis satisfaite par rapport le produit, la communication et le service (avant et après). L’idée de faire l’importation chaque 15jrs, c’est une très bonne idée pour garder le client avec vous, et si j’ai des remarques après angolhom lik tqt"',
     name: 'Verified DDPSourcing client',
     store: 'eCommerce seller',
@@ -760,7 +761,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       if (s.type === 'video') { const v = el('video', { src: s.src, controls: '', preload: 'metadata', playsinline: '' }); if (s.poster) v.setAttribute('poster', s.poster); fig.appendChild(v); }
       else {
         const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': s.full || s.src, 'aria-label': 'Enlarge photo' });
-        btn.appendChild(el('img', { src: s.src, alt: title || desc || 'Shipment received in Morocco' }));
+        btn.appendChild(el('img', Object.assign({ src: s.src, alt: title || desc || 'Shipment received in Morocco', loading: 'lazy', decoding: 'async' }, s.w ? { width: s.w, height: s.h } : {})));
         fig.appendChild(btn);
       }
       if (title || desc) {
@@ -780,8 +781,8 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       const card = el('article', { class: 'review' });
       if (t.video) card.appendChild(el('video', { src: t.video, controls: '', preload: 'metadata', playsinline: '' }));
       else if (t.image) {
-        const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': t.image, 'aria-label': 'Enlarge screenshot' });
-        btn.appendChild(el('img', { src: t.image, alt: t.alt || 'Client testimonial screenshot' }));
+        const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': t.full || t.image, 'aria-label': 'Enlarge screenshot' });
+        btn.appendChild(el('img', Object.assign({ src: t.image, alt: t.alt || 'Client testimonial screenshot', loading: 'lazy', decoding: 'async' }, t.w ? { width: t.w, height: t.h } : {})));
         card.appendChild(btn);
       }
       if (t.quote) card.appendChild(el('blockquote', {}, '“' + t.quote + '”'));
@@ -809,11 +810,48 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   // The request is always sent under the client's account. A new visitor creates the account at
   // step 3: the request travels in the signup metadata (pending_request) and the database creates it,
   // even before the email is confirmed.
-  const DDP = window.DDP_CONFIG || {};
-  const sb = window.supabase && DDP.SUPABASE_URL ? window.supabase.createClient(DDP.SUPABASE_URL, DDP.SUPABASE_ANON_KEY) : null;
+  // Speed: the database library (≈220 KB) is not needed to show the page. It loads once the page is
+  // shown, or as soon as the visitor starts the request form, whichever comes first.
+  let sb = null, sbLoading = null;
+  function loadSupabase() {
+    if (sbLoading) return sbLoading;
+    sbLoading = new Promise((resolve) => {
+      const ready = () => {
+        const cfg = window.DDP_CONFIG || {};
+        resolve(window.supabase && cfg.SUPABASE_URL ? (sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)) : null);
+      };
+      if (window.supabase) return ready();
+      const tag = document.createElement('script');
+      tag.src = '/assets/vendor/supabase.js'; tag.async = true;
+      tag.onload = ready; tag.onerror = () => resolve(null);
+      document.head.appendChild(tag);
+    });
+    return sbLoading;
+  }
+  $('reqForm').addEventListener('focusin', () => loadSupabase().then(startAccountFeatures), { once: true });
+  const whenIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1200));
+  window.addEventListener('load', () => whenIdle(() => loadSupabase().then(startAccountFeatures)));
+
+  let featuresStarted = false;
+  function startAccountFeatures(client) {
+    if (!client || featuresStarted) return;
+    featuresStarted = true;
+    loadPublishedReviews();
+    sb.auth.getSession().then(({ data }) => {
+      session = data && data.session;
+      if (!session) return;
+      ['navAccount', 'headerLogin'].forEach((id) => { $(id).textContent = 'My account'; $(id).href = '/account'; });
+      if (step === 3) showStep(3);
+      sb.from('profiles').select('full_name, whatsapp, city, selling_status, business_name').eq('id', session.user.id).single().then(({ data: p }) => {
+        if (!p) return;
+        const fill = (id, v) => { if (v && !$(id).value) $(id).value = v; };
+        fill('f-name', p.full_name); fill('f-wa', p.whatsapp); fill('f-city', p.city); fill('f-selling', p.selling_status); fill('f-store', p.business_name);
+      });
+    });
+  }
 
   // Reviews written by clients in their account and published by the team (CRM → Reviews).
-  if (sb) sb.rpc('published_reviews').then(async ({ data }) => {
+  const loadPublishedReviews = () => sb.rpc('published_reviews').then(async ({ data }) => {
     const list = data || [];
     if (!list.length) return;
     const paths = list.map((r) => r.media_path).filter(Boolean);
@@ -828,7 +866,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       if (url && r.media_type === 'video') card.appendChild(el('video', { src: url, controls: '', preload: 'metadata', playsinline: '' }));
       else if (url) {
         const btn = el('button', { type: 'button', class: 'zoom-trigger', 'data-zoom': url, 'aria-label': 'Enlarge photo' });
-        btn.appendChild(el('img', { src: url, alt: r.headline, class: 'review-photo' }));
+        btn.appendChild(el('img', { src: url, alt: r.headline, class: 'review-photo', loading: 'lazy', decoding: 'async' }));
         card.appendChild(btn);
       }
       card.appendChild(el('h3', {}, r.headline));
@@ -846,17 +884,6 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   const MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
   const LABELS = ['Your product', 'You and your timing', 'Your account'];
   let step = 1, files = [], session = null, acctMode = null; // acctMode: null (email not checked yet), 'new' or 'login'
-
-  if (sb) sb.auth.getSession().then(({ data }) => {
-    session = data && data.session;
-    if (!session) return;
-    ['navAccount', 'headerLogin'].forEach((id) => { $(id).textContent = 'My account'; $(id).href = '/account'; });
-    sb.from('profiles').select('full_name, whatsapp, city, selling_status, business_name').eq('id', session.user.id).single().then(({ data: p }) => {
-      if (!p) return;
-      const fill = (id, v) => { if (v && !$(id).value) $(id).value = v; };
-      fill('f-name', p.full_name); fill('f-wa', p.whatsapp); fill('f-city', p.city); fill('f-selling', p.selling_status); fill('f-store', p.business_name);
-    });
-  });
 
   function normWa(v) {
     let s = String(v || '').replace(/[\s\-().]/g, '');
@@ -1033,7 +1060,10 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (step !== 3) return;
     for (const n of [1, 2]) if (!validate(n)) return showStep(n), validate(n);
     if (!validate(3)) return;
-    if (!sb) return showErrors(['The request form is not available right now. Please try again in a few minutes, or contact us on WhatsApp.']);
+    const btnWait = $('submitBtn'); btnWait.disabled = true;
+    const client = await loadSupabase();
+    btnWait.disabled = false;
+    if (!client) return showErrors(['The request form is not available right now. Please try again in a few minutes, or contact us on WhatsApp.']);
     if (!session && !acctMode) {
       const b = $('submitBtn'); b.disabled = true; b.textContent = 'Checking…';
       await checkEmail();

@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   .top{background:var(--navy);color:var(--white)}
@@ -455,6 +455,8 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  // Only http(s) links are ever made clickable (a "javascript:" link would run code).
+  function safeUrl(u) { return /^https?:\/\/[^\s"'<>]+$/i.test(String(u || "").trim()) ? String(u).trim() : ""; }
   function msg(el, type, text) { el.innerHTML = text ? '<div class="alert alert-' + type + '">' + esc(text) + "</div>" : ""; }
   function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
@@ -826,7 +828,7 @@
         row("Delivery city", esc(q.delivery_city)) +
         row("Budget", esc(q.budget_range)) +
         row("Desired arrival", esc(q.urgency)) +
-        row("Product link", q.product_link ? '<a href="' + esc(q.product_link) + '" target="_blank" rel="noopener nofollow">Open link</a>' : "") +
+        row("Product link", safeUrl(q.product_link) ? '<a href="' + esc(safeUrl(q.product_link)) + '" target="_blank" rel="noopener nofollow">Open link</a>' : "") +
         row("Specifications", esc(q.specifications)) +
         row("Notes", esc(q.client_notes)) +
         "</dl>" + (files.length ? '<h3 class="section-title">Images</h3><div class="thumbs" id="thumbs"></div>' : "") + "</div>" +

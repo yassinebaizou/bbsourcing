@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/ui.css">
 <style>
   body{font-size:14.5px}
@@ -518,6 +518,8 @@
     var s = (name || email || "?").trim().split(/\s+/);
     return ((s[0] || "?")[0] + (s.length > 1 ? s[s.length - 1][0] : "")).toUpperCase();
   }
+  // Only http(s) links are ever made clickable (a "javascript:" link would run code).
+  function safeUrl(u) { return /^https?:\/\/[^\s"'<>]+$/i.test(String(u || "").trim()) ? String(u).trim() : ""; }
   function dShort(iso) { return iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""; }
   function dTime(iso) { return iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""; }
   function waLink(n) { var d = String(n || "").replace(/\D/g, ""); return d ? "https://wa.me/" + d : ""; }
@@ -1331,7 +1333,7 @@
       '<p class="hint" style="margin-top:10px">' + (c.first ? "First order " + dShort(c.first) + " · last order " + dShort(c.last) : "No confirmed order yet") + "</p></div>";
     h += '<div class="sec"><h3>Profile</h3><dl class="dl">' + dd("Email", esc(p.email)) + dd("WhatsApp", esc(p.whatsapp)) + dd("City", esc(p.city)) +
       dd("Selling status", esc(SELLING[p.selling_status] || "")) + dd("Business", esc(p.business_name)) +
-      dd("Store link", p.store_link ? '<a href="' + esc(p.store_link) + '" target="_blank" rel="noopener nofollow">Open</a>' : "") +
+      dd("Store link", safeUrl(p.store_link) ? '<a href="' + esc(safeUrl(p.store_link)) + '" target="_blank" rel="noopener nofollow">Open</a>' : esc(p.store_link || "")) +
       dd("Client since", p.created_at ? dShort(p.created_at) : "") + "</dl></div>";
     h += '<div class="sec"><h3>Requests and orders</h3>' + (c.reqs.length ? '<div class="table-wrap"><table class="compact" style="min-width:480px"><thead><tr><th>Request</th><th>Product</th><th>Status</th><th>Payment</th><th class="num">Quote</th></tr></thead><tbody id="clientReqs">' +
       c.reqs.map(function (q) { return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + "</td><td>" + esc(q.product_name) + "</td><td>" + statusPill(q.status) + "</td><td>" + payCell(q) + "</td><td class='num'>" + (q.quote_amount_mad ? money(q.quote_amount_mad) : "—") + "</td></tr>"; }).join("") +
@@ -1428,7 +1430,7 @@
       dd("Budget", esc(q.budget_range)) +
       dd("Desired arrival", esc(q.urgency)) +
       dd("Delivery city", esc(q.delivery_city)) +
-      dd("Product link", q.product_link ? '<a href="' + esc(q.product_link) + '" target="_blank" rel="noopener nofollow">' + esc(q.product_link.slice(0, 60)) + (q.product_link.length > 60 ? "…" : "") + "</a>" : "", true) +
+      dd("Product link", safeUrl(q.product_link) ? '<a href="' + esc(safeUrl(q.product_link)) + '" target="_blank" rel="noopener nofollow">' + esc(q.product_link.slice(0, 60)) + (q.product_link.length > 60 ? "…" : "") + "</a>" : "", true) +
       dd("Specifications", esc(q.specifications), true) +
       dd("Client notes", esc(q.client_notes), true) +
       '</dl><div class="thumbs" id="dFiles" style="margin-top:12px"></div></div>';
