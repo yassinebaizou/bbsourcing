@@ -204,12 +204,12 @@
     <section id="appView" hidden>
       <div class="page-head">
         <h1 id="pageTitle">My requests</h1>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-secondary" href="/estimate" id="estTop">Get estimation</a><button class="btn btn-primary" type="button" id="newReqTop">Get my quote</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-secondary" href="/estimate" id="estTop" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a><button class="btn btn-primary" type="button" id="newReqTop">Submit sourcing request</button></div>
       </div>
       <nav class="subnav" role="tablist">
         <button type="button" role="tab" data-tab="requests" aria-selected="true">My requests</button>
-        <button type="button" role="tab" data-tab="new" aria-selected="false">Get my quote</button>
-        <button type="button" role="tab" data-tab="estimate" aria-selected="false">Get estimation</button>
+        <button type="button" role="tab" data-tab="new" aria-selected="false">Submit sourcing request</button>
+        <button type="button" role="tab" data-tab="estimate" aria-selected="false">Get estimated price</button>
         <button type="button" role="tab" data-tab="profile" aria-selected="false">My profile</button>
       </nav>
 
@@ -541,7 +541,7 @@
     document.querySelectorAll(".subnav button").forEach(function (b) {
       b.setAttribute("aria-selected", b.dataset.tab === name || (name === "detail" && b.dataset.tab === "requests"));
     });
-    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Get my quote", sent: "Request sent", profile: "My profile" }[name];
+    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Submit sourcing request", sent: "Request sent", profile: "My profile" }[name];
     $("newReqTop").hidden = name === "new" || name === "sent";
     $("estTop").hidden = state.guest;
     window.scrollTo({ top: 0 });
@@ -711,7 +711,7 @@
           if (!reads[m.request_id] || new Date(m.created_at) > new Date(reads[m.request_id])) state.unread[m.request_id] = (state.unread[m.request_id] || 0) + 1;
         });
         if (!state.requests.length) {
-          list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Sure about a product? Ask for your final door-to-door quotation. Just testing an idea? Get an instant estimation first.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="emptyNew">Get my quote</button><a class="btn btn-secondary" href="/estimate">Get estimation</a></div></div>';
+          list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Sure about a product? Submit a sourcing request for your final door-to-door quote. Just testing an idea? Get an estimated price first.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="emptyNew">Submit sourcing request</button><a class="btn btn-secondary" href="/estimate">Get estimated price</a></div></div>';
           $("emptyNew").onclick = function () { openTab("new"); };
           return;
         }
