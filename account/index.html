@@ -228,7 +228,7 @@
           <span>Already a client? <button type="button" class="link" id="guestLogin">Log in</button></span>
         </div>
         <div class="steps" id="steps">
-          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Budget and timing</div><div id="step4Label" hidden>4. Your account</div>
+          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Last details</div><div id="step4Label" hidden>4. Your account</div>
         </div>
         <form class="card form-card" id="reqForm" novalidate>
           <div id="reqMsg"></div>
@@ -287,32 +287,8 @@
           </div>
 
           <div data-step="3" hidden>
-            <h2>Budget and timing</h2>
-            <p class="sub">This helps us prepare the right quotation.</p>
-            <div class="grid-2">
-              <div class="field">
-                <label for="f_budget">Estimated sourcing budget</label>
-                <select id="f_budget" required>
-                  <option value="">Select a range</option>
-                  <option>Below MAD 5,000</option>
-                  <option>MAD 5,000 – 10,000</option>
-                  <option>MAD 10,000 – 25,000</option>
-                  <option>MAD 25,000 – 50,000</option>
-                  <option>MAD 50,000 – 100,000</option>
-                  <option>Over MAD 100,000</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="f_urgency">Desired arrival</label>
-                <select id="f_urgency" required>
-                  <option value="">Select</option>
-                  <option>As soon as possible</option>
-                  <option>Within 1 month</option>
-                  <option>Within 2 months</option>
-                  <option>Flexible</option>
-                </select>
-              </div>
-            </div>
+            <h2>Last details</h2>
+            <p class="sub">Anything else that helps us prepare the right quotation.</p>
             <div class="field"><label for="f_notes">Additional notes <span class="opt">(optional)</span></label><textarea id="f_notes" maxlength="3000"></textarea></div>
             <label class="check"><input type="checkbox" id="f_consent"> <span>I agree to be contacted on WhatsApp about this request.</span></label>
             <label class="check"><input type="checkbox" id="f_privacy"> <span>I accept the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
@@ -964,7 +940,7 @@
       ok = req("f_qty", function (v) { return parseInt(v, 10) > 0; }) & req("f_value", function (v) { return v !== "" && parseFloat(v) >= 0; }) & req("f_city");
     }
     if (n === 3) {
-      ok = req("f_budget") & req("f_urgency");
+      ok = true;
       if (ok && (!$("f_consent").checked || !$("f_privacy").checked)) {
         msg($("reqMsg"), "error", "Please accept WhatsApp contact and the Privacy Policy to send your request.");
         return false;
@@ -1012,8 +988,6 @@
       target_unit_cost_mad: num("f_target"),
       delivery_city: $("f_city").value.trim(),
       order_type: document.querySelector('input[name="f_type"]:checked').value,
-      budget_range: $("f_budget").value,
-      urgency: $("f_urgency").value,
       client_notes: $("f_notes").value.trim() || null,
       consent_whatsapp: true,
       privacy_accepted: true

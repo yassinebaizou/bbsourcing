@@ -244,9 +244,7 @@ fieldset.field{border:0;margin:0;padding:0}
 .form-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;border-top:1px solid var(--line);padding-top:24px;margin-top:28px;flex-wrap:wrap}
 .form-foot .spacer{font-size:14px;color:var(--muted)}
 .privacy-line{font-size:13px;color:var(--muted);margin-top:16px}
-.acct-tabs{display:flex;background:var(--cloud);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:22px}
-.acct-tabs button{flex:1;border:0;background:none;padding:11px;border-radius:9px;font:600 15px var(--font);color:var(--slate);cursor:pointer}
-.acct-tabs button[aria-selected=true]{background:var(--white);color:var(--navy);box-shadow:0 1px 3px rgba(11,18,32,.12)}
+.acct-status{margin:0;background:var(--cloud);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-size:15px}
 .signed-in{background:var(--cloud);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;font-size:15px}
 .files-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .files-chips button{background:none;border:0;cursor:pointer;font-size:15px;line-height:1;color:var(--slate);padding:0 2px}
@@ -573,28 +571,6 @@ fieldset.field{border:0;margin:0;padding:0}
                     <option value="scaling">Scaling an established store</option>
                   </select>
                 </div>
-                <div class="field">
-                  <label for="f-budget">Sourcing budget <span aria-hidden="true">*</span></label>
-                  <select id="f-budget">
-                    <option value="">Select a range</option>
-                    <option>Below MAD 5,000</option>
-                    <option>MAD 5,000 – 10,000</option>
-                    <option>MAD 10,000 – 25,000</option>
-                    <option>MAD 25,000 – 50,000</option>
-                    <option>MAD 50,000 – 100,000</option>
-                    <option>Over MAD 100,000</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="f-urgency">Desired arrival <span aria-hidden="true">*</span></label>
-                  <select id="f-urgency">
-                    <option value="">Select</option>
-                    <option>As soon as possible</option>
-                    <option>Within 1 month</option>
-                    <option>Within 2 months</option>
-                    <option>Flexible</option>
-                  </select>
-                </div>
                 <div class="field full"><label for="f-store">Business or store name (optional)</label><input id="f-store" type="text" maxlength="200"></div>
                 <div class="field full"><label for="f-notes">Anything else we should know? (optional)</label><textarea id="f-notes" rows="2" maxlength="3000"></textarea></div>
                 <label class="check full"><input type="checkbox" id="consent-wa"> I agree to be contacted on WhatsApp about this request.</label>
@@ -606,18 +582,11 @@ fieldset.field{border:0;margin:0;padding:0}
               <legend class="sr-only">Step 3: your account</legend>
               <div id="signedIn" class="signed-in" hidden></div>
               <div id="acctBox">
-                <p style="margin:0 0 16px;color:var(--slate)">Create your free account to send the request. You follow your quotation, payments and delivery there, and talk with our team.</p>
-                <div class="acct-tabs" role="tablist">
-                  <button type="button" role="tab" id="tabNew" aria-selected="true">Create my account</button>
-                  <button type="button" role="tab" id="tabLogin" aria-selected="false">I already have one</button>
-                </div>
-                <div class="fields" id="newAcct">
+                <p style="margin:0 0 16px;color:var(--slate)">Enter your email. If you already have a DDPSourcing account, the request is added to it. If not, we create your free account, where you follow your quotation, payments and delivery.</p>
+                <div class="fields">
                   <div class="field full"><label for="a-email">Email <span aria-hidden="true">*</span></label><input id="a-email" type="email" autocomplete="email"></div>
-                  <div class="field full"><label for="a-pass">Choose a password <span aria-hidden="true">*</span></label><input id="a-pass" type="password" autocomplete="new-password" minlength="8"><p class="hint">At least 8 characters.</p></div>
-                </div>
-                <div class="fields" id="oldAcct" hidden>
-                  <div class="field full"><label for="l-email">Email</label><input id="l-email" type="email" autocomplete="email"></div>
-                  <div class="field full"><label for="l-pass">Password</label><input id="l-pass" type="password" autocomplete="current-password"><p class="hint"><a href="/account?login">Forgot your password?</a></p></div>
+                  <p class="acct-status full" id="acctStatus" hidden></p>
+                  <div class="field full" id="passBox" hidden><label for="a-pass" id="passLabel">Password</label><input id="a-pass" type="password"><p class="hint" id="passHint"></p></div>
                 </div>
               </div>
             </fieldset>
@@ -840,7 +809,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   const sb = window.supabase && DDP.SUPABASE_URL ? window.supabase.createClient(DDP.SUPABASE_URL, DDP.SUPABASE_ANON_KEY) : null;
   const MAX_FILES = 5, MAX_SIZE = 5 * 1024 * 1024;
   const LABELS = ['Your product', 'You and your timing', 'Your account'];
-  let step = 1, files = [], session = null, acctMode = 'new';
+  let step = 1, files = [], session = null, acctMode = null; // acctMode: null (email not checked yet), 'new' or 'login'
 
   if (sb) sb.auth.getSession().then(({ data }) => {
     session = data && data.session;
@@ -881,7 +850,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     (fields.length && $(fields[0]) ? $(fields[0]) : box).focus();
   }
 
-  function sendLabel() { return session ? 'Send my request' : acctMode === 'login' ? 'Log in and send my request' : 'Create my account and send'; }
+  function sendLabel() { return session ? 'Send my request' : acctMode === 'login' ? 'Log in and send my request' : acctMode === 'new' ? 'Create my account and send' : 'Continue'; }
   function showStep(n) {
     step = n;
     [1, 2, 3].forEach((i) => { $('step' + i).hidden = i !== n; });
@@ -897,15 +866,30 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     }
     clearErrors();
   }
+  // After the email is checked: ask for the existing password, or for a new one.
   function setAcct(mode) {
     acctMode = mode;
-    $('newAcct').hidden = mode !== 'new'; $('oldAcct').hidden = mode !== 'login';
-    $('tabNew').setAttribute('aria-selected', mode === 'new'); $('tabLogin').setAttribute('aria-selected', mode === 'login');
+    $('passBox').hidden = !mode; $('acctStatus').hidden = !mode;
+    if (mode === 'login') {
+      $('acctStatus').textContent = 'Welcome back. You already have an account: enter your password and the request is added to it.';
+      $('passLabel').textContent = 'Your password'; $('a-pass').autocomplete = 'current-password';
+      $('passHint').innerHTML = '<a href="/account?login">Forgot your password?</a>';
+    } else if (mode === 'new') {
+      $('acctStatus').textContent = 'No account yet with this email. Choose a password to create your free account and send the request.';
+      $('passLabel').textContent = 'Choose a password'; $('a-pass').autocomplete = 'new-password';
+      $('passHint').textContent = 'At least 8 characters.';
+    }
     $('submitBtn').textContent = sendLabel();
     clearErrors();
   }
-  $('tabNew').addEventListener('click', () => setAcct('new'));
-  $('tabLogin').addEventListener('click', () => setAcct('login'));
+  $('a-email').addEventListener('input', () => { if (acctMode) { $('a-pass').value = ''; setAcct(null); } });
+  async function checkEmail() {
+    const email = $('a-email').value.trim();
+    const r = await sb.rpc('account_exists', { p_email: email });
+    // If the check fails, signup still detects an existing account and switches to log in.
+    setAcct(!r.error && r.data === true ? 'login' : 'new');
+    $('a-pass').focus();
+  }
 
   function renderFiles() {
     const box = $('filesChips'); box.innerHTML = '';
@@ -944,19 +928,13 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       need('f-wa', normWa($('f-wa').value), 'Enter a valid WhatsApp number, for example +212 6 12 34 56 78.');
       need('f-city', $('f-city').value.trim(), 'Enter your delivery city.');
       need('f-selling', $('f-selling').value, 'Choose your selling status.');
-      need('f-budget', $('f-budget').value, 'Choose your sourcing budget.');
-      need('f-urgency', $('f-urgency').value, 'Choose when you need the goods.');
       need('consent-wa', $('consent-wa').checked, 'Agree to be contacted on WhatsApp so we can send your price.');
       need('consent-privacy', $('consent-privacy').checked, 'Accept the Privacy Policy.');
     }
     if (n === 3 && !session) {
-      if (acctMode === 'new') {
-        need('a-email', /^\S+@\S+\.\S+$/.test($('a-email').value.trim()), 'Enter a valid email address.');
-        need('a-pass', $('a-pass').value.length >= 8, 'Choose a password with at least 8 characters.');
-      } else {
-        need('l-email', /^\S+@\S+\.\S+$/.test($('l-email').value.trim()), 'Enter your email address.');
-        need('l-pass', $('l-pass').value.length > 0, 'Enter your password.');
-      }
+      need('a-email', /^\S+@\S+\.\S+$/.test($('a-email').value.trim()), 'Enter a valid email address.');
+      if (acctMode === 'new') need('a-pass', $('a-pass').value.length >= 8, 'Choose a password with at least 8 characters.');
+      if (acctMode === 'login') need('a-pass', $('a-pass').value.length > 0, 'Enter your password.');
     }
     if (errs.length) { showErrors(errs, bad); return false; }
     return true;
@@ -969,8 +947,6 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       quantity: parseInt($('f-qty').value, 10),
       specifications: $('f-specs').value.trim() || null,
       order_type: (document.querySelector('input[name="otype"]:checked') || {}).value || 'new',
-      budget_range: $('f-budget').value,
-      urgency: $('f-urgency').value,
       client_notes: $('f-notes').value.trim() || null,
       delivery_city: $('f-city').value.trim(),
       consent_whatsapp: true,
@@ -1022,13 +998,19 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     for (const n of [1, 2]) if (!validate(n)) return showStep(n), validate(n);
     if (!validate(3)) return;
     if (!sb) return showErrors(['The request form is not available right now. Please try again in a few minutes, or contact us on WhatsApp.']);
+    if (!session && !acctMode) {
+      const b = $('submitBtn'); b.disabled = true; b.textContent = 'Checking…';
+      await checkEmail();
+      b.disabled = false;
+      return;
+    }
     const btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Sending…';
     const row = buildRow();
     const profile = { full_name: $('f-name').value.trim(), whatsapp: normWa($('f-wa').value), city: row.delivery_city, selling_status: $('f-selling').value, business_name: $('f-store').value.trim() };
     try {
       if (session) return await insertAndFinish(row);
       if (acctMode === 'login') {
-        const r = await sb.auth.signInWithPassword({ email: $('l-email').value.trim(), password: $('l-pass').value });
+        const r = await sb.auth.signInWithPassword({ email: $('a-email').value.trim(), password: $('a-pass').value });
         if (r.error) throw r.error;
         session = r.data.session;
         return await insertAndFinish(row);
@@ -1037,7 +1019,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row }) } });
       if (r.error) throw r.error;
       if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
-        setAcct('login'); $('l-email').value = email;
+        setAcct('login'); $('a-pass').value = '';
         throw new Error('An account already exists with this email. Enter your password to log in and send your request.');
       }
       if (!r.data.session) return finish('confirm', { email });
