@@ -93,6 +93,15 @@
   .done-card h2{margin:0 0 8px}
   .done-card p{color:var(--slate);max-width:460px;margin:0 auto 18px}
   .profile-card{padding:22px;max-width:640px}
+  .est-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+  @media (max-width:760px){.est-grid{grid-template-columns:1fr}}
+  .est-result{padding:22px}
+  .est-empty{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14px}
+  .est-big{font-size:34px;font-weight:800;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+  .est-rows{margin:16px 0 8px;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:14px}
+  .est-rows div{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+  .est-rows dt{color:var(--muted)}
+  .est-rows dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
   .steps div[hidden]{display:none}
 
   /* Guest */
@@ -123,7 +132,7 @@
     <div class="top-right">
       <span class="hello" id="hello"></span>
       <a href="/team" id="crmLink" hidden>Team CRM</a>
-      <a href="/estimate">Price estimator</a>
+      <a href="/estimate" id="estHeader">Get estimated price</a>
       <button type="button" id="loginTop" hidden>Log in</button>
       <button type="button" id="logoutBtn" hidden>Log out</button>
     </div>
@@ -204,7 +213,7 @@
     <section id="appView" hidden>
       <div class="page-head">
         <h1 id="pageTitle">My requests</h1>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-secondary" href="/estimate" id="estTop" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a><button class="btn btn-primary" type="button" id="newReqTop">Submit sourcing request</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" type="button" id="estTop" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</button><button class="btn btn-primary" type="button" id="newReqTop">Submit sourcing request</button></div>
       </div>
       <nav class="subnav" role="tablist">
         <button type="button" role="tab" data-tab="requests" aria-selected="true">My requests</button>
@@ -228,83 +237,55 @@
           <span>Already a client? <button type="button" class="link" id="guestLogin">Log in</button></span>
         </div>
         <div class="steps" id="steps">
-          <div class="active">1. Your product</div><div>2. Your order</div><div>3. Last details</div><div id="step4Label" hidden>4. Your account</div>
+          <div class="active">1. Your product</div><div>2. Last details</div><div id="step4Label" hidden>3. Your account</div>
         </div>
         <form class="card form-card" id="reqForm" novalidate>
           <div id="reqMsg"></div>
 
           <div data-step="1">
             <h2>Your product</h2>
-            <p class="sub">Tell us what you want to source. A link or photos help us a lot.</p>
+            <p class="sub">Tell us what you want to source. The product link or pictures help us a lot.</p>
             <div class="estimate-box" id="estimateBox" hidden></div>
+            <div class="field"><label for="f_link">Product link (Alibaba, 1688, AliExpress…)</label><input id="f_link" type="url" placeholder="https://www.alibaba.com/product-detail/…"><p class="hint">No link? Add product pictures below instead.</p></div>
             <div class="field"><label for="f_name">Product name or short description</label><input id="f_name" maxlength="200" placeholder="e.g. Wireless earbuds with charging case" required></div>
-            <div class="field">
-              <label for="f_category">Product category</label>
-              <select id="f_category" required>
-                <option value="">Select a category</option>
-                <option value="gadget">Gadget (standard)</option>
-                <option value="connected">Gadget with Bluetooth / WiFi</option>
-                <option value="vibration">Product with vibration</option>
-                <option value="textile">Textile &amp; clothing</option>
-                <option value="home">Home &amp; kitchen</option>
-                <option value="beauty">Beauty &amp; accessories</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="field"><label for="f_link">Product link <span class="opt">(optional)</span></label><input id="f_link" type="url" placeholder="https://www.alibaba.com/…"></div>
             <div class="grid-2">
-              <div class="field"><label for="f_usd">Alibaba price per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_usd" type="number" inputmode="decimal" min="0" step="0.01"><span class="unit">USD</span></div></div>
-              <div class="field"><label for="f_weight">Weight per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_weight" type="number" inputmode="numeric" min="0" step="1"><span class="unit">grams</span></div></div>
+              <div class="field">
+                <span class="label">Order type</span>
+                <div class="radio-row">
+                  <label><input type="radio" name="f_type" value="new" checked> New product</label>
+                  <label><input type="radio" name="f_type" value="restock"> Restock</label>
+                </div>
+              </div>
+              <div class="field"><label for="f_qty">Quantity</label><div class="with-unit"><input id="f_qty" type="number" inputmode="numeric" min="1" step="1" required><span class="unit">units</span></div></div>
             </div>
             <div class="field">
-              <label for="f_images">Product images <span class="opt">(optional, encouraged)</span></label>
+              <label for="f_images">Product pictures</label>
               <input id="f_images" type="file" accept="image/jpeg,image/png,image/webp" multiple>
-              <p class="hint">Up to 5 images, JPG, PNG or WEBP, 5 MB each.</p>
+              <p class="hint">Up to 5 pictures, JPG, PNG or WEBP, 5 MB each.</p>
               <div class="files-list" id="filesList"></div>
             </div>
-            <div class="field"><label for="f_specs">Specifications, variations or packaging needs <span class="opt">(optional)</span></label><textarea id="f_specs" maxlength="3000" placeholder="Colors, sizes, materials, branding, packaging…"></textarea></div>
+            <div class="field"><label for="f_specs">Specifications <span class="opt">(optional)</span></label><textarea id="f_specs" maxlength="3000" placeholder="Colors, sizes, materials, packaging, branding…"></textarea></div>
+            <!-- Filled only when the client comes from the price estimator; sent with the request. -->
+            <input type="hidden" id="f_category"><input type="hidden" id="f_usd"><input type="hidden" id="f_weight">
           </div>
 
           <div data-step="2" hidden>
-            <h2>Your order</h2>
-            <p class="sub">Minimum order: MAD 5,000 or 100 units. Below the minimum? You can still send it, and our team will review it.</p>
-            <div class="grid-2">
-              <div class="field"><label for="f_qty">Desired quantity</label><div class="with-unit"><input id="f_qty" type="number" inputmode="numeric" min="1" step="1" required><span class="unit">units</span></div></div>
-              <div class="field"><label for="f_value">Estimated total product value</label><div class="with-unit"><input id="f_value" type="number" inputmode="decimal" min="0" step="1" required><span class="unit">MAD</span></div><p class="hint" id="valueHint">Quantity × unit price, before shipping.</p></div>
-            </div>
-            <div class="alert alert-warn" id="minWarn" hidden>This request is below the minimum order (MAD 5,000 or 100 units). You can still send it; our team will review it individually.</div>
-            <div class="grid-2">
-              <div class="field"><label for="f_target">Target cost per unit <span class="opt">(optional)</span></label><div class="with-unit"><input id="f_target" type="number" inputmode="decimal" min="0" step="0.01"><span class="unit">MAD</span></div></div>
-              <div class="field"><label for="f_city">Delivery city</label><input id="f_city" required></div>
-            </div>
-            <div class="field">
-              <span class="label">Order type</span>
-              <div class="radio-row">
-                <label><input type="radio" name="f_type" value="new" checked> New product</label>
-                <label><input type="radio" name="f_type" value="restock"> Restock</label>
-              </div>
-            </div>
-          </div>
-
-          <div data-step="3" hidden>
             <h2>Last details</h2>
-            <p class="sub">Anything else that helps us prepare the right quotation.</p>
-            <div class="field"><label for="f_notes">Additional notes <span class="opt">(optional)</span></label><textarea id="f_notes" maxlength="3000"></textarea></div>
+            <p class="sub">Where we deliver, and anything else that helps us prepare your quotation.</p>
+            <div class="field"><label for="f_city">Delivery city</label><input id="f_city" required></div>
+            <div class="field"><label for="f_notes">Notes <span class="opt">(optional)</span></label><textarea id="f_notes" maxlength="3000"></textarea></div>
             <label class="check"><input type="checkbox" id="f_consent"> <span>I agree to be contacted on WhatsApp about this request.</span></label>
             <label class="check"><input type="checkbox" id="f_privacy"> <span>I accept the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
             <p class="hint">Your information is used only to review your request and contact you about our sourcing service.</p>
           </div>
 
-          <div data-step="4" hidden>
-            <h2>Create your account to send it</h2>
-            <p class="sub">Your request is ready. Your free account lets you follow your quotation, payments and delivery, and talk with our team, in one place.</p>
-            <div class="tabs" role="tablist">
-              <button type="button" role="tab" id="gTabSignup" aria-selected="true">Create account</button>
-              <button type="button" role="tab" id="gTabLogin" aria-selected="false">I already have an account</button>
-            </div>
-            <div id="gSignup">
+          <div data-step="3" hidden>
+            <h2>Your account</h2>
+            <p class="sub">Enter your email. If you already have a DDPSourcing account, the request is added to it. If not, we create your free account, where you follow your quotation, payments and delivery.</p>
+            <div class="field"><label for="g_email">Email</label><input id="g_email" type="email" autocomplete="email"></div>
+            <div class="alert alert-info" id="gStatus" hidden></div>
+            <div id="gNew" hidden>
               <div class="field"><label for="g_name">Full name</label><input id="g_name" autocomplete="name"></div>
-              <div class="field"><label for="g_email">Email</label><input id="g_email" type="email" autocomplete="email"></div>
               <div class="field">
                 <label for="g_whatsapp">WhatsApp number</label>
                 <input id="g_whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="+212 6 12 34 56 78">
@@ -322,13 +303,8 @@
                 </div>
                 <div class="field"><label for="g_business">Business or store name <span class="opt">(optional)</span></label><input id="g_business"></div>
               </div>
-              <div class="field"><label for="g_password">Password</label><input id="g_password" type="password" autocomplete="new-password" minlength="8"><p class="hint">At least 8 characters.</p></div>
             </div>
-            <div id="gLogin" hidden>
-              <div class="field"><label for="gl_email">Email</label><input id="gl_email" type="email" autocomplete="email"></div>
-              <div class="field"><label for="gl_password">Password</label><input id="gl_password" type="password" autocomplete="current-password"></div>
-              <p class="hint"><button type="button" class="link" id="gForgot">Forgot your password?</button></p>
-            </div>
+            <div class="field" id="gPassBox" hidden><label for="g_password" id="gPassLabel">Password</label><input id="g_password" type="password"><p class="hint" id="gPassHint"></p></div>
           </div>
 
           <div class="form-actions">
@@ -356,6 +332,50 @@
       </div>
 
       <!-- Profile -->
+      <!-- Estimated price (same calculation as /estimate, inside the account) -->
+      <div id="tab-estimate" hidden>
+        <div class="est-grid">
+          <form class="card form-card" id="estForm" novalidate>
+            <h2>Test a product</h2>
+            <p class="sub">An instant, indicative price per unit, delivered to your door. Nothing is sent to our team.</p>
+            <div id="estMsg"></div>
+            <div class="field">
+              <label for="e_category">Product category</label>
+              <select id="e_category">
+                <option value="">Select a category</option>
+                <option value="gadget">Gadget (standard)</option>
+                <option value="connected">Gadget with Bluetooth / WiFi</option>
+                <option value="vibration">Product with vibration</option>
+                <option value="textile">Textile &amp; clothing</option>
+                <option value="home">Home &amp; kitchen</option>
+                <option value="beauty">Beauty &amp; accessories</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="grid-2">
+              <div class="field"><label for="e_usd">Alibaba price per unit</label><div class="with-unit"><input id="e_usd" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="e.g. 4.00"><span class="unit">USD</span></div><p class="hint">The unit price shown on Alibaba.</p></div>
+              <div class="field"><label for="e_weight">Weight per unit</label><div class="with-unit"><input id="e_weight" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 200"><span class="unit">grams</span></div><p class="hint">One unit with its packaging.</p></div>
+            </div>
+            <button class="btn btn-primary" type="submit" id="estBtn">Estimate my price</button>
+          </form>
+          <div class="card est-result" aria-live="polite">
+            <h3 class="section-title" style="margin-top:0">Your estimate</h3>
+            <div id="estEmpty" class="est-empty"><span class="est-big">— MAD</span><span>Fill in the three details to see an indicative price per unit.</span></div>
+            <div id="estOut" hidden>
+              <div class="est-big" id="estAmount"></div>
+              <div class="muted">per unit, delivered to your door</div>
+              <span class="pill pill-orange" id="estConnected" hidden style="margin-top:10px">Includes the approval fee for connected products</span>
+              <dl class="est-rows">
+                <div><dt>Based on a stock of</dt><dd id="estQty"></dd></div>
+                <div><dt>Estimated total</dt><dd id="estTotal"></dd></div>
+              </dl>
+              <p class="hint">Indicative price to help you test your product. Your exact final price comes in your quotation after our team reviews your request.</p>
+              <button class="btn btn-primary btn-block" type="button" id="estToRequest">Submit sourcing request for this product</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="tab-profile" hidden>
         <form class="card profile-card" id="profileForm" novalidate>
           <div id="profileMsg"></div>
@@ -463,8 +483,8 @@
     ? decodeURIComponent((urlHash.match(/error_description=([^&]+)/) || [])[1] || "").replace(/\+/g, " ") : "";
   if (/invalid or has expired/i.test(linkError)) linkError = "This email link was already used or has expired. Ask for a new one if you need it.";
   var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: /type=recovery/.test(urlHash), guest: false, submitting: false, gMode: "signup", unread: {}, chatFile: null, chatTimer: null };
-  var lastStep = function () { return state.guest ? 4 : 3; };
+  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: /type=recovery/.test(urlHash), guest: false, submitting: false, gMode: null, unread: {}, chatFile: null, chatTimer: null };
+  var lastStep = function () { return state.guest ? 3 : 2; };
   var safeName = function (n) { return String(n).toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-60); };
 
   // Estimator → account: keep the product details until the request is sent.
@@ -519,13 +539,13 @@
     msg($("authMsg"));
   }
   function tab(name) {
-    ["requests", "new", "profile", "detail", "sent"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
+    ["requests", "new", "estimate", "profile", "detail", "sent"].forEach(function (t) { $("tab-" + t).hidden = t !== name; });
     document.querySelectorAll(".subnav button").forEach(function (b) {
       b.setAttribute("aria-selected", b.dataset.tab === name || (name === "detail" && b.dataset.tab === "requests"));
     });
-    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Submit sourcing request", sent: "Request sent", profile: "My profile" }[name];
+    $("pageTitle").textContent = { requests: "My requests", detail: "Request details", new: "Submit sourcing request", estimate: "Get estimated price", sent: "Request sent", profile: "My profile" }[name];
     $("newReqTop").hidden = name === "new" || name === "sent";
-    $("estTop").hidden = state.guest;
+    $("estTop").hidden = state.guest || name === "estimate";
     window.scrollTo({ top: 0 });
   }
 
@@ -537,28 +557,46 @@
     b.onclick = function () { openTab(b.dataset.tab); };
   });
   $("newReqTop").onclick = function () { openTab("new"); };
+  $("estTop").onclick = function () { openTab("estimate"); };
+  // Logged-in clients stay in their account; visitors without an account use the public page.
+  $("estHeader").addEventListener("click", function (e) { if (state.user && !state.guest) { e.preventDefault(); openTab("estimate"); } });
   $("viewRequestsBtn").onclick = function () { openTab("requests"); };
   $("anotherBtn").onclick = function () { openTab("new"); };
   $("logoutBtn").onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
   $("loginTop").onclick = guestToLogin;
   $("guestLogin").onclick = guestToLogin;
   $("backToFormBtn").onclick = function () { if ($("tab-new").hidden) enterGuest(); else show("app"); };
-  $("gTabSignup").onclick = function () { guestMode("signup"); };
-  $("gTabLogin").onclick = function () { guestMode("login"); };
-  $("gForgot").onclick = function () { $("fp_email").value = $("gl_email").value; show("auth"); authMode("forgot"); };
+  // Guest, last step: the email decides between "log in" (existing account) and "create the account".
   function guestMode(m) {
     state.gMode = m;
-    $("gSignup").hidden = m !== "signup";
-    $("gLogin").hidden = m !== "login";
-    $("gTabSignup").setAttribute("aria-selected", m === "signup");
-    $("gTabLogin").setAttribute("aria-selected", m === "login");
-    $("sendBtn").textContent = m === "login" ? "Log in and send my request" : "Create my account and send my request";
+    $("gStatus").hidden = !m; $("gNew").hidden = m !== "new"; $("gPassBox").hidden = !m;
+    if (m === "login") {
+      $("gStatus").textContent = "Welcome back. You already have an account: enter your password and the request is added to it.";
+      $("gPassLabel").textContent = "Your password"; $("g_password").autocomplete = "current-password";
+      $("gPassHint").innerHTML = '<button type="button" class="link" id="gForgot">Forgot your password?</button>';
+      $("gForgot").onclick = function () { $("fp_email").value = $("g_email").value; show("auth"); authMode("forgot"); };
+    } else if (m === "new") {
+      $("gStatus").textContent = "No account yet with this email. Add your details and choose a password to create your free account.";
+      $("gPassLabel").textContent = "Choose a password"; $("g_password").autocomplete = "new-password";
+      $("gPassHint").textContent = "At least 8 characters.";
+      if (!$("g_name").value && state.profile) $("g_name").value = state.profile.full_name || "";
+    }
+    $("sendBtn").textContent = m === "login" ? "Log in and send my request" : m === "new" ? "Create my account and send" : "Continue";
     msg($("reqMsg"));
+  }
+  $("g_email").addEventListener("input", function () { if (state.gMode) { $("g_password").value = ""; guestMode(null); } });
+  function checkGuestEmail() {
+    var btn = $("sendBtn");
+    btn.disabled = true; btn.textContent = "Checking…";
+    sb.rpc("account_exists", { p_email: $("g_email").value.trim() }).then(function (r) {
+      btn.disabled = false;
+      // If the check fails, signup still detects an existing account and switches to log in.
+      guestMode(!r.error && r.data === true ? "login" : "new");
+      (state.gMode === "login" ? $("g_password") : $("g_name")).focus();
+    });
   }
 
   function openTab(name) {
-    // The estimator is its own page; its "Request my exact quote" comes back here prefilled.
-    if (name === "estimate") { location.href = "/estimate"; return; }
     if (name === "new") resetRequestForm();
     if (name === "profile") fillProfile();
     if (name === "requests") loadRequests();
@@ -670,7 +708,7 @@
     // A visitor who logs in halfway through the form keeps what they typed.
     var draft = state.guest && $("f_name").value.trim();
     loadBase(user).then(function () {
-      if (draft) { tab("new"); goStep(Math.min(state.step, 3)); }
+      if (draft) { tab("new"); goStep(Math.min(state.step, 2)); }
       else if (load(PREFILL_KEY)) openTab("new");
       else openTab("requests");
     });
@@ -696,8 +734,9 @@
           if (!reads[m.request_id] || new Date(m.created_at) > new Date(reads[m.request_id])) state.unread[m.request_id] = (state.unread[m.request_id] || 0) + 1;
         });
         if (!state.requests.length) {
-          list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Sure about a product? Submit a sourcing request for your final door-to-door quote. Just testing an idea? Get an estimated price first.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="emptyNew">Submit sourcing request</button><a class="btn btn-secondary" href="/estimate">Get estimated price</a></div></div>';
+          list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Sure about a product? Submit a sourcing request for your final door-to-door quote. Just testing an idea? Get an estimated price first.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="emptyNew">Submit sourcing request</button><button class="btn btn-secondary" type="button" id="emptyEst">Get estimated price</button></div></div>';
           $("emptyNew").onclick = function () { openTab("new"); };
+          $("emptyEst").onclick = function () { openTab("estimate"); };
           return;
         }
         list.innerHTML = state.requests.map(function (q) {
@@ -851,20 +890,52 @@
     };
   }
 
+  // ---------- Estimated price (same server calculation as /estimate) ----------
+  var lastEstimate = null;
+  $("estForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var d = { category: $("e_category").value, priceUsd: parseFloat($("e_usd").value), weightGrams: parseFloat($("e_weight").value) };
+    var ok = req("e_category") & req("e_usd", function (v) { return parseFloat(v) > 0; }) & req("e_weight", function (v) { return parseFloat(v) >= 1; });
+    if (!ok) return msg($("estMsg"), "error", "Choose the category and enter the Alibaba unit price and the weight of one unit.");
+    msg($("estMsg"));
+    var btn = $("estBtn"); btn.disabled = true; btn.textContent = "Calculating…";
+    fetch("/api/estimate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (r) {
+        if (!r.ok || !r.j.pricePerUnit) throw new Error("bad response");
+        lastEstimate = d;
+        $("estAmount").textContent = fmt.format(r.j.pricePerUnit) + " MAD";
+        $("estQty").textContent = fmt.format(r.j.batchQty) + " units";
+        $("estTotal").textContent = fmt.format(r.j.batchTotal) + " MAD";
+        $("estConnected").hidden = !r.j.connectedNotice;
+        $("estEmpty").hidden = true; $("estOut").hidden = false;
+      })
+      .catch(function () { msg($("estMsg"), "error", "We could not calculate your estimate right now. Please try again in a moment."); })
+      .then(function () { btn.disabled = false; btn.textContent = "Estimate my price"; });
+  });
+  ["e_category", "e_usd", "e_weight"].forEach(function (id) {
+    $(id).addEventListener("input", function () { $("estOut").hidden = true; $("estEmpty").hidden = false; });
+  });
+  // Turn the tested product into a real request, prefilled.
+  $("estToRequest").onclick = function () {
+    if (!lastEstimate) return;
+    store(PREFILL_KEY, { category: lastEstimate.category, priceUsd: String(lastEstimate.priceUsd), weightGrams: String(lastEstimate.weightGrams), link: "", qty: "" });
+    openTab("new");
+  };
+
   // ---------- New request ----------
   var stepEls = function () { return document.querySelectorAll("#reqForm [data-step]"); };
-  var valueTouched = false;
 
   function resetRequestForm() {
     $("reqForm").reset();
-    state.files = []; valueTouched = false;
+    state.files = [];
     $("filesList").innerHTML = "";
     msg($("reqMsg"));
     $("f_city").value = (state.profile && state.profile.city) || "";
     var p = load(PREFILL_KEY);
     $("estimateBox").hidden = true;
     if (p) {
-      if (CATEGORY_LABELS[p.category]) $("f_category").value = p.category;
+      $("f_category").value = CATEGORY_LABELS[p.category] ? p.category : "";
       if (p.priceUsd) $("f_usd").value = p.priceUsd;
       if (p.weightGrams) $("f_weight").value = p.weightGrams;
       if (p.link) $("f_link").value = p.link;
@@ -887,20 +958,6 @@
         $("estimateBox").innerHTML = "Estimated price: <strong>≈ " + fmt.format(j.pricePerUnit) + " MAD per unit</strong>, delivered to your door. Your exact price comes in your quotation.";
       }).catch(function () {});
   }
-  ["f_category", "f_usd", "f_weight"].forEach(function (id) { $(id).addEventListener("change", refreshEstimate); });
-
-  function suggestValue() {
-    var qty = parseInt($("f_qty").value, 10), usd = parseFloat($("f_usd").value);
-    if (!valueTouched && qty > 0 && usd > 0) $("f_value").value = Math.round(qty * usd * 10);
-    checkMinimum();
-  }
-  function checkMinimum() {
-    var qty = parseInt($("f_qty").value, 10), val = parseFloat($("f_value").value);
-    $("minWarn").hidden = !(qty > 0 && val >= 0 && qty < 100 && val < 5000);
-  }
-  $("f_qty").addEventListener("input", suggestValue);
-  $("f_value").addEventListener("input", function () { valueTouched = true; checkMinimum(); });
-
   $("f_images").addEventListener("change", function () {
     var picked = Array.prototype.slice.call(this.files || []);
     var errors = [];
@@ -930,7 +987,7 @@
     $("nextBtn").hidden = n === lastStep();
     $("sendBtn").hidden = n !== lastStep();
     if (!state.guest) $("sendBtn").textContent = "Send my sourcing request";
-    else if (n === 4) guestMode(state.gMode);
+    else if (n === 3) guestMode(state.gMode);
     msg($("reqMsg"));
   }
 
@@ -942,28 +999,30 @@
   function validateStep(n) {
     var ok = true;
     if (n === 1) {
-      ok = req("f_name", function (v) { return v.trim().length >= 2; }) & req("f_category");
+      ok = req("f_name", function (v) { return v.trim().length >= 2; }) & req("f_qty", function (v) { return parseInt(v, 10) > 0; });
       if ($("f_link").value.trim()) ok = req("f_link", function (v) { return /^https?:\/\/\S+$/i.test(v.trim()); }) & ok;
+      if (ok && !$("f_link").value.trim() && !state.files.length) {
+        $("f_link").closest(".field").classList.add("invalid");
+        msg($("reqMsg"), "error", "Add the product link or at least one picture.");
+        return false;
+      }
     }
     if (n === 2) {
-      ok = req("f_qty", function (v) { return parseInt(v, 10) > 0; }) & req("f_value", function (v) { return v !== "" && parseFloat(v) >= 0; }) & req("f_city");
-    }
-    if (n === 3) {
-      ok = true;
+      ok = req("f_city");
       if (ok && (!$("f_consent").checked || !$("f_privacy").checked)) {
         msg($("reqMsg"), "error", "Please accept WhatsApp contact and the Privacy Policy to send your request.");
         return false;
       }
     }
-    if (n === 4 && state.gMode === "signup") {
-      ok = req("g_name", function (v) { return v.trim().length >= 2; }) &
-        req("g_email", function (v) { return /^\S+@\S+\.\S+$/.test(v.trim()); }) &
-        req("g_whatsapp", function (v) { return !!normWhatsapp(v); }) &
-        req("g_status") & req("g_password", function (v) { return v.length >= 8; });
-      if (!ok) { msg($("reqMsg"), "error", "Please complete the highlighted fields. Your password needs at least 8 characters, and your WhatsApp number should look like +212 6 12 34 56 78."); return false; }
-    }
-    if (n === 4 && state.gMode === "login") {
-      ok = req("gl_email", function (v) { return /^\S+@\S+\.\S+$/.test(v.trim()); }) & req("gl_password", function (v) { return v.length > 0; });
+    if (n === 3) {
+      ok = req("g_email", function (v) { return /^\S+@\S+\.\S+$/.test(v.trim()); });
+      if (ok && state.gMode === "new") {
+        ok = req("g_name", function (v) { return v.trim().length >= 2; }) &
+          req("g_whatsapp", function (v) { return !!normWhatsapp(v); }) &
+          req("g_status") & req("g_password", function (v) { return v.length >= 8; });
+        if (!ok) { msg($("reqMsg"), "error", "Please complete the highlighted fields. Your password needs at least 8 characters, and your WhatsApp number should look like +212 6 12 34 56 78."); return false; }
+      }
+      if (ok && state.gMode === "login") ok = req("g_password", function (v) { return v.length > 0; });
     }
     if (!ok) msg($("reqMsg"), "error", "Please complete the highlighted fields.");
     return !!ok;
@@ -981,20 +1040,20 @@
   $("reqForm").addEventListener("submit", function (e) {
     e.preventDefault();
     if (state.step !== lastStep()) return $("nextBtn").click();
-    if (!validateStep(3)) return goStep(3);
-    if (state.guest && !validateStep(4)) return;
+    if (!validateStep(1)) return goStep(1);
+    if (!validateStep(2)) return goStep(2);
+    if (state.guest && !validateStep(3)) return;
+    if (state.guest && !state.gMode) return checkGuestEmail();
     var num = function (id) { var v = $(id).value; return v === "" ? null : Number(v); };
     var row = {
       product_name: $("f_name").value.trim(),
-      category: $("f_category").value,
+      category: $("f_category").value || null,
       product_link: $("f_link").value.trim() || null,
       alibaba_price_usd: num("f_usd"),
       unit_weight_g: num("f_weight"),
       estimator_price_mad: state.estimate || null,
       specifications: $("f_specs").value.trim() || null,
       quantity: parseInt($("f_qty").value, 10),
-      estimated_value_mad: Number($("f_value").value),
-      target_unit_cost_mad: num("f_target"),
       delivery_city: $("f_city").value.trim(),
       order_type: document.querySelector('input[name="f_type"]:checked').value,
       client_notes: $("f_notes").value.trim() || null,
@@ -1040,7 +1099,7 @@
   function guestSubmit(row) {
     state.submitting = true;
     if (state.gMode === "login") {
-      sb.auth.signInWithPassword({ email: $("gl_email").value.trim(), password: $("gl_password").value }).then(function (r) {
+      sb.auth.signInWithPassword({ email: $("g_email").value.trim(), password: $("g_password").value }).then(function (r) {
         if (r.error) return sendFailed(r.error);
         loadBase(r.data.user).then(function () { insertRequest(row); });
       });
@@ -1061,7 +1120,7 @@
       if (r.error) return sendFailed(r.error);
       if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
         guestMode("login");
-        $("gl_email").value = email;
+        $("g_password").value = "";
         return sendFailed({ message: "An account already exists with this email. Enter your password to log in and send your request." });
       }
       if (!r.data.session) {
