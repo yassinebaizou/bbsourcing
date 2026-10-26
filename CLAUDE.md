@@ -54,7 +54,7 @@ Never invent testimonials, numbers or shipment proof.
 ## Database model (Supabase, all enforced in SQL)
 
 Tables: `profiles` (1 per auth user, created by trigger), `staff` (role `admin` | `agent` |
-`ops_finance`, `active`), `requests` (code `BS-1001…`, 18 statuses in `request_statuses`),
+`ops_finance`, `active`), `requests` (code `DDP-1001…`; older `BS-` codes were renamed, 18 statuses in `request_statuses`),
 `request_internal` (next action, team only), `payments` (1 per request, created when a quote is
 saved; deposit/balance are generated columns), `request_notes`, `request_files`,
 `request_events` (activity log, written only by triggers), `request_messages` (client ↔ team
@@ -95,11 +95,9 @@ The owner's target process is **`docs/PROCESS.md`** (it wins over the code). Its
 still to build; the items below are the infrastructure ones.
 
 
-0. **Read `docs/PROCESS.md` first.** It is the owner's target process. Its section 5 lists what is
-   already built and what is still missing (homepage form, Guest estimation, estimator in the
-   account, restock, answered/unanswered, Orders page, invitations, notifications). It overrides
-   this file where they differ. Ask Yassine the open questions in its section 6 before building
-   the parts they affect.
+0. **Read `docs/PROCESS.md` first.** It is the owner's target process; its section 5 marks what is
+   done. Still open there: restock, Orders page, invitations, notifications. Ask Yassine the open
+   questions in its section 6 before building the parts they affect.
 
 1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
 2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
