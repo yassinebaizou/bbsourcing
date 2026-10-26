@@ -456,8 +456,14 @@
     $("setupWarning").hidden = false;
     return;
   }
+  // Read the email-link result before Supabase clears it from the address bar.
+  // A password-reset link must always open the "Choose a new password" form, even though it also logs the person in.
+  var urlHash = location.hash;
+  var linkError = /error_description=/.test(urlHash)
+    ? decodeURIComponent((urlHash.match(/error_description=([^&]+)/) || [])[1] || "").replace(/\+/g, " ") : "";
+  if (/invalid or has expired/i.test(linkError)) linkError = "This email link was already used or has expired. Ask for a new one if you need it.";
   var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: false, guest: false, submitting: false, gMode: "signup", unread: {}, chatFile: null, chatTimer: null };
+  var state = { user: null, profile: null, statuses: {}, requests: [], step: 1, files: [], recovering: /type=recovery/.test(urlHash), guest: false, submitting: false, gMode: "signup", unread: {}, chatFile: null, chatTimer: null };
   var lastStep = function () { return state.guest ? 4 : 3; };
   var safeName = function (n) { return String(n).toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-60); };
 
@@ -652,11 +658,14 @@
       $("crmLink").hidden = !res[2].data;
       $("hello").textContent = state.profile.full_name ? "Hi, " + state.profile.full_name.split(" ")[0] : "";
       state.guest = false;
-      show("app");
+      if (!state.recovering) show("app");
     });
   }
 
+  function showReset() { state.guest = false; show("auth"); authMode("reset"); }
+
   function enterApp(user) {
+    if (state.recovering) return showReset();
     if (state.user && state.user.id === user.id && !$("appView").hidden) return;
     // A visitor who logs in halfway through the form keeps what they typed.
     var draft = state.guest && $("f_name").value.trim();
@@ -1128,7 +1137,7 @@
 
   // ---------- Start ----------
   sb.auth.onAuthStateChange(function (event, session) {
-    if (event === "PASSWORD_RECOVERY") { state.recovering = true; show("auth"); authMode("reset"); return; }
+    if (event === "PASSWORD_RECOVERY") { state.recovering = true; showReset(); return; }
     if (state.recovering || state.submitting) return;
     if (session && session.user) enterApp(session.user);
     else if (event === "SIGNED_OUT") { state.user = null; show("auth"); authMode("login"); }
@@ -1136,18 +1145,20 @@
 
   sb.auth.getSession().then(function (r) {
     var session = r.data && r.data.session;
-    if (state.recovering) return;
-    if (session) return enterApp(session.user);
+    if (state.recovering && session) return showReset();
+    state.recovering = false;
+    if (session) {
+      enterApp(session.user);
+      if (linkError) toast(linkError, true);
+      return;
+    }
     // Returning from an email link, or asked for the login page (/account?login): show log in. Otherwise the request form.
-    var wantsLogin = /type=signup|error_description/.test(location.hash) || /[?&]login\b/.test(location.search);
+    var wantsLogin = /type=signup|error_description/.test(urlHash) || /[?&]login\b/.test(location.search);
     if (!wantsLogin) return enterGuest();
     state.guest = true;
     show("auth");
     authMode("login");
-    if (/error_description/.test(location.hash)) {
-      var d = decodeURIComponent((location.hash.match(/error_description=([^&]+)/) || [])[1] || "").replace(/\+/g, " ");
-      msg($("authMsg"), "error", d || "This link is no longer valid. Please try again.");
-    }
+    if (linkError) msg($("authMsg"), "error", linkError);
   });
 })();
 </script>
