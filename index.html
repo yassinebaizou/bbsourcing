@@ -332,9 +332,10 @@ fieldset.field{border:0;margin:0;padding:0}
       <a class="nav-mobile" href="#reviews" data-section-link="reviews">Reviews</a>
       <a href="#faq">FAQ</a>
       <a class="nav-mobile" href="/estimate">Get estimated price</a>
-      <a href="/account?login" id="navAccount">Log in</a>
+      <a class="nav-mobile" href="/account?login" id="navAccount">Log in</a>
     </nav>
     <div class="header-actions">
+      <a class="btn btn-ghost-dark header-cta" href="/account?login" id="headerLogin">Log in</a>
       <a class="btn btn-ghost-dark header-cta" href="/estimate" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a>
       <a class="btn btn-primary header-cta" href="#request">Submit sourcing request</a>
     </div>
@@ -849,7 +850,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   if (sb) sb.auth.getSession().then(({ data }) => {
     session = data && data.session;
     if (!session) return;
-    $('navAccount').textContent = 'My account'; $('navAccount').href = '/account';
+    ['navAccount', 'headerLogin'].forEach((id) => { $(id).textContent = 'My account'; $(id).href = '/account'; });
     sb.from('profiles').select('full_name, whatsapp, city, selling_status, business_name').eq('id', session.user.id).single().then(({ data: p }) => {
       if (!p) return;
       const fill = (id, v) => { if (v && !$(id).value) $(id).value = v; };
