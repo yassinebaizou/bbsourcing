@@ -48,8 +48,8 @@ Never invent testimonials, numbers or shipment proof.
 
 - Minimum order **MAD 5,000 OR 100 units**; below both = still accepted, flagged "Below min.".
 - Payment **40% deposit** after the client accepts the final quotation, **60% before delivery**.
-  Payments are tracked, not processed online. (The original spec named Beast Capital Group as
-  invoice issuer; confirm with Yassine before showing any legal entity on the site.)
+  Payments are tracked, not processed online. Invoices are issued by **Beast Capital Group** (owner
+  confirmed); its RC/ICE/IF go in `assets/company.js` only when the owner gives them.
 - Same-business-day WhatsApp reply, Monday–Friday 10:00–18:00 Morocco time.
 - Express air only, 15–20 days.
 - Estimator formula (in `api/estimate.js`): 1 USD = 10 MAD, batch of 100 units, 130 MAD/kg,
@@ -110,7 +110,8 @@ The owner's target process is **`docs/PROCESS.md`** (it wins over the code). Its
 still to build; the items below are the infrastructure ones.
 
 
-0. **`docs/IMPROVEMENT_PLAN.md` sets the priorities** (trust, legal clarity, 40/60 cancellation and
+0. **Follow `docs/WORK_PLAN.md`: one sprint per session, in order.** It holds the owner's decisions
+   (section 1) and wins over the other docs. Background: `docs/IMPROVEMENT_PLAN.md` sets the priorities (trust, legal clarity, 40/60 cancellation and
    refunds, UX, French and Arabic). Start with its Track 0, which includes the bugs below.
    **Fix the bugs in `docs/ROADMAP.md` section A first** (lost request on signup, guest photos not
    uploaded, missing "Below min." flag), then follow its section C build order.
