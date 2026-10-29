@@ -110,7 +110,9 @@ The owner's target process is **`docs/PROCESS.md`** (it wins over the code). Its
 still to build; the items below are the infrastructure ones.
 
 
-0. **Fix the bugs in `docs/ROADMAP.md` section A first** (lost request on signup, guest photos not
+0. **`docs/IMPROVEMENT_PLAN.md` sets the priorities** (trust, legal clarity, 40/60 cancellation and
+   refunds, UX, French and Arabic). Start with its Track 0, which includes the bugs below.
+   **Fix the bugs in `docs/ROADMAP.md` section A first** (lost request on signup, guest photos not
    uploaded, missing "Below min." flag), then follow its section C build order.
 
 0b. **Read `docs/PROCESS.md`.** It is the owner's target process; its section 5 marks what is
