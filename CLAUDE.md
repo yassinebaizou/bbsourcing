@@ -110,7 +110,10 @@ The owner's target process is **`docs/PROCESS.md`** (it wins over the code). Its
 still to build; the items below are the infrastructure ones.
 
 
-0. **Read `docs/PROCESS.md` first.** It is the owner's target process; its section 5 marks what is
+0. **Fix the bugs in `docs/ROADMAP.md` section A first** (lost request on signup, guest photos not
+   uploaded, missing "Below min." flag), then follow its section C build order.
+
+0b. **Read `docs/PROCESS.md`.** It is the owner's target process; its section 5 marks what is
    done. Still open there: restock, Orders page, invitations, notifications. Ask Yassine the open
    questions in its section 6 before building the parts they affect.
 
