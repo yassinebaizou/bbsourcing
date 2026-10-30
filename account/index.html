@@ -257,7 +257,7 @@
                   <label><input type="radio" name="f_type" value="restock"> Restock</label>
                 </div>
               </div>
-              <div class="field"><label for="f_qty">Quantity</label><div class="with-unit"><input id="f_qty" type="number" inputmode="numeric" min="1" step="1" required><span class="unit">units</span></div></div>
+              <div class="field"><label for="f_qty">Quantity</label><div class="with-unit"><input id="f_qty" type="number" inputmode="numeric" min="1" max="1000000" step="1" required><span class="unit">units</span></div></div>
             </div>
             <div class="field">
               <label for="f_images">Product pictures</label>
@@ -435,6 +435,7 @@
 </main>
 
 <script src="/assets/config.js"></script>
+<script src="/assets/pending-photos.js"></script>
 <script src="/assets/vendor/supabase.js"></script>
 <script>
 (function () {
@@ -456,6 +457,10 @@
     });
   }
   // Only http(s) links are ever made clickable (a "javascript:" link would run code).
+  // Same rule as the database for product links: http(s), no spaces (spaces are encoded).
+  function normLink(v) { return String(v || "").trim().replace(/\s+/g, "%20"); }
+  function validLink(v) { var s = normLink(v); if (!/^https?:\/\/[^\s"'<>]+$/i.test(s)) return false; try { new URL(s); return true; } catch (e) { return false; } }
+  var MAX_QTY = 1000000;
   function safeUrl(u) { return /^https?:\/\/[^\s"'<>]+$/i.test(String(u || "").trim()) ? String(u).trim() : ""; }
   function msg(el, type, text) { el.innerHTML = text ? '<div class="alert alert-' + type + '">' + esc(text) + "</div>" : ""; }
   function store(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -741,11 +746,63 @@
     if (state.user && state.user.id === user.id && !$("appView").hidden) return;
     // A visitor who logs in halfway through the form keeps what they typed.
     var draft = state.guest && $("f_name").value.trim();
-    loadBase(user).then(function () {
+    loadBase(user).then(recoverAfterLogin).then(function (lost) {
+      if (lost) return reopenLostRequest(lost);
       if (draft) { tab("new"); goStep(Math.min(state.step, 2)); }
       else if (load(PREFILL_KEY)) openTab("new");
       else openTab("requests");
     });
+  }
+
+  // First login after sign-up (ROADMAP A1/A2):
+  // - pictures kept in this browser at sign-up are uploaded to the request they belong to;
+  // - if the database refused the request sent at sign-up, it comes back so the client can send it again.
+  // Resolves with the lost request (form fields + pictures), or null.
+  function recoverAfterLogin() {
+    var uid = state.user.id;
+    var pending = window.PendingPhotos ? window.PendingPhotos.get(uid) : Promise.resolve(null);
+    return pending.then(function (kept) {
+      var since = kept ? new Date(kept.savedAt - 15 * 60 * 1000).toISOString() : null;
+      var reqs = kept
+        ? sb.from("requests").select("id, code, created_at").gte("created_at", since).order("created_at", { ascending: true }).limit(1)
+        : Promise.resolve({ data: [] });
+      return reqs.then(function (q) {
+        var target = q.data && q.data[0];
+        if (kept && target) {
+          state.photoWait = target.id;
+          uploadFileList(target.id, kept.files).then(function (failed) {
+            if (!failed) { window.PendingPhotos.remove(uid); state.photoWait = null; toast(kept.files.length + (kept.files.length === 1 ? " picture" : " pictures") + " added to " + target.code + "."); }
+            else toast("Some pictures could not be uploaded yet. We will try again next time you open your account.", true);
+            if (!$("tab-requests").hidden) loadRequests();
+          });
+          return null;
+        }
+        return sb.from("requests").select("id", { count: "exact", head: true }).then(function (c) {
+          if (c.count) return null;
+          return sb.rpc("my_failed_request").then(function (f) {
+            return f && f.data ? { fields: f.data, files: kept ? kept.files : [] } : null;
+          });
+        });
+      });
+    }).catch(function () { return null; });
+  }
+
+  function reopenLostRequest(lost) {
+    var p = lost.fields || {};
+    openTab("new");
+    $("f_name").value = p.product_name || "";
+    $("f_link").value = p.product_link ? normLink(p.product_link) : "";
+    var qn = Number(p.quantity);
+    $("f_qty").value = Number.isInteger(qn) && qn >= 1 && qn <= MAX_QTY ? qn : "";
+    var t = document.querySelector('input[name="f_type"][value="' + (p.order_type === "restock" ? "restock" : "new") + '"]'); if (t) t.checked = true;
+    $("f_specs").value = p.specifications || "";
+    if (p.delivery_city) $("f_city").value = p.delivery_city;
+    $("f_notes").value = p.client_notes || "";
+    if (CATEGORY_LABELS[p.category]) $("f_category").value = p.category;
+    if (p.alibaba_price_usd) $("f_usd").value = p.alibaba_price_usd;
+    if (p.unit_weight_g) $("f_weight").value = p.unit_weight_g;
+    if (lost.files && lost.files.length) { state.files = lost.files.slice(0, MAX_FILES); $("f_images").dispatchEvent(new Event("change")); }
+    msg($("reqMsg"), "warn", "We could not save the request you sent when you created your account. Your details are below: please check them and send it again.");
   }
 
   function loadRequests() {
@@ -779,7 +836,8 @@
             '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
             '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + (q.category ? esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' : '') + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
             pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) +
-            (state.unread[q.id] ? '<div class="unread">' + state.unread[q.id] + ' new from our team</div>' : "") + '</button>';
+            (state.unread[q.id] ? '<div class="unread">' + state.unread[q.id] + ' new from our team</div>' : "") +
+            (state.photoWait === q.id ? '<div class="unread">Photos waiting to upload</div>' : "") + '</button>';
         }).join("");
         list.querySelectorAll(".req").forEach(function (b) { b.onclick = function () { openDetail(b.dataset.id); }; });
       });
@@ -1033,8 +1091,10 @@
   function validateStep(n) {
     var ok = true;
     if (n === 1) {
-      ok = req("f_name", function (v) { return v.trim().length >= 2; }) & req("f_qty", function (v) { return parseInt(v, 10) > 0; });
-      if ($("f_link").value.trim()) ok = req("f_link", function (v) { return /^https?:\/\/\S+$/i.test(v.trim()); }) & ok;
+      ok = req("f_name", function (v) { return v.trim().length >= 2; }) &
+        req("f_qty", function (v) { var n = Number(v); return Number.isInteger(n) && n >= 1 && n <= MAX_QTY; });
+      if ($("f_link").value.trim()) ok = req("f_link", validLink) & ok;
+      if (!ok) { msg($("reqMsg"), "error", "Please complete the highlighted fields. The link must start with https:// and the quantity must be between 1 and 1,000,000 units."); return false; }
       if (ok && !$("f_link").value.trim() && !state.files.length) {
         $("f_link").closest(".field").classList.add("invalid");
         msg($("reqMsg"), "error", "Add the product link or at least one picture.");
@@ -1082,7 +1142,7 @@
     var row = {
       product_name: $("f_name").value.trim(),
       category: $("f_category").value || null,
-      product_link: $("f_link").value.trim() || null,
+      product_link: normLink($("f_link").value) || null,
       alibaba_price_usd: num("f_usd"),
       unit_weight_g: num("f_weight"),
       estimator_price_mad: state.estimate || null,
@@ -1121,6 +1181,7 @@
       state.submitting = false;
       btn.disabled = false; btn.textContent = "Send my sourcing request";
       store(PREFILL_KEY, null);
+      if (!failed && window.PendingPhotos && state.user) window.PendingPhotos.remove(state.user.id);
       $("sentCode").textContent = created.code;
       $("sentText").hidden = false; $("sentConfirm").hidden = true; $("sentActions").hidden = false;
       $("sentFileWarn").hidden = !failed;
@@ -1163,10 +1224,19 @@
         store(PREFILL_KEY, null);
         $("sentEmail").textContent = email;
         $("sentText").hidden = true; $("sentConfirm").hidden = false; $("sentActions").hidden = true;
-        $("sentFileWarn").hidden = !state.files.length;
-        $("sentFileWarn").textContent = "Your photos were not uploaded yet. After you log in, open your request and send them in the conversation.";
         $("guestBar").hidden = true; $("loginTop").hidden = false;
+        $("sentFileWarn").hidden = true;
         tab("sent");
+        // No login before the email is confirmed: keep the pictures in this browser; they upload at first login.
+        if (state.files.length) {
+          (window.PendingPhotos && r.data.user ? window.PendingPhotos.save(r.data.user.id, state.files) : Promise.resolve(false)).then(function (kept) {
+            $("sentFileWarn").hidden = false;
+            $("sentFileWarn").className = "alert " + (kept ? "alert-info" : "alert-warn");
+            $("sentFileWarn").textContent = kept
+              ? "Your pictures are saved on this device. They are added to your request automatically when you open the confirmation link here."
+              : "Your pictures could not be kept. After you log in, open your request and send them in the conversation.";
+          });
+        }
         return;
       }
       loadBase(r.data.user).then(function () {
@@ -1178,9 +1248,10 @@
     });
   }
 
-  function uploadFiles(requestId) {
+  function uploadFiles(requestId) { return uploadFileList(requestId, state.files); }
+  function uploadFileList(requestId, list) {
     var failed = 0;
-    return state.files.reduce(function (p, f, i) {
+    return list.reduce(function (p, f, i) {
       return p.then(function () {
         var safe = f.name.toLowerCase().replace(/[^a-z0-9.\-_]+/g, "-").slice(-60);
         var path = state.user.id + "/" + requestId + "/" + Date.now() + "-" + i + "-" + safe;

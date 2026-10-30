@@ -312,6 +312,7 @@ fieldset.field{border:0;margin:0;padding:0}
 .wa-btn{background:#25D366;color:#062E16}
 .wa-btn:hover{background:#3BE07A;color:#062E16}
 
+@media (max-width:760px){.foot-grid a,.logo{min-height:44px;display:inline-flex;align-items:center}.logo{flex-direction:column;align-items:flex-start;justify-content:center}.foot-grid ul{gap:0}}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style>
@@ -554,7 +555,7 @@ fieldset.field{border:0;margin:0;padding:0}
                     <label><input type="radio" name="otype" value="restock"> Restock</label>
                   </div>
                 </fieldset>
-                <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
+                <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="e.g. 300"></div>
                 <div class="field full"><label for="f-img">Product pictures (up to 5)</label><input class="file" id="f-img" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="files-chips" id="filesChips"></div></div>
                 <div class="field full"><label for="f-specs">Specifications (optional)</label><textarea id="f-specs" rows="3" maxlength="3000" placeholder="Colors, sizes, materials, packaging, branding…"></textarea></div>
               </div>
@@ -672,11 +673,11 @@ fieldset.field{border:0;margin:0;padding:0}
         <a class="logo" href="#top" aria-label="DDPSourcing home"><b>DDP</b><span>SOURCING</span></a>
         <p class="foot-about">DDP sourcing from China to Morocco. We find trusted suppliers, ship by express air, clear customs, and deliver to your door for one final price per unit.</p>
       </div>
-      <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Request a price</a></li></ul></div>
-      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms of Service</a></li></ul></div>
+      <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Submit sourcing request</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
       <div><h4>Contact</h4><ul id="contactList"><li>Monday to Friday, 10:00 AM – 6:00 PM (Morocco time)</li></ul></div>
     </div>
-    <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span>Invoices are issued by Beast Capital Group.</span></div>
+    <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span data-company-line>DDPSourcing is a service of Beast Capital Group, Casablanca. Invoices are issued by Beast Capital Group.</span></div>
   </div>
 </footer>
 
@@ -695,6 +696,8 @@ fieldset.field{border:0;margin:0;padding:0}
 </div>
 
 <script src="/assets/config.js" defer></script>
+<script src="/assets/pending-photos.js" defer></script>
+<script src="/assets/company.js" defer></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)
@@ -703,7 +706,7 @@ const CONFIG = {
   // Business WhatsApp in international format, digits only, e.g. '212612345678'. Leave '' to hide WhatsApp buttons.
   whatsappNumber: '',
   // Business email. Leave '' to hide it.
-  email: ''
+  email: 'contact@ddpsourcing.com'
 };
 
 // Real shipment photos/videos only. Put the files in the /assets/proof folder.
@@ -902,7 +905,15 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (!m || /Failed to fetch|NetworkError|network/i.test(m)) return 'Your request could not be sent. Check your connection and try again, or contact us on WhatsApp.';
     return m;
   }
-  function validLink(v) { try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
+  // Same rule as the database (requests_product_link_http): http(s), no spaces. Spaces typed or pasted
+  // inside a link are encoded, so a link like ".../product detail/..." is not refused at sign-up.
+  function normLink(v) { return String(v || '').trim().replace(/\s+/g, '%20'); }
+  function validLink(v) {
+    const s = normLink(v);
+    if (!/^https?:\/\/[^\s"'<>]+$/i.test(s)) return false;
+    try { new URL(s); return true; } catch (e) { return false; }
+  }
+  const MAX_QTY = 1000000;
   function clearErrors() { $('errors').classList.remove('show'); $('errors').innerHTML = ''; document.querySelectorAll('#reqForm [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid')); }
   function showErrors(list, fields = []) {
     const box = $('errors'); box.innerHTML = '';
@@ -984,7 +995,8 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       need('f-link', !link || validLink(link), 'The product link should start with https://');
       need('f-link', link || files.length, 'Add the product link or at least one picture.');
       need('f-prod', $('f-prod').value.trim().length >= 2, 'Enter the product name or a short description.');
-      need('f-qty', Number($('f-qty').value) >= 1, 'Enter the quantity you need.');
+      const qty = Number($('f-qty').value);
+      need('f-qty', Number.isInteger(qty) && qty >= 1 && qty <= MAX_QTY, 'Enter a quantity between 1 and 1,000,000 units.');
     }
     if (n === 2) {
       need('f-name', $('f-name').value.trim().length >= 2, 'Enter your full name.');
@@ -1006,7 +1018,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   function buildRow() {
     return {
       product_name: $('f-prod').value.trim(),
-      product_link: $('f-link').value.trim() || null,
+      product_link: normLink($('f-link').value) || null,
       quantity: parseInt($('f-qty').value, 10),
       specifications: $('f-specs').value.trim() || null,
       order_type: (document.querySelector('input[name="otype"]:checked') || {}).value || 'new',
@@ -1035,7 +1047,9 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (kind === 'confirm') {
       $('doneTitle').textContent = 'Check your email to finish.';
       $('doneText').textContent = 'Your request is saved. We sent a confirmation link to ' + info.email + '. Open it to activate your account, then follow your request and talk with our team there. We will also contact you on WhatsApp the same business day.' +
-        (files.length ? ' Your photos were not uploaded yet: after you log in, open your request and send them in the conversation.' : '');
+        (!files.length ? '' : info.photosKept
+          ? ' Your pictures are saved on this device: they are added to your request automatically when you open the confirmation link here.'
+          : ' Your pictures could not be kept: after you log in, open your request and send them in the conversation.');
       $('doneBtn').hidden = true;
       return;
     }
@@ -1088,7 +1102,11 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
         setAcct('login'); $('a-pass').value = '';
         throw new Error('An account already exists with this email. Enter your password to log in and send your request.');
       }
-      if (!r.data.session) return finish('confirm', { email });
+      if (!r.data.session) {
+        // No login before the email is confirmed: keep the pictures in this browser; /account uploads them at first login.
+        const photosKept = files.length && window.PendingPhotos && r.data.user ? await window.PendingPhotos.save(r.data.user.id, files) : false;
+        return finish('confirm', { email, photosKept });
+      }
       session = r.data.session;
       const q = await sb.from('requests').select('id, code').order('created_at', { ascending: false }).limit(1);
       sb.auth.updateUser({ data: { pending_request: null } }).catch(() => {});
