@@ -33,9 +33,12 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `account/index.html` | Client portal. Request form = same simple fields as the homepage (step 1 product: link, name, order type, quantity, pictures, specs; step 2: delivery city, notes, consents; step 3 for visitors without a session: email checked with `account_exists` → log in, or name/WhatsApp/selling status + new password; the request travels in `pending_request`). Category/USD price/weight are hidden fields filled only from the estimator. **Get estimated price** is a tab inside the account (same `/api/estimate`), with a button that turns the tested product into a prefilled request. Also: log in, reset password (a reset link always opens the new-password form), my requests + tracking + unread badges, two-way conversation per request, profile |
 | `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management; request drawer with client conversation, status, assignment, next action, quotation, 40/60 payments with proof, costs & profit, notes, activity |
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
+| `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
+| `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
+| `tests/` | `sprint1_db_checks.sql` (rolled-back DB checks), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
-| `privacy.html`, `terms.html` | Legal templates (bracketed parts to complete) |
+| `privacy.html`, `terms.html` | Legal pages (placeholders removed in Sprint 1; full rewrite in Sprint 2) |
 
 ## Brand
 
@@ -86,6 +89,9 @@ So are the 2 warnings for `account_exists(email)` (callable without login): the 
 at step 3 to ask "your password" or "choose a password"; it returns only true/false, which signup already reveals.
 Same for `published_reviews()` and `review_media_published(name)` (callable without login): the homepage reads approved
 reviews and their media with them; they expose nothing about unapproved reviews or accounts.
+`my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
+team-only table shown in CRM "Needs attention"). `request_notifications` has RLS with no policy on purpose: only the
+`notify-new-request` Edge Function (service role) uses it.
 Links typed by clients (`requests.product_link`, `profiles.store_link`) must be http(s) (DB check constraints);
 pages only make a link clickable through `safeUrl()`. `request-files` accepts pictures and PDF, 10 MB max.
 

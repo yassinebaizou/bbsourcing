@@ -312,6 +312,7 @@ fieldset.field{border:0;margin:0;padding:0}
 .wa-btn{background:#25D366;color:#062E16}
 .wa-btn:hover{background:#3BE07A;color:#062E16}
 
+@media (max-width:760px){.foot-grid a,.logo{min-height:44px;display:inline-flex;align-items:center}.logo{flex-direction:column;align-items:flex-start;justify-content:center}.foot-grid ul{gap:0}}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style>
@@ -672,11 +673,11 @@ fieldset.field{border:0;margin:0;padding:0}
         <a class="logo" href="#top" aria-label="DDPSourcing home"><b>DDP</b><span>SOURCING</span></a>
         <p class="foot-about">DDP sourcing from China to Morocco. We find trusted suppliers, ship by express air, clear customs, and deliver to your door for one final price per unit.</p>
       </div>
-      <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Request a price</a></li></ul></div>
-      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms of Service</a></li></ul></div>
+      <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Submit sourcing request</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
       <div><h4>Contact</h4><ul id="contactList"><li>Monday to Friday, 10:00 AM – 6:00 PM (Morocco time)</li></ul></div>
     </div>
-    <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span>Invoices are issued by Beast Capital Group.</span></div>
+    <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span data-company-line>DDPSourcing is a service of Beast Capital Group, Casablanca. Invoices are issued by Beast Capital Group.</span></div>
   </div>
 </footer>
 
@@ -696,6 +697,7 @@ fieldset.field{border:0;margin:0;padding:0}
 
 <script src="/assets/config.js" defer></script>
 <script src="/assets/pending-photos.js" defer></script>
+<script src="/assets/company.js" defer></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)
@@ -704,7 +706,7 @@ const CONFIG = {
   // Business WhatsApp in international format, digits only, e.g. '212612345678'. Leave '' to hide WhatsApp buttons.
   whatsappNumber: '',
   // Business email. Leave '' to hide it.
-  email: ''
+  email: 'contact@ddpsourcing.com'
 };
 
 // Real shipment photos/videos only. Put the files in the /assets/proof folder.

@@ -52,6 +52,8 @@ a `business_settings` table edited from CRM → Settings (Sprint 3), read by the
 
 ## Sprint 1 — Fix the bugs and remove "unfinished" signals
 
+**Status: done** (30 Oct 2026). Migration `20261030223353`, tests in `tests/`. Test data (D24) not deleted: waiting for the owner.
+
 **Prompt to paste:**
 > Read CLAUDE.md, docs/WORK_PLAN.md and docs/ROADMAP.md. Do Sprint 1 of docs/WORK_PLAN.md only. Open one pull request.
 
