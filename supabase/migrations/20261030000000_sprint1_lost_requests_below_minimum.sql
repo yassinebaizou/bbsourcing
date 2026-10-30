@@ -3,10 +3,9 @@
 -- =====================================================================
 
 -- A3. "Below min." must work when the form gives no product value (value is optional since v3).
---     A generated column cannot be changed in place: rebuild it (nothing else depends on it).
-alter table public.requests drop column below_minimum;
-alter table public.requests add column below_minimum boolean
-  generated always as (quantity < 100 and coalesce(estimated_value_mad, 0) < 5000) stored;
+--     Postgres 17 changes the formula in place (no column removed, nothing else depends on it).
+alter table public.requests alter column below_minimum
+  set expression as (quantity < 100 and coalesce(estimated_value_mad, 0) < 5000);
 
 -- Same limit as the request forms: 1 to 1,000,000 units.
 alter table public.requests add constraint requests_quantity_max check (quantity <= 1000000);
