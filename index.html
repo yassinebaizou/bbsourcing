@@ -554,7 +554,7 @@ fieldset.field{border:0;margin:0;padding:0}
                     <label><input type="radio" name="otype" value="restock"> Restock</label>
                   </div>
                 </fieldset>
-                <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" inputmode="numeric" placeholder="e.g. 300"></div>
+                <div class="field"><label for="f-qty">Quantity <span aria-hidden="true">*</span></label><input id="f-qty" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="e.g. 300"></div>
                 <div class="field full"><label for="f-img">Product pictures (up to 5)</label><input class="file" id="f-img" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="files-chips" id="filesChips"></div></div>
                 <div class="field full"><label for="f-specs">Specifications (optional)</label><textarea id="f-specs" rows="3" maxlength="3000" placeholder="Colors, sizes, materials, packaging, branding…"></textarea></div>
               </div>
@@ -695,6 +695,7 @@ fieldset.field{border:0;margin:0;padding:0}
 </div>
 
 <script src="/assets/config.js" defer></script>
+<script src="/assets/pending-photos.js" defer></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)
@@ -902,7 +903,15 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (!m || /Failed to fetch|NetworkError|network/i.test(m)) return 'Your request could not be sent. Check your connection and try again, or contact us on WhatsApp.';
     return m;
   }
-  function validLink(v) { try { const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; } catch (e) { return false; } }
+  // Same rule as the database (requests_product_link_http): http(s), no spaces. Spaces typed or pasted
+  // inside a link are encoded, so a link like ".../product detail/..." is not refused at sign-up.
+  function normLink(v) { return String(v || '').trim().replace(/\s+/g, '%20'); }
+  function validLink(v) {
+    const s = normLink(v);
+    if (!/^https?:\/\/[^\s"'<>]+$/i.test(s)) return false;
+    try { new URL(s); return true; } catch (e) { return false; }
+  }
+  const MAX_QTY = 1000000;
   function clearErrors() { $('errors').classList.remove('show'); $('errors').innerHTML = ''; document.querySelectorAll('#reqForm [aria-invalid]').forEach((x) => x.removeAttribute('aria-invalid')); }
   function showErrors(list, fields = []) {
     const box = $('errors'); box.innerHTML = '';
@@ -984,7 +993,8 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
       need('f-link', !link || validLink(link), 'The product link should start with https://');
       need('f-link', link || files.length, 'Add the product link or at least one picture.');
       need('f-prod', $('f-prod').value.trim().length >= 2, 'Enter the product name or a short description.');
-      need('f-qty', Number($('f-qty').value) >= 1, 'Enter the quantity you need.');
+      const qty = Number($('f-qty').value);
+      need('f-qty', Number.isInteger(qty) && qty >= 1 && qty <= MAX_QTY, 'Enter a quantity between 1 and 1,000,000 units.');
     }
     if (n === 2) {
       need('f-name', $('f-name').value.trim().length >= 2, 'Enter your full name.');
@@ -1006,7 +1016,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
   function buildRow() {
     return {
       product_name: $('f-prod').value.trim(),
-      product_link: $('f-link').value.trim() || null,
+      product_link: normLink($('f-link').value) || null,
       quantity: parseInt($('f-qty').value, 10),
       specifications: $('f-specs').value.trim() || null,
       order_type: (document.querySelector('input[name="otype"]:checked') || {}).value || 'new',
@@ -1035,7 +1045,9 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
     if (kind === 'confirm') {
       $('doneTitle').textContent = 'Check your email to finish.';
       $('doneText').textContent = 'Your request is saved. We sent a confirmation link to ' + info.email + '. Open it to activate your account, then follow your request and talk with our team there. We will also contact you on WhatsApp the same business day.' +
-        (files.length ? ' Your photos were not uploaded yet: after you log in, open your request and send them in the conversation.' : '');
+        (!files.length ? '' : info.photosKept
+          ? ' Your pictures are saved on this device: they are added to your request automatically when you open the confirmation link here.'
+          : ' Your pictures could not be kept: after you log in, open your request and send them in the conversation.');
       $('doneBtn').hidden = true;
       return;
     }
@@ -1088,7 +1100,11 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
         setAcct('login'); $('a-pass').value = '';
         throw new Error('An account already exists with this email. Enter your password to log in and send your request.');
       }
-      if (!r.data.session) return finish('confirm', { email });
+      if (!r.data.session) {
+        // No login before the email is confirmed: keep the pictures in this browser; /account uploads them at first login.
+        const photosKept = files.length && window.PendingPhotos && r.data.user ? await window.PendingPhotos.save(r.data.user.id, files) : false;
+        return finish('confirm', { email, photosKept });
+      }
       session = r.data.session;
       const q = await sb.from('requests').select('id, code').order('created_at', { ascending: false }).limit(1);
       sb.auth.updateUser({ data: { pending_request: null } }).catch(() => {});

@@ -520,6 +520,8 @@
   }
   // Only http(s) links are ever made clickable (a "javascript:" link would run code).
   function safeUrl(u) { return /^https?:\/\/[^\s"'<>]+$/i.test(String(u || "").trim()) ? String(u).trim() : ""; }
+  // "1 order", "2 orders"
+  function plural(n, one, many) { return fmt.format(n) + " " + (n === 1 ? one : many); }
   function dShort(iso) { return iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""; }
   function dTime(iso) { return iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""; }
   function waLink(n) { var d = String(n || "").replace(/\D/g, ""); return d ? "https://wa.me/" + d : ""; }
@@ -667,6 +669,7 @@
       staff: sb.from("staff").select("user_id, role, active, created_at, profile:profiles!staff_user_id_fkey(full_name,email)"),
       msgs: sb.from("request_messages").select("request_id, from_team, kind, created_at").eq("kind", "message").order("created_at", { ascending: false }).range(0, 9999),
       reads: sb.from("message_reads").select("request_id, last_read_at"),
+      failed: sb.from("failed_pending_requests").select("id, payload, error, created_at, user:profiles!failed_pending_requests_user_id_fkey(full_name,email,whatsapp)").is("resolved_at", null).order("created_at", { ascending: false }),
       reviews: sb.from("reviews").select("*, client:profiles!reviews_client_id_fkey(full_name,email)").order("created_at", { ascending: false }).range(0, 999)
     };
     if (S.canMoney) jobs.costs = sb.from("order_costs").select("*");
@@ -688,6 +691,7 @@
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
       S.profiles = (res.profiles && res.profiles.data) || [];
       S.reviews = (res.reviews && res.reviews.data) || [];
+      S.failed = (res.failed && res.failed.data) || [];
       S.reads = {}; ((res.reads && res.reads.data) || []).forEach(function (r) { S.reads[r.request_id] = r.last_read_at; });
       S.unread = {}; S.lastClientMsg = {}; S.lastTeamMsg = {};
       ((res.msgs && res.msgs.data) || []).forEach(function (m) {
@@ -813,6 +817,12 @@
 
   function attentionItems() {
     var today = new Date().toISOString().slice(0, 10), items = [];
+    // Requests sent at sign-up that the database refused: the client's account was created without them.
+    (S.failed || []).forEach(function (f) {
+      var p = f.payload || {};
+      items.push({ f: f, w: 0, t: "Request lost at sign-up: " + (p.product_name || "product") + (p.quantity ? " · " + p.quantity + " units" : ""),
+        s: "Not saved on " + dTime(f.created_at) + ". The client is asked to send it again when they log in. Contact them if they don't." });
+    });
     S.requests.forEach(function (q) {
       var r = rank(q.status), p = q.payment;
       if (q.status === "completed" || q.status === "not_qualified") {
@@ -869,12 +879,12 @@
       if (p && (p.deposit_status === "received" || p.final_status === "received")) toVerify++;
     });
     var km = [
-      { l: "Sales", v: money(sales), s: fmt.format(ordersP.length) + " confirmed orders" },
+      { l: "Sales", v: money(sales), s: plural(ordersP.length, "confirmed order", "confirmed orders") },
       { l: "Collected", v: money(collected), s: "Verified payments on these orders" },
       { l: "Outstanding now", v: money(outstandingAll), s: "All open orders", go: S.role === "agent" ? null : { view: "payments" } }
     ];
     if (S.canMoney) {
-      km.push({ l: "Costs", v: money(costSum), s: "Costs entered on " + withCost + " of " + ordersP.length + " orders", warn: withCost < ordersP.length });
+      km.push({ l: "Costs", v: money(costSum), s: "Costs entered on " + withCost + " of " + plural(ordersP.length, "order", "orders"), warn: withCost < ordersP.length });
       km.push({ l: "Profit", v: money(profitSum), s: "Orders with costs entered" });
       km.push({ l: "Average margin", v: pct(salesWithCost ? profitSum / salesWithCost : null), s: "Profit ÷ sales" });
       km.push({ l: "Payments to verify", v: fmt.format(toVerify), s: "Proof received", hl: toVerify > 0, go: { view: "payments" } });
@@ -889,7 +899,7 @@
     var waitingFin = R.filter(function (q) { return q.status === "awaiting_final_payment"; }).length;
     var unreadTotal = Object.keys(S.unread).reduce(function (a, k) { return a + S.unread[k]; }, 0);
     var ko = [
-      { l: "Unread client messages", v: fmt.format(unreadTotal), s: Object.keys(S.unread).length + " conversations", hl: unreadTotal > 0, go: { unread: true } },
+      { l: "Unread client messages", v: fmt.format(unreadTotal), s: plural(Object.keys(S.unread).length, "conversation", "conversations"), hl: unreadTotal > 0, go: { unread: true } },
       { l: "Awaiting 40% deposit", v: fmt.format(waitingDep), s: "Quotation accepted", go: { status: "awaiting_deposit" } },
       { l: "Awaiting 60% payment", v: fmt.format(waitingFin), s: "Arrived in Morocco", go: { status: "awaiting_final_payment" } },
       { l: "Average days to deliver", v: avgDays == null ? "—" : String(Math.round(avgDays * 10) / 10), s: "Deposit verified → delivered" },
@@ -898,13 +908,29 @@
     $("kpiOps").innerHTML = kpiHtml(ko); bindKpis($("kpiOps"), ko);
 
     var att = attentionItems();
-    $("attentionCount").textContent = att.length ? att.length + " items" : "";
+    $("attentionCount").textContent = att.length ? att.length + (att.length === 1 ? " item" : " items") : "";
     $("attentionBody").innerHTML = att.length ? att.slice(0, 15).map(function (a) {
+      if (a.f) {
+        var u = a.f.user || {};
+        return '<tr><td><span class="code">Not saved</span></td><td>' + esc(u.full_name || u.email || "Client") + (u.whatsapp ? "<br><small class='muted'>" + esc(u.whatsapp) + "</small>" : "") +
+          '</td><td class="reason">' + esc(a.t) + "<small>" + esc(a.s) + '</small></td><td><span class="pill pill-red">Lost at sign-up</span></td>' +
+          '<td><button type="button" class="btn btn-secondary btn-sm" data-failed="' + esc(a.f.id) + '">Mark handled</button></td></tr>';
+      }
       var q = a.q;
       return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span></td><td>" + esc(clientName(q)) +
         '</td><td class="reason">' + esc(a.t) + "<small>" + esc(a.s) + "</small></td><td>" + statusPill(q.status) + "</td><td>" + ownerCell(q.assigned_to) + "</td></tr>";
     }).join("") : emptyRow(5, "Nothing needs attention right now.");
     bindRows($("attentionBody"));
+    $("attentionBody").querySelectorAll("[data-failed]").forEach(function (b) {
+      b.onclick = function (e) {
+        e.stopPropagation(); b.disabled = true;
+        sb.from("failed_pending_requests").update({ resolved_at: new Date().toISOString() }).eq("id", b.dataset.failed).then(function (r) {
+          if (r.error) { b.disabled = false; return toast(friendly(r.error), true); }
+          S.failed = S.failed.filter(function (f) { return f.id !== b.dataset.failed; });
+          toast("Marked as handled."); render();
+        });
+      };
+    });
 
     renderMonthly();
     renderPipeline();
@@ -987,7 +1013,7 @@
         var m = months[+h.dataset.m];
         tip.innerHTML = "<b>" + esc(m.full) + "</b>" + '<i style="background:var(--series-1)"></i>Sales ' + money(m.sales) + "<br>" +
           (showProfit ? '<i style="background:var(--series-2)"></i>Profit ' + money(m.profit) + (m.salesWithCost ? " · " + pct(m.profit / m.salesWithCost) : "") + "<br>" : "") +
-          fmt.format(m.orders) + " orders · " + fmt.format(m.req) + " requests";
+          plural(m.orders, "order", "orders") + " · " + plural(m.req, "request", "requests");
         tip.hidden = false;
         var r = wrap.getBoundingClientRect(), x = e.clientX - r.left + wrap.scrollLeft + 14, yy = e.clientY - r.top + 10;
         if (x + tip.offsetWidth > wrap.scrollWidth) x = x - tip.offsetWidth - 28;
@@ -1146,7 +1172,7 @@
       if (sort === "recent") return (b.lastActivity || "") < (a.lastActivity || "") ? -1 : 1;
       return b.sales - a.sales;
     });
-    $("clientsCount").textContent = list.length + " clients";
+    $("clientsCount").textContent = plural(list.length, "client", "clients");
     $("clientsHead").innerHTML = "<tr><th>Client</th><th>WhatsApp</th><th>City</th><th class='num'>Requests</th><th class='num'>Orders</th><th class='num'>Sales</th><th class='num'>Collected</th><th class='num'>Outstanding</th>" + (S.canMoney ? "<th class='num'>Profit</th>" : "") + "<th>Last order</th></tr>";
     $("clientsBody").innerHTML = list.length ? list.map(function (c) {
       var out = c.sales - c.collected;
@@ -1168,7 +1194,7 @@
       if (p.final_status === "received") finWait++;
     });
     $("payKpis").innerHTML = kpiHtml([
-      { l: "Confirmed order value", v: money(total), s: rows.length + " orders" }, { l: "Verified", v: money(ver), s: "Money in the account" },
+      { l: "Confirmed order value", v: money(total), s: plural(rows.length, "order", "orders") }, { l: "Verified", v: money(ver), s: "Money in the account" },
       { l: "Outstanding", v: money(total - ver), s: "Still to collect" }, { l: "To verify", v: depWait + finWait + "", s: depWait + " deposits · " + finWait + " balances", hl: depWait + finWait > 0 }
     ]);
     var f = $("pFilter").value;
