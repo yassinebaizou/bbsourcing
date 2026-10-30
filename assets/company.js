@@ -27,6 +27,8 @@ window.DDP_COMPANY = {
   function fill() {
     var c = window.DDP_COMPANY;
     document.querySelectorAll("[data-company-line]").forEach(function (el) { el.textContent = line(); });
+    document.querySelectorAll("[data-company-legal-name]").forEach(function (el) { el.textContent = c.legalName; });
+    document.querySelectorAll("[data-company-city]").forEach(function (el) { el.textContent = c.city; });
     document.querySelectorAll("[data-company-email]").forEach(function (el) {
       if (!c.email) { el.hidden = true; return; }
       el.textContent = c.email;
