@@ -259,6 +259,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Payments</button>
       <button type="button" data-view="reviews">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>Reviews <span class="count" id="countReviews" hidden></span></button>
+      <button type="button" data-view="settings" id="navSettings" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
       <button type="button" data-view="team" id="navTeam" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg>Team</button>
     </nav>
@@ -426,6 +428,11 @@
       </section>
 
       <!-- Team -->
+      <section id="view-settings" hidden>
+        <div class="page-head"><h1>Settings</h1></div>
+        <div id="settingsBox"><div class="muted">Loading…</div></div>
+      </section>
+
       <section id="view-team" hidden>
         <div class="page-head"><h1>Team</h1></div>
         <div class="alert alert-info">To add someone: they first create a normal account on <strong>/account</strong> with their work email. Then enter that email below and choose their role.</div>
@@ -648,6 +655,7 @@
       $("meRole").textContent = ROLE_LABEL[S.role]; $("meRole2").textContent = ROLE_LABEL[S.role];
       $("meAvatar").textContent = initials(S.me.full_name, S.me.email);
       $("navTeam").hidden = S.role !== "admin";
+      $("navSettings").hidden = !S.canMoney;
       $("navPayments").hidden = S.role === "agent";
       var fs = $("fStatus");
       S.statusList.forEach(function (s) { var o = document.createElement("option"); o.value = s.code; o.textContent = s.label; fs.appendChild(o); });
@@ -673,6 +681,7 @@
       reviews: sb.from("reviews").select("*, client:profiles!reviews_client_id_fkey(full_name,email)").order("created_at", { ascending: false }).range(0, 999)
     };
     if (S.canMoney) jobs.costs = sb.from("order_costs").select("*");
+    jobs.acceptances = sb.from("quote_acceptances").select("request_id, amount_mad, terms_version, accepted_at").order("accepted_at");
     if (S.role === "admin") jobs.profiles = sb.from("profiles").select("id, full_name, email, whatsapp, city, business_name, store_link, selling_status, created_at").range(0, 9999);
     var keys = Object.keys(jobs);
     return Promise.all(keys.map(function (k) { return jobs[k]; })).then(function (arr) {
@@ -689,6 +698,7 @@
       });
       S.staffById = {}; S.staff.forEach(function (s) { S.staffById[s.id] = s; });
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
+      S.accepted = {}; ((res.acceptances && res.acceptances.data) || []).forEach(function (a) { S.accepted[a.request_id] = a; });
       S.profiles = (res.profiles && res.profiles.data) || [];
       S.reviews = (res.reviews && res.reviews.data) || [];
       S.failed = (res.failed && res.failed.data) || [];
@@ -728,7 +738,7 @@
   $("side").addEventListener("click", function (e) { if (e.target === $("side")) $("side").classList.remove("open"); });
   function go(v) {
     S.view = v;
-    ["dashboard", "requests", "clients", "payments", "reviews", "team"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
+    ["dashboard", "requests", "clients", "payments", "reviews", "team", "settings"].forEach(function (x) { $("view-" + x).hidden = x !== v; });
     document.querySelectorAll(".side nav button").forEach(function (b) {
       if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -752,6 +762,7 @@
     if (S.view === "payments") renderPayments();
     if (S.view === "team") renderTeam();
     if (S.view === "reviews") renderReviews();
+    if (S.view === "settings") renderSettings();
     var nRev = (S.reviews || []).filter(function (r) { return r.status === "pending"; }).length;
     $("countReviews").hidden = !nRev; $("countReviews").textContent = nRev;
   }
@@ -1419,12 +1430,14 @@
     // Quotation & payments
     h += '<div class="sec"><h3>Final door-to-door quotation</h3>';
     if (canQuote) {
-      h += '<div class="row-inline"><div class="field"><label for="dQuote">Total price (MAD)</label><input id="dQuote" type="number" min="1" step="1" inputmode="numeric" value="' + esc(q.quote_amount_mad || "") + '"></div><button class="btn btn-primary" type="button" id="saveQuote">Save quotation</button></div>';
+      h += '<div class="row-inline"><div class="field"><label for="dQuote">Total price (MAD)</label><input id="dQuote" type="number" min="1" step="1" inputmode="numeric" value="' + esc(q.quote_amount_mad || "") + '"></div><button class="btn btn-primary" type="button" id="saveQuote">' + (q.quote_amount_mad ? "Save and send again" : "Save and send to the client") + "</button></div>" +
+        '<p class="hint">Saving sends the quote to the client\'s account with an expiry date. They accept or decline it there.</p>';
       if (q.estimator_price_mad) h += '<p class="hint">Estimator shown to the client: ≈ ' + money(q.estimator_price_mad) + " per unit × " + fmt.format(q.quantity) + " = " + money(q.estimator_price_mad * q.quantity) + "</p>";
     } else {
       h += '<div class="quote">' + (q.quote_amount_mad ? money(q.quote_amount_mad) : "Not set yet") + "</div>" +
         (p && p.deposit_status === "verified" ? '<p class="hint">Locked: the deposit is verified.</p>' : "");
     }
+    h += quoteStatus(q, canQuote);
     if (p) {
       h += '<div style="margin-top:14px">' + payBlock("deposit", "40% deposit", p.deposit_amount_mad, p.deposit_status, DEP_LABEL, p.deposit_date, p.deposit_reference, p.deposit_proof_path, p.deposit_verified_by, p.deposit_verified_at, canPay) +
         payBlock("final", "60% balance", p.balance_amount_mad, p.final_status, FIN_LABEL, p.final_date, p.final_reference, p.final_proof_path, p.final_verified_by, p.final_verified_at, canPay) +
@@ -1484,7 +1497,10 @@
     if ($("saveQuote")) $("saveQuote").onclick = function () {
       var v = Number($("dQuote").value);
       if (!(v > 0)) return toast("Enter the total quotation in MAD.", true);
-      act(sb.from("requests").update({ quote_amount_mad: v }).eq("id", q.id), "Quotation saved. Deposit: " + money(Math.round(v * 40) / 100));
+      act(sb.from("requests").update({ quote_amount_mad: v }).eq("id", q.id), "Quotation sent to the client. Deposit: " + money(Math.round(v * 40) / 100));
+    };
+    if ($("resendQuote")) $("resendQuote").onclick = function () {
+      act(sb.from("requests").update({ quote_sent_at: new Date().toISOString() }).eq("id", q.id), "Quote sent again with a new validity period.");
     };
     if (p && canPay) ["deposit", "final"].forEach(bindPay.bind(null, q));
     if ($("saveCosts")) bindCosts(q);
@@ -1568,6 +1584,81 @@
     });
   }
 
+  // Quote sent / expiry / acceptance / client closing, shown under the quotation.
+  function quoteStatus(q, canQuote) {
+    var h = "", a = S.accepted[q.id];
+    if (q.closed_kind) {
+      h += '<div class="alert alert-warn" style="margin-top:12px"><strong>' + (q.closed_kind === "declined" ? "The client declined the quote" : "The client cancelled the request") + "</strong>" +
+        (q.closed_at ? " on " + dTime(q.closed_at) : "") + ". Reason: " + esc(q.closed_reason || "—") + "</div>";
+    }
+    if (a && q.status !== "not_qualified") {
+      h += '<p class="hint" style="color:var(--green)">Accepted by the client on ' + dTime(a.accepted_at) + " · " + money(a.amount_mad) + " · Terms " + esc(a.terms_version) + "</p>";
+    }
+    if (q.quote_sent_at && q.status === "awaiting_confirmation") {
+      var expired = new Date(q.quote_expires_at) <= new Date();
+      h += '<div class="' + (expired ? "alert alert-warn" : "hint") + '" style="margin-top:10px">Sent ' + dTime(q.quote_sent_at) + " · " + (expired ? "<strong>expired</strong> " : "valid until ") + dTime(q.quote_expires_at) + ". Waiting for the client's answer." +
+        (canQuote ? ' <button type="button" class="btn btn-secondary btn-sm" id="resendQuote" style="margin-left:6px">Send again (new validity)</button>' : "") + "</div>";
+    }
+    return h;
+  }
+
+  // ---------- Settings (business_settings: rules + bank details) ----------
+  var SETTING_FIELDS = [
+    ["bank_name", "Bank", "text", "Shown to the client with the payment instructions."],
+    ["account_holder", "Account holder", "text", "Company name on the bank account."],
+    ["rib", "RIB (24 digits)", "text", "Shown to a client only while one of their requests waits for a payment."],
+    ["iban", "IBAN", "text", "Optional."],
+    ["swift", "SWIFT / BIC", "text", "Optional."],
+    ["payment_reference_note", "Transfer reference instruction", "text", "The request code (DDP-…) is shown next to it."],
+    ["quote_validity_days", "Quote valid for (days)", "number", "Expiry date of every new or resent quote."],
+    ["refund_business_days", "Refund paid within (business days)", "number", ""],
+    ["claim_hours", "Claim deadline after delivery (hours)", "number", ""],
+    ["delay_grace_days", "Late delivery counts as our problem after (days)", "number", ""],
+    ["storage_fee_after_days", "Storage fee after unpaid 60% (days)", "number", ""],
+    ["unpaid_cancel_after_days", "Order cancelled after unpaid 60% (days)", "number", ""],
+    ["storage_fee_mad", "Storage fee per day (MAD)", "number", "Leave empty to keep the amount hidden on the website."]
+  ];
+  function renderSettings() {
+    var box = $("settingsBox"), admin = S.role === "admin";
+    sb.from("business_settings").select("*").maybeSingle().then(function (r) {
+      if (S.view !== "settings") return;
+      if (r.error || !r.data) { box.innerHTML = '<div class="alert alert-warn">' + esc(r.error ? friendly(r.error) : "Settings not found.") + "</div>"; return; }
+      var d = r.data;
+      var field = function (f) {
+        var v = d[f[0]] == null ? "" : d[f[0]];
+        return '<div class="field"><label for="set_' + f[0] + '">' + esc(f[1]) + '</label><input id="set_' + f[0] + '" type="' + f[2] + '"' + (f[2] === "number" ? ' min="0" step="1" inputmode="numeric"' : ' autocomplete="off"') +
+          ' value="' + esc(v) + '"' + (admin ? "" : " disabled") + ">" + (f[3] ? '<p class="hint">' + esc(f[3]) + "</p>" : "") + "</div>";
+      };
+      box.innerHTML =
+        (admin ? "" : '<div class="alert alert-info">Only an administrator can change these settings.</div>') +
+        '<div class="card panel"><div class="panel-head"><h2>Bank account for client transfers</h2></div><div style="padding:0 20px 20px">' +
+        '<p class="hint" style="margin-top:0">Type the account details here yourself. Never send them in a chat or an email.</p><div class="cost-grid">' +
+        SETTING_FIELDS.slice(0, 6).map(field).join("") + "</div></div></div>" +
+        '<div class="card panel"><div class="panel-head"><h2>Rules shown to clients</h2></div><div style="padding:0 20px 20px">' +
+        '<p class="hint" style="margin-top:0">These numbers appear on /policies, the Terms of Service and the FAQ. Changing a rule changes what clients agree to: tell your lawyer and raise the Terms version for big changes. Terms version in force: <strong>' + esc(d.terms_version) + "</strong>.</p>" +
+        '<div class="cost-grid">' + SETTING_FIELDS.slice(6).map(field).join("") + "</div></div></div>" +
+        (admin ? '<div class="pay-foot" style="margin-top:16px"><span class="hint">' + (d.updated_by ? "Last saved " + dTime(d.updated_at) + (S.staffById[d.updated_by] ? " by " + esc(S.staffById[d.updated_by].name || S.staffById[d.updated_by].email) : "") : "") + '</span><button class="btn btn-primary" type="button" id="saveSettings">Save settings</button></div>' : "");
+      if (!admin) return;
+      $("saveSettings").onclick = function () {
+        var patch = {}, bad = null;
+        SETTING_FIELDS.forEach(function (f) {
+          var raw = $("set_" + f[0]).value.trim();
+          if (f[2] === "number") {
+            if (raw === "") { if (f[0] === "storage_fee_mad") patch[f[0]] = null; else bad = f[1]; return; }
+            var n = Number(raw); if (!(n >= 0)) bad = f[1]; patch[f[0]] = n;
+          } else {
+            if (!raw && (f[0] === "bank_name" || f[0] === "account_holder" || f[0] === "payment_reference_note")) bad = f[1];
+            patch[f[0]] = raw || null;
+          }
+        });
+        if (bad) return toast("Check the field: " + bad, true);
+        var compact = function (x) { return String(x || "").replace(/\s/g, ""); };
+        if (patch.rib && !/^\d{24}$/.test(compact(patch.rib))) return toast("The RIB must have 24 digits.", true);
+        act(sb.from("business_settings").update(patch).eq("id", true), "Settings saved.");
+      };
+    });
+  }
+
   function payBlock(kind, title, amount, status, labels, date, ref, proof, by, at, canPay) {
     var who = S.staffById[by];
     var cls = status === "verified" ? "verified" : status === "pending" ? "pendingc" : "";
@@ -1637,6 +1728,9 @@
       case "message_to_client": return "Message sent to the client";
       case "message_from_client": return "Message from the client";
       case "costs_updated": return "Costs updated (total " + money(d.total) + ")";
+      case "quote_accepted": return "Client accepted the quote (" + money(d.amount) + ", Terms " + (d.terms_version || "") + ")";
+      case "quote_declined": return "Client declined the quote: " + (d.reason || "");
+      case "client_cancelled": return "Client cancelled the request: " + (d.reason || "");
       default:
         var m = e.action.match(/^(deposit|final_payment)_(.+)$/);
         if (m) return (m[1] === "deposit" ? "40% deposit" : "60% balance") + " marked " + (DEP_LABEL[m[2]] || FIN_LABEL[m[2]] || m[2]).toLowerCase() + (d.amount ? " (" + money(d.amount) + ")" : "");

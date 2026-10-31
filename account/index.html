@@ -68,6 +68,24 @@
   .thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
   .thumbs img{width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
   .section-title{font-size:15px;margin:22px 0 12px}
+  /* Quote, acceptance and payment card (Sprint 3) */
+  .deal{border:2px solid var(--orange)}
+  .deal h3{margin:0 0 4px;font-size:18px}
+  .deal .total{font-size:30px;font-weight:900;letter-spacing:-.01em;margin:6px 0 2px}
+  .deal .split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+  .deal .split div{background:var(--cloud);border-radius:10px;padding:10px 12px}
+  .deal .split b{display:block;font-size:17px}
+  .deal .split span{font-size:12.5px;color:var(--muted);font-weight:600}
+  .deal ul{margin:6px 0 12px;padding-left:20px;font-size:14px;color:var(--slate)}
+  .deal .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .deal .actions .btn{min-height:44px}
+  .bank{display:grid;gap:8px;margin:12px 0;background:var(--cloud);border-radius:10px;padding:14px}
+  .bank div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px}
+  .bank dt{font-size:12.5px;color:var(--muted);font-weight:600}
+  .bank dd{margin:0;font-weight:700;word-break:break-all}
+  .copy{font:inherit;font-size:12.5px;font-weight:700;color:#B04600;background:none;border:0;cursor:pointer;padding:0 0 0 8px;min-height:24px}
+  .cancel-box{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
+  @media (max-width:760px){.copy,.cancel-box .link{min-height:44px}}
 
   /* Request form */
   .steps{display:flex;gap:8px;margin-bottom:20px}
@@ -490,13 +508,13 @@
     if (status === "not_qualified") return ["This request is closed", "Contact us on WhatsApp if you have any question about it."];
     if (rank <= 4) return ["We are reviewing your request", "Our team will contact you on WhatsApp within the same business day."];
     if (rank <= 6) return ["Your product can be sourced", "We are preparing your final door-to-door quotation."];
-    if (rank === 7) return ["Your quotation is ready", "We shared your final door-to-door price on WhatsApp. Reply there to confirm."];
-    if (rank === 8) return ["Pay the 40% deposit to start", "Our team shared the payment details on WhatsApp. Your order starts once the deposit is confirmed."];
+    if (rank === 7) return ["Your quotation is ready", "Read your final door-to-door price below, then accept it, decline it or ask us a question."];
+    if (rank === 8) return ["Pay the 40% deposit to start", "Use the bank details below, then send us your transfer proof. Your order starts once the deposit is verified."];
     if (rank === 9) return ["Your order is being prepared", "Your deposit is confirmed and the order is placed with the supplier."];
     if (rank === 10) return ["Quality inspection", "We are checking your products against the agreed specifications."];
     if (rank <= 12) return ["On its way by express air", "Your order is in transit and customs clearance is handled by our team."];
     if (rank === 13) return ["Arrived in Morocco", "Your order has arrived. We will ask for the final payment before delivery."];
-    if (rank === 14) return ["Pay the remaining 60%", "Our team shared the details on WhatsApp. Delivery is scheduled once the payment is confirmed."];
+    if (rank === 14) return ["Pay the remaining 60%", "Use the bank details below, then send us your transfer proof. Delivery is scheduled once the payment is verified."];
     if (rank <= 16) return ["Out for delivery", "Your products are on their way to your address."];
     return ["Delivered", "Your order has been delivered. Thank you for working with us."];
   }
@@ -862,12 +880,14 @@
     box.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
     Promise.all([
       sb.from("requests").select("*").eq("id", id).single(),
-      sb.from("request_files").select("path, file_name").eq("request_id", id)
+      sb.from("request_files").select("path, file_name").eq("request_id", id).eq("kind", "product_image")
     ]).then(function (res) {
       if (res[0].error) { box.innerHTML = ""; return msg(box, "error", friendly(res[0].error)); }
       var q = res[0].data, files = res[1].data || [];
       var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
       var ns = nextStep(q.status, st.rank);
+      if (q.closed_kind === "declined") ns = ["You declined this quote", "Reason: " + (q.closed_reason || "") + ". You can send a new request at any time."];
+      if (q.closed_kind === "cancelled") ns = ["You cancelled this request", "Reason: " + (q.closed_reason || "") + ". If you already paid the 40%, our team contacts you about the refund."];
       var row = function (k, v) { return v || v === 0 ? "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
       box.innerHTML =
         '<button type="button" class="btn btn-ghost" id="backList">← All requests</button>' +
@@ -891,6 +911,7 @@
         row("Specifications", esc(q.specifications)) +
         row("Notes", esc(q.client_notes)) +
         "</dl>" + (files.length ? '<h3 class="section-title">Images</h3><div class="thumbs" id="thumbs"></div>' : "") + "</div>" +
+        '<div id="dealBox"></div>' +
         '<div class="card" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">Conversation with our team</h3>' +
         '<p class="muted" style="margin:-6px 0 12px;font-size:14px">Ask a question, send photos or documents, and read our updates on this request.</p>' +
         '<div class="chat" id="chat"><div class="loading"><div class="spinner"></div></div></div>' +
@@ -900,6 +921,7 @@
       $("backList").onclick = function () { openTab("requests"); };
       bindChat(q);
       loadChat(q.id, true);
+      renderDeal(q, st);
       if (files.length) {
         sb.storage.from("request-files").createSignedUrls(files.map(function (f) { return f.path; }), 3600).then(function (r) {
           $("thumbs").innerHTML = (r.data || []).filter(function (x) { return x.signedUrl; }).map(function (x) {
@@ -908,6 +930,155 @@
         });
       }
     });
+  }
+
+  // ---------- Quote, acceptance and payment (Sprint 3) ----------
+  // Rule numbers and the Terms version come from business_settings (public_settings), never hard-coded.
+  var dayFmt = function (t) { return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }); };
+  var mad = function (n) { return "MAD " + new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(n); };
+  function loadSettings() {
+    if (state.settings) return Promise.resolve(state.settings);
+    return sb.rpc("public_settings").then(function (r) { state.settings = r.data || {}; return state.settings; });
+  }
+  function askInChat(text) {
+    var t = $("chatMsg"); if (!t) return;
+    t.value = text; t.focus();
+    t.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function renderDeal(q, st) {
+    var box = $("dealBox");
+    if (!box) return;
+    var cancellable = q.status !== "not_qualified" && st.rank <= 8;
+    Promise.all([
+      loadSettings(),
+      q.quote_amount_mad != null ? sb.rpc("my_payment_info", { p_request: q.id }) : Promise.resolve({ data: null }),
+      sb.from("quote_acceptances").select("amount_mad, terms_version, accepted_at").eq("request_id", q.id).order("accepted_at", { ascending: false }).limit(1)
+    ]).then(function (res) {
+      if (!$("dealBox")) return;
+      var S = res[0], pay = res[1].data, acc = (res[2].data || [])[0], html = "";
+      if (pay && pay.deposit_status === "verified") cancellable = false;
+      if (q.status === "awaiting_confirmation" && q.quote_sent_at) html = quoteCard(q, S);
+      else if (pay && pay.bank) html = payCard(q, pay, S);
+      if (acc && q.status !== "not_qualified") html += '<p class="muted" style="font-size:13.5px;margin:12px 0 0">You accepted this quote (' + esc(mad(acc.amount_mad)) + ") on " + esc(dayFmt(acc.accepted_at)) + ", under our Terms version " + esc(acc.terms_version) + ".</p>";
+      var main = !!html;
+      if (cancellable && q.status !== "awaiting_confirmation") html += cancelBox(pay, S);
+      if (!html) { box.innerHTML = ""; return; }
+      box.innerHTML = '<div class="card' + (main ? " deal" : "") + '" style="margin-top:16px">' + html + "</div>";
+      bindDeal(q, pay, S);
+    });
+  }
+  function quoteCard(q, S) {
+    var total = Number(q.quote_amount_mad), expired = !q.quote_expires_at || new Date(q.quote_expires_at) <= new Date();
+    var unit = total / q.quantity;
+    var h = '<h3>Your final quote</h3><p class="muted" style="margin:0;font-size:14px">One price, delivered to your door in ' + esc(q.delivery_city || "Morocco") + ". Nothing more to pay at customs.</p>" +
+      '<div class="total">' + esc(mad(total)) + "</div>" +
+      '<div class="muted" style="font-size:14px">' + esc(mad(Math.round(unit * 100) / 100)) + " per unit × " + fmt.format(q.quantity) + " units</div>" +
+      '<div class="split"><div><span>40% deposit, after you accept</span><b>' + esc(mad(Math.round(total * 40) / 100)) + "</b></div>" +
+      "<div><span>60% balance, before delivery</span><b>" + esc(mad(Math.round(total * 60) / 100)) + "</b></div></div>" +
+      '<strong style="font-size:14px">Included in the price</strong><ul><li>Product, supplier check and quality inspection before shipping</li><li>Express air freight to Morocco (15 to 20 days)</li><li>Customs clearance, import duties and charges</li><li>Delivery to your door and our service fee</li></ul>';
+    if (expired) {
+      return h + '<div class="alert alert-warn">This quote expired on ' + esc(dayFmt(q.quote_expires_at || q.quote_sent_at)) + ". Prices from suppliers and transport may have changed. Ask our team to send it again.</div>" +
+        '<div class="actions"><button type="button" class="btn btn-primary" id="dealAsk" data-text="Please send my quote again.">Ask for a new quote</button></div>';
+    }
+    return h + '<p style="font-size:14px;margin:0 0 12px"><strong>Valid until ' + esc(dayFmt(q.quote_expires_at)) + ".</strong> Read the <a href=\"/policies\" target=\"_blank\" rel=\"noopener\">payment, cancellation and refund rules</a> and our <a href=\"/terms\" target=\"_blank\" rel=\"noopener\">Terms of Service</a>.</p>" +
+      '<label class="check"><input type="checkbox" id="dealTerms"> <span>I accept the <a href="/terms" target="_blank" rel="noopener">Terms of Service</a> (version ' + esc(S.termsVersion || "") + ") and this quote.</span></label>" +
+      '<div id="dealMsg"></div>' +
+      '<div class="actions"><button type="button" class="btn btn-primary" id="dealAccept">Accept the quote</button>' +
+      '<button type="button" class="btn btn-secondary" id="dealAsk" data-text="Question about my quote: ">Ask a question</button>' +
+      '<button type="button" class="btn btn-ghost" id="dealDecline">Decline</button></div>' +
+      '<div id="declineBox" hidden style="margin-top:14px"><div class="field"><label for="declineWhy">Why do you decline? <span class="opt">(helps us improve)</span></label><textarea id="declineWhy" maxlength="1000" placeholder="For example: price too high, I found another supplier…"></textarea></div>' +
+      '<button type="button" class="btn btn-danger" id="declineGo">Decline this quote</button></div>';
+  }
+  function payCard(q, pay, S) {
+    var part = q.status === "awaiting_deposit" && pay.deposit_status !== "verified" ? "deposit" : "final";
+    var amount = part === "deposit" ? pay.deposit_amount_mad : pay.balance_amount_mad;
+    var status = part === "deposit" ? pay.deposit_status : pay.final_status;
+    var b = pay.bank, line = function (k, v, copy) {
+      return v ? "<div><dt>" + k + "</dt><dd>" + esc(v) + (copy ? ' <button type="button" class="copy" data-copy="' + esc(v) + '">Copy</button>' : "") + "</dd></div>" : "";
+    };
+    var h = "<h3>" + (part === "deposit" ? "Pay the 40% deposit" : "Pay the remaining 60%") + '</h3><div class="total">' + esc(mad(amount)) + "</div>" +
+      '<p class="muted" style="margin:0;font-size:14px">By bank transfer only, to the company account below. We never ask for cash or a personal account.</p>';
+    if (b.rib || b.iban) {
+      h += '<dl class="bank">' + line("Bank", b.bank_name) + line("Account holder", b.account_holder) + line("RIB", b.rib, true) + line("IBAN", b.iban, true) + line("SWIFT", b.swift, true) +
+        line("Reference to write", b.reference, true) + "</dl>" + '<p style="font-size:14px;margin:0 0 12px">' + esc(b.reference_note) + "</p>";
+    } else {
+      h += '<div class="alert alert-info">Our bank details will appear here very soon. Write to us in the conversation below if you want to pay now. Reference to write: <strong>' + esc(b.reference) + "</strong>.</div>";
+    }
+    if (status === "received") {
+      h += '<div class="alert alert-success">We received your transfer proof' + (part === "deposit" && pay.deposit_date ? " on " + esc(dayFmt(pay.deposit_date)) : part === "final" && pay.final_date ? " on " + esc(dayFmt(pay.final_date)) : "") + ". Our team is checking the transfer on our bank account.</div>" +
+        '<p class="muted" style="font-size:14px">Sent the wrong file? Send the right one below.</p>';
+    }
+    h += '<h3 style="font-size:15px;margin-top:14px">Send your transfer proof</h3>' +
+      '<div class="field"><label for="proofFile">Photo or PDF of the transfer receipt</label><input type="file" id="proofFile" accept="image/jpeg,image/png,image/webp,application/pdf"></div>' +
+      '<div class="field"><label for="proofRef">Bank transfer reference <span class="opt">(optional)</span></label><input type="text" id="proofRef" maxlength="100" autocomplete="off"></div>' +
+      '<div id="proofMsg"></div><div class="actions"><button type="button" class="btn btn-primary" id="proofSend" data-part="' + part + '">Send the transfer proof</button></div>';
+    return h;
+  }
+  function cancelBox(pay, S) {
+    var paid = pay && pay.deposit_status === "received";
+    return '<div class="cancel-box"' + (pay && pay.bank ? "" : ' style="margin:0;padding:0;border:0"') + '><button type="button" class="link" id="cancelOpen">Cancel this request</button>' +
+      '<div id="cancelForm" hidden style="margin-top:10px"><p style="margin:0 0 10px">' + (paid
+        ? "You can cancel until we verify your 40% and order from the supplier. Your 40% is refunded in full, by bank transfer within " + esc(S.refundBusinessDays || 7) + " business days."
+        : "Cancelling is free: you have paid nothing.") + ' <a href="/policies" target="_blank" rel="noopener">Read the rules</a>.</p>' +
+      '<div class="field"><label for="cancelWhy">Why do you cancel?</label><textarea id="cancelWhy" maxlength="1000"></textarea></div><div id="cancelMsg"></div>' +
+      '<button type="button" class="btn btn-danger" id="cancelGo">Cancel this request</button></div></div>';
+  }
+  function bindDeal(q, pay, S) {
+    var reopen = function (text) { toast(text); loadRequests(); openDetail(q.id); };
+    var busy = function (b, on, label) { b.disabled = on; if (label) b.textContent = label; };
+    if ($("dealAsk")) $("dealAsk").onclick = function () { askInChat(this.dataset.text); };
+    if ($("dealAccept")) $("dealAccept").onclick = function () {
+      var b = this;
+      if (!$("dealTerms").checked) return msg($("dealMsg"), "error", "Tick the box to accept the Terms of Service first.");
+      busy(b, true, "Accepting…");
+      sb.rpc("accept_quote", { p_request: q.id, p_terms_version: S.termsVersion }).then(function (r) {
+        if (r.error) { busy(b, false, "Accept the quote"); return msg($("dealMsg"), "error", friendly(r.error)); }
+        reopen("Quote accepted. You can now pay the 40% deposit.");
+      });
+    };
+    if ($("dealDecline")) $("dealDecline").onclick = function () { $("declineBox").hidden = false; $("declineWhy").focus(); };
+    if ($("declineGo")) $("declineGo").onclick = function () {
+      var b = this, why = $("declineWhy").value.trim();
+      if (why.length < 3) return toast("Tell us in a few words why you decline.", true);
+      if (!confirm("Decline this quote? Your request will be closed.")) return;
+      busy(b, true);
+      sb.rpc("decline_quote", { p_request: q.id, p_reason: why }).then(function (r) {
+        if (r.error) { busy(b, false); return toast(friendly(r.error), true); }
+        reopen("Quote declined. Thank you for telling us why.");
+      });
+    };
+    if ($("cancelOpen")) $("cancelOpen").onclick = function () { $("cancelForm").hidden = false; $("cancelWhy").focus(); };
+    if ($("cancelGo")) $("cancelGo").onclick = function () {
+      var b = this, why = $("cancelWhy").value.trim();
+      if (why.length < 3) return msg($("cancelMsg"), "error", "Tell us in a few words why you cancel.");
+      if (!confirm("Cancel this request? This cannot be undone.")) return;
+      busy(b, true);
+      sb.rpc("cancel_request", { p_request: q.id, p_reason: why }).then(function (r) {
+        if (r.error) { busy(b, false); return msg($("cancelMsg"), "error", friendly(r.error)); }
+        reopen("Your request is cancelled.");
+      });
+    };
+    document.querySelectorAll("#dealBox [data-copy]").forEach(function (c) {
+      c.onclick = function () {
+        if (!navigator.clipboard) return;
+        navigator.clipboard.writeText(c.dataset.copy).then(function () { toast("Copied."); });
+      };
+    });
+    if ($("proofSend")) $("proofSend").onclick = function () {
+      var b = this, f = $("proofFile").files && $("proofFile").files[0];
+      if (!f) return msg($("proofMsg"), "error", "Choose the photo or PDF of your transfer receipt.");
+      if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(f.type)) return msg($("proofMsg"), "error", "Only JPG, PNG, WEBP or PDF files.");
+      if (f.size > 10 * 1024 * 1024) return msg($("proofMsg"), "error", "This file is larger than 10 MB.");
+      busy(b, true, "Sending…");
+      var path = state.user.id + "/" + q.id + "/proof-" + b.dataset.part + "-" + Date.now() + "-" + safeName(f.name);
+      sb.storage.from("request-files").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+        if (u.error) { busy(b, false, "Send the transfer proof"); return msg($("proofMsg"), "error", friendly(u.error)); }
+        return sb.rpc("submit_payment_proof", { p_request: q.id, p_part: b.dataset.part, p_path: path, p_file_name: f.name, p_reference: $("proofRef").value.trim() || null }).then(function (r) {
+          if (r.error) { busy(b, false, "Send the transfer proof"); return msg($("proofMsg"), "error", friendly(r.error)); }
+          reopen("Transfer proof sent. We will confirm once the transfer is verified.");
+        });
+      });
+    };
   }
 
   // ---------- Conversation ----------
