@@ -46,6 +46,7 @@
       updateUser:function(o){M.calls.push(["updateUser",o]);return Promise.resolve({data:{user:{}},error:null});},
       signOut:function(){return Promise.resolve({});}
     },
+    functions:{invoke:function(n,o){M.calls.push(["invoke",n,o&&o.body]);if(M.invokeError)return Promise.resolve({data:null,error:{message:"Edge Function returned a non-2xx status code",context:{json:function(){return Promise.resolve({error:M.invokeError});}}}});return Promise.resolve({data:M.invokeData||{ok:true,id:"c1",emailed:true},error:null});}},
     storage:{from:function(){return {upload:function(p){M.calls.push(["upload",p]);return Promise.resolve({data:{},error:null});},createSignedUrl:function(){return Promise.resolve({data:{signedUrl:"about:blank"},error:null});},createSignedUrls:function(ps){return Promise.resolve({data:ps.map(function(p){return {path:p,signedUrl:"data:image/gif;base64,R0lGODlhAQABAAAAACw="};}),error:null});}};}}
   };}};
 })();

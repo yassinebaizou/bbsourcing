@@ -376,7 +376,7 @@
 
       <!-- Clients -->
       <section id="view-clients" hidden>
-        <div class="page-head"><h1>Clients</h1><span class="muted" id="clientsCount"></span></div>
+        <div class="page-head"><h1>Clients</h1><span class="muted" id="clientsCount"></span><button class="btn btn-primary btn-sm" type="button" id="addClientBtn" hidden style="margin-left:auto">Add a client</button></div>
         <div class="card panel">
           <div class="filters">
             <select id="cFilter" aria-label="Clients filter">
@@ -656,6 +656,7 @@
       $("meAvatar").textContent = initials(S.me.full_name, S.me.email);
       $("navTeam").hidden = S.role !== "admin";
       $("navSettings").hidden = !S.canMoney;
+      $("addClientBtn").hidden = S.role !== "admin";
       $("navPayments").hidden = S.role === "agent";
       var fs = $("fStatus");
       S.statusList.forEach(function (s) { var o = document.createElement("option"); o.value = s.code; o.textContent = s.label; fs.appendChild(o); });
@@ -1375,8 +1376,82 @@
     h += '<div class="sec"><h3>Requests and orders</h3>' + (c.reqs.length ? '<div class="table-wrap"><table class="compact" style="min-width:480px"><thead><tr><th>Request</th><th>Product</th><th>Status</th><th>Payment</th><th class="num">Quote</th></tr></thead><tbody id="clientReqs">' +
       c.reqs.map(function (q) { return '<tr data-id="' + esc(q.id) + '"><td><span class="code">' + esc(q.code) + "</span>" + unreadBadge(q.id) + "</td><td>" + esc(q.product_name) + "</td><td>" + statusPill(q.status) + "</td><td>" + payCell(q) + "</td><td class='num'>" + (q.quote_amount_mad ? money(q.quote_amount_mad) : "—") + "</td></tr>"; }).join("") +
       "</tbody></table></div>" : '<p class="muted">No request yet.</p>') + "</div>";
+    if (S.role === "admin") {
+      h += '<div class="sec"><h3>Manage this client</h3><div class="actions-row"><button class="btn btn-secondary btn-sm" type="button" id="editClient">Edit details</button>' +
+        '<button class="btn btn-danger btn-sm" type="button" id="deleteClient">Delete client</button></div>' +
+        '<p class="hint">Deleting removes the account, all their requests, messages and files. A client with an accepted quote or a payment cannot be deleted.</p></div>';
+    }
     $("drawerBody").innerHTML = h;
     if ($("clientReqs")) bindRows($("clientReqs"));
+    if ($("editClient")) $("editClient").onclick = function () { renderClientForm(c); };
+    if ($("deleteClient")) $("deleteClient").onclick = function () {
+      var b = this, nm = p.full_name || p.email;
+      var typed = prompt("Delete " + nm + ", " + plural(c.reqs.length, "request", "requests") + ", their messages and files? This cannot be undone.\n\nType DELETE to confirm.");
+      if (typed === null) return;
+      if (typed.trim().toUpperCase() !== "DELETE") return toast("Not deleted: type DELETE to confirm.", true);
+      b.disabled = true;
+      adminCall({ action: "delete_client", id: c.id }).then(function () {
+        toast(nm + " was deleted."); closeDrawer(); return reload();
+      }, function (e) { b.disabled = false; toast(e.message, true); });
+    };
+  }
+
+  // ---------- Add / edit a client (administrator, Edge Function admin-clients) ----------
+  function adminCall(body) {
+    return sb.functions.invoke("admin-clients", { body: body }).then(function (r) {
+      if (!r.error) return r.data;
+      var ctx = r.error.context;
+      if (ctx && typeof ctx.json === "function") {
+        return ctx.json().then(function (j) { throw new Error((j && j.error) || r.error.message); }, function () { throw new Error(r.error.message); });
+      }
+      throw new Error(r.error.message || "Something went wrong.");
+    });
+  }
+  $("addClientBtn").onclick = function () {
+    S.openClient = null; S.openId = null;
+    $("drawer").hidden = false; $("backdrop").hidden = false;
+    renderClientForm(null);
+  };
+  function renderClientForm(c) {
+    var p = (c && c.p) || {}, isNew = !c;
+    S.openClient = null; S.openId = null;  // the background refresh must not replace the form
+    $("drawerHead").innerHTML = "<div><h2>" + (isNew ? "Add a client" : "Edit " + esc(p.full_name || p.email || "client")) + "</h2>" +
+      '<small class="muted">' + (isNew ? "We create the account and email the client a secure link to choose their password." : "Changes are saved in the client's account.") + "</small></div>" + closeBtn();
+    $("closeDrawer").onclick = closeDrawer;
+    var fld = function (id, lbl, val, type, extra) {
+      return '<div class="field"><label for="' + id + '">' + lbl + '</label><input id="' + id + '" type="' + (type || "text") + '" value="' + esc(val || "") + '"' + (extra || "") + "></div>";
+    };
+    $("drawerBody").innerHTML = '<div class="sec"><form id="clientForm" novalidate><div class="cost-grid">' +
+      fld("cf_name", "Full name *", p.full_name, "text", ' maxlength="120" autocomplete="off"') +
+      fld("cf_email", "Email (login) *", p.email, "email", ' maxlength="200" autocomplete="off"') +
+      fld("cf_wa", "WhatsApp", p.whatsapp, "tel", ' maxlength="30" placeholder="06 12 34 56 78"') +
+      fld("cf_city", "City", p.city, "text", ' maxlength="120"') +
+      fld("cf_business", "Business name", p.business_name, "text", ' maxlength="160"') +
+      fld("cf_store", "Store link", p.store_link, "url", ' maxlength="300" placeholder="https://"') +
+      '<div class="field"><label for="cf_selling">Selling status</label><select id="cf_selling"><option value="">—</option>' +
+      Object.keys(SELLING).map(function (k) { return '<option value="' + k + '"' + (p.selling_status === k ? " selected" : "") + ">" + esc(SELLING[k]) + "</option>"; }).join("") + "</select></div>" +
+      "</div>" + (isNew ? '<p class="hint">The client receives an email "Your DDPSourcing account is ready" with a button to choose their password. We never send passwords by email.</p>'
+        : '<p class="hint">If you change the email, the client logs in with the new email from now on.</p>') +
+      '<div class="actions-row" style="margin-top:12px"><button class="btn btn-primary" type="submit" id="cfSave">' + (isNew ? "Create the account and send the email" : "Save changes") + "</button>" +
+      '<button class="btn btn-secondary" type="button" id="cfCancel">Cancel</button></div></form></div>';
+    $("cfCancel").onclick = function () { if (isNew) closeDrawer(); else renderClientDrawer(c.id); };
+    $("clientForm").onsubmit = function (e) {
+      e.preventDefault();
+      var body = {
+        action: isNew ? "create_client" : "update_client", id: c && c.id,
+        full_name: $("cf_name").value.trim(), email: $("cf_email").value.trim(), whatsapp: $("cf_wa").value.trim(), city: $("cf_city").value.trim(),
+        business_name: $("cf_business").value.trim(), store_link: $("cf_store").value.trim(), selling_status: $("cf_selling").value
+      };
+      if (!body.full_name) return toast("Enter the client's full name.", true);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(body.email)) return toast("Enter a valid email address.", true);
+      var btn = $("cfSave"); btn.disabled = true;
+      adminCall(body).then(function (d) {
+        toast(isNew ? (d && d.emailed ? "Account created. The login email was sent to " + body.email + "." : "Account created, but the email could not be sent. Ask the client to use \"Forgot password?\" on /account.")
+          : "Client details saved.");
+        return reload().then(function () { if (isNew && d && d.id) openClient(d.id); else if (!isNew) renderClientDrawer(c.id); });
+      }, function (err) { btn.disabled = false; toast(err.message, true); });
+    };
+    $("cf_name").focus();
   }
 
   function renderDrawer(id) {
@@ -1480,7 +1555,20 @@
       '<div class="actions-row"><button class="btn btn-secondary btn-sm" type="button" id="addNote">Add note</button><button class="btn btn-secondary btn-sm" type="button" id="addContact">Log client contact</button></div></div>';
 
     h += '<div class="sec"><h3>Activity</h3><ul class="timeline" id="dEvents"><li class="muted">Loading…</li></ul></div>';
+    if (S.role === "admin") {
+      h += '<div class="sec"><h3>Delete</h3><button class="btn btn-danger btn-sm" type="button" id="deleteRequest">Delete this request</button>' +
+        '<p class="hint">Removes the request, its conversation and files for good. A request with an accepted quote or a payment cannot be deleted: close it as "Not qualified" instead.</p></div>';
+    }
     $("drawerBody").innerHTML = h;
+    if ($("deleteRequest")) $("deleteRequest").onclick = function () {
+      var b = this, typed = prompt("Delete " + q.code + " (" + q.product_name + ") with its conversation and files? This cannot be undone.\n\nType " + q.code + " to confirm.");
+      if (typed === null) return;
+      if (typed.trim().toUpperCase() !== String(q.code).toUpperCase()) return toast("Not deleted: type " + q.code + " to confirm.", true);
+      b.disabled = true;
+      adminCall({ action: "delete_request", id: q.id }).then(function () {
+        toast(q.code + " was deleted."); closeDrawer(); return reload();
+      }, function (e) { b.disabled = false; toast(e.message, true); });
+    };
 
     // Bindings
     if ($("saveStatus")) $("saveStatus").onclick = function () {

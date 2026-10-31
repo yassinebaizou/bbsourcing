@@ -35,7 +35,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
@@ -104,6 +104,10 @@ Conversation emails (migration `20261031230501`): every `request_messages` row q
 (`client_message` → assigned member or admins; `team_message` and `status_update` → client), sent by the Edge Function
 `notify-message`; messages are grouped (one email per request and direction per 10 minutes), status updates never.
 `message_notifications` has RLS with no policy (service role only), like `team_notifications`.
+Admin tools (Edge Function `admin-clients`, verify_jwt on, caller must be an active admin, service role inside): CRM → Clients
+**Add a client** (account created with the email confirmed + branded email with a one-time "choose my password" recovery link;
+never a password by email), **Edit details** (profile + login email), **Delete client** (account, requests, files), and
+**Delete this request** in the request drawer. Requests with an accepted quote or a payment received/verified are never deleted.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.
