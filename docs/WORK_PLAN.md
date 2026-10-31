@@ -132,6 +132,8 @@ Done when: a visitor sees who we are, how payments are protected and real proof 
 
 ## Sprint 6 — Client email notifications
 
+**Already done (31 Oct 2026, owner's request):** email to the client for every team message (grouped, max one per 10 minutes) and every status change; email to the team for every client message and client action. Function `notify-message`.
+
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 6 only. One pull request.
 
 Emails (Resend, branded like `docs/email-templates/`): request received, quote ready, quote expiring in 2 days, deposit verified, inspection ready to approve, shipped, cleared customs + 60% due, delivered + leave a review, refund paid, team reply in the conversation (grouped, max one email per 10 minutes). Client can turn off non-essential emails in the profile. Store the language for Sprint 7.

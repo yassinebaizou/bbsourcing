@@ -100,6 +100,10 @@ intentional advisor warnings): `accept_quote` (refuses expired quotes and an old
 `decline_quote`, `cancel_request` (only up to rank 8 and before the 40% is verified), `submit_payment_proof`, `my_payment_info`
 (bank details only while a payment is due). They pass the triggers with the transaction setting `ddp.client_action`, which
 clients cannot set. `public_settings()` (anon, intentional) returns only the rule numbers.
+Conversation emails (migration `20261031230501`): every `request_messages` row queues `message_notifications`
+(`client_message` → assigned member or admins; `team_message` and `status_update` → client), sent by the Edge Function
+`notify-message`; messages are grouped (one email per request and direction per 10 minutes), status updates never.
+`message_notifications` has RLS with no policy (service role only), like `team_notifications`.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.
@@ -140,6 +144,6 @@ still to build; the items below are the infrastructure ones.
 1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
 2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
    request, conversation and payment-tracking data, product images, and how to delete an account.
-3. **Team alert on new request / new client message**: Supabase Database Webhook or Edge Function →
-   email (and later WhatsApp) to the team. Secrets via `create_edge_function_secret`, never in code.
+3. **Team alert on new request / new client message**: done by email (`notify-new-request`, `notify-team`,
+   `notify-message`). Later: WhatsApp. Secrets via `create_edge_function_secret`, never in code.
 4. Nice to have: export requests/payments to CSV from the CRM; client email when the team replies.

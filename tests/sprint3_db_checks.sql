@@ -156,6 +156,16 @@ begin
   select status || '/' || closed_kind || '/' || closed_reason into v from requests where id = r3;
   L := array_append(L, case when v = 'not_qualified/declined/Price too high' then 'ok' else 'FAIL' end || ' decline -> ' || v);
 
+  -- Conversation emails (migration message_email_notifications): one email per burst of messages.
+  insert into request_messages (request_id, body) values (r1, 'Hello, when do you ship?');
+  insert into request_messages (request_id, body) values (r1, 'And the colour?');
+  execute 'reset role'; perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
+  insert into request_messages (request_id, body) values (r1, 'Next week, black.');
+  execute 'reset role';
+  select count(*) filter (where kind = 'client_message') || '/' || count(*) filter (where kind = 'team_message') || '/' ||
+         (count(*) filter (where kind = 'status_update') >= 3)::text into v from message_notifications where request_id = r1;
+  L := array_append(L, case when v = '1/1/true' then 'ok' else 'FAIL' end || ' message emails queued (client grouped/team/status updates) = ' || v);
+
   execute 'reset role';
   select string_agg(kind, ',' order by id) into v from team_notifications where request_id in (r1, r2, r3);
   L := array_append(L, case when v = 'quote_accepted,deposit_proof,request_cancelled,quote_declined' then 'ok' else 'FAIL' end || ' team emails queued: ' || v);
