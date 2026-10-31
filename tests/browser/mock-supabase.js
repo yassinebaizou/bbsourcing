@@ -17,6 +17,8 @@
     message_reads:[], order_costs:[{request_id:"r1",product_cost_mad:9000,air_freight_mad:3000,total_cost_mad:13000}],
     reviews:[{id:"rv1",client_id:"c1",headline:"Fast and honest",body:"My earbuds arrived in 17 days, all good.",media_path:"c1/a.jpg",media_type:"image",display_name:"Sara B.",city:"Rabat",store_name:"SB Store",status:"pending",created_at:iso(1),client:{full_name:"Sara B",email:"sara@x.ma"}},{id:"rv2",client_id:"c1",headline:"Second order",body:"Again on time and well packed.",media_path:null,media_type:null,display_name:"Sara B.",status:"approved",reviewed_at:iso(2),created_at:iso(3),client:{full_name:"Sara B",email:"sara@x.ma"}}], payments:[], request_events:[], request_notes:[], request_files:[], request_internal:[]
   };
+  if (M.extraStatuses) db.request_statuses = db.request_statuses.concat(M.extraStatuses);
+  if (M.extraTables) Object.keys(M.extraTables).forEach(function(k){ db[k] = M.extraTables[k]; });
   if (M.emptyRequests) db.requests = [];
   db.failed_pending_requests = M.failedRows || [];
   if (M.addRequests) db.requests = M.addRequests.concat(db.requests);
@@ -35,7 +37,7 @@
   var session=M.session===undefined?{user:{id:uid,email:"y@x.ma",user_metadata:{}}}:M.session;
   window.supabase={createClient:function(){return {
     from:function(t){return new B(t);},
-    rpc:function(n){M.calls.push(["rpc",n]);return Promise.resolve({data:n==="staff_role"?(M.role||"admin"):n==="account_exists"?!!M.exists:(M.rpcData&&M.rpcData[n])||null,error:null});},
+    rpc:function(n,a){M.calls.push(["rpc",n,a]);if(M.rpcError&&M.rpcError[n])return Promise.resolve({data:null,error:{message:M.rpcError[n]}});return Promise.resolve({data:n==="staff_role"?(M.role||"admin"):n==="account_exists"?!!M.exists:(M.rpcData&&M.rpcData[n])||null,error:null});},
     auth:{
       getSession:function(){return Promise.resolve({data:{session:session}});},
       onAuthStateChange:function(cb){M.authCb=cb;return {data:{subscription:{unsubscribe:function(){}}}};},

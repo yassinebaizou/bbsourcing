@@ -1,6 +1,9 @@
 /* Business rules shown to clients: one place for every number, read by /policies, /terms and the homepage FAQ,
    so the pages can never disagree (docs/WORK_PLAN.md decisions D6–D17).
-   Sprint 3 moves these values to the business_settings table (CRM → Settings); until then, edit them here.
+   The rule numbers (quote validity, refund days, claim hours, storage fee…) are edited in CRM → Settings
+   (table business_settings). The values below are the static fallback written in the HTML; on load, the
+   live values are read from the database (public_settings) and replace them. Keep both equal when you
+   change a rule, so the page reads correctly without JavaScript too.
    null = not decided yet: the sentence that needs it is hidden. */
 window.DDP_POLICY = {
   termsVersion: "2026-11-v1",
@@ -41,5 +44,19 @@ window.DDP_POLICY = {
       el.textContent = parts.filter(Boolean).join(", ");
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fill); else fill();
+  // Live values from CRM → Settings (no bank account details: public_settings never returns them).
+  function live() {
+    var cfg = window.DDP_CONFIG;
+    if (!cfg || !window.fetch || !document.querySelector("[data-policy],[data-policy-if]")) return;
+    fetch(cfg.SUPABASE_URL + "/rest/v1/rpc/public_settings", {
+      method: "POST", body: "{}",
+      headers: { apikey: cfg.SUPABASE_ANON_KEY, "Content-Type": "application/json" }
+    }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d || typeof d !== "object") return;
+      Object.keys(d).forEach(function (k) { if (k in window.DDP_POLICY) window.DDP_POLICY[k] = d[k]; });
+      fill();
+    }).catch(function () {});
+  }
+  function start() { fill(); live(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
