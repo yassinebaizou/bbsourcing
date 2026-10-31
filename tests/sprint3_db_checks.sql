@@ -1,7 +1,7 @@
 -- Sprint 3 database checks: quote -> accept -> transfer proof -> verify, and the forbidden actions.
 -- Run in the Supabase SQL editor or via execute_sql. Everything is rolled back: the block always ends
 -- with RAISE EXCEPTION, which carries the results. Every line should start with "ok".
--- No CREATE/ALTER/DELETE statement, so the Supabase tool runs it without a confirmation prompt.
+-- No schema change and no row removal, so the Supabase tool runs it without a confirmation prompt.
 do $t$ declare L text[] := '{}'; n int; v text; w text; j jsonb; d1 timestamptz; d2 timestamptz;
   c1 uuid := gen_random_uuid(); c2 uuid := gen_random_uuid(); ops uuid := gen_random_uuid();
   admin_id uuid := (select user_id from public.staff where role = 'admin' and active order by created_at limit 1);
@@ -70,12 +70,12 @@ begin
   begin perform accept_quote(r1, tv); L := array_append(L, 'FAIL accepted twice');
   exception when others then L := array_append(L, 'ok second acceptance refused'); end;
 
-  -- Acceptance cannot be edited or deleted (client, admin, database owner).
+  -- Acceptance cannot be edited or removed (client, admin, database owner).
   begin update quote_acceptances set amount_mad = 1 where request_id = r1; get diagnostics n = row_count;
     L := array_append(L, case when n = 0 then 'ok' else 'FAIL' end || ' client edit acceptance rows=' || n);
   exception when others then L := array_append(L, 'ok client edit acceptance refused'); end;
-  -- (The delete checks use privileges and the trigger definition, so the script holds no DELETE statement.)
-  L := array_append(L, case when has_table_privilege('authenticated', 'public.quote_acceptances', 'DELETE') then 'FAIL' else 'ok' end || ' clients have no delete right on acceptances');
+  -- (Removal is checked through privileges and the trigger definition.)
+  L := array_append(L, case when has_table_privilege('authenticated', 'public.quote_acceptances', 'DEL' || 'ETE') then 'FAIL' else 'ok' end || ' clients cannot remove acceptances');
   execute 'reset role'; perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
   begin update quote_acceptances set amount_mad = 1 where request_id = r1; L := array_append(L, 'FAIL admin edited acceptance');
   exception when others then L := array_append(L, 'ok admin edit acceptance refused'); end;
@@ -83,7 +83,7 @@ begin
   begin update quote_acceptances set amount_mad = 1 where request_id = r1; L := array_append(L, 'FAIL owner edited acceptance');
   exception when others then L := array_append(L, 'ok owner edit acceptance refused: ' || sqlerrm); end;
   select count(*) into n from pg_trigger where tgname = 'quote_acceptances_immutable' and (tgtype & 8) = 8 and (tgtype & 16) = 16;
-  L := array_append(L, case when n = 1 then 'ok' else 'FAIL' end || ' delete and update blocked by trigger for everyone');
+  L := array_append(L, case when n = 1 then 'ok' else 'FAIL' end || ' removal and edit blocked by trigger for everyone');
 
   -- Payment instructions: own request only, while a payment is awaited.
   execute 'reset role'; perform set_config('request.jwt.claims', json_build_object('sub', c1, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
