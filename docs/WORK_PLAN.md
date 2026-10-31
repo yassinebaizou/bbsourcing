@@ -88,7 +88,7 @@ Done when: no placeholder left; every rule on `/policies` matches the Terms; own
 
 ## Sprint 3 — Quote, acceptance and payment inside the account
 
-**Status: built** (31 Oct 2026), database test run waiting for the owner's approval of the Supabase prompt. Migration `20261031001806`, Edge Function `notify-team`, CRM → Settings, tests `tests/sprint3_db_checks.sql` and `tests/browser/sprint3.js`. The owner types the RIB in CRM → Settings.
+**Status: done** (31 Oct 2026). Database checks passed on the live project (rolled back, no test data left). Migration `20261031001806`, Edge Function `notify-team`, CRM → Settings, tests `tests/sprint3_db_checks.sql` and `tests/browser/sprint3.js`. The owner types the RIB in CRM → Settings.
 
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 3 only. One pull request.
 

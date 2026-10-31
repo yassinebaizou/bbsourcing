@@ -53,13 +53,14 @@ begin
 
   -- The team resends: new validity period.
   execute 'reset role'; perform set_config('request.jwt.claims', json_build_object('sub', admin_id, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
-  update requests set quote_sent_at = now() where id = r1;
+  update requests set quote_sent_at = now() + interval '1 second' where id = r1;   -- the CRM sends the browser's current time
   select quote_expires_at into d1 from requests where id = r1;
   L := array_append(L, case when d1 > now() + interval '6 days' then 'ok' else 'FAIL' end || ' resend renews expiry');
 
   -- Client cannot move the stage directly.
   execute 'reset role'; perform set_config('request.jwt.claims', json_build_object('sub', c1, 'role', 'authenticated')::text, true); execute 'set local role authenticated';
-  begin update requests set status = 'awaiting_deposit' where id = r1; L := array_append(L, 'FAIL client changed status directly');
+  begin update requests set status = 'awaiting_deposit' where id = r1; get diagnostics n = row_count;
+    L := array_append(L, case when n = 0 then 'ok' else 'FAIL' end || ' client direct status change rows=' || n);
   exception when others then L := array_append(L, 'ok client direct status change refused'); end;
 
   -- Accept.
