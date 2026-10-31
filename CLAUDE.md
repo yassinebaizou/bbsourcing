@@ -35,7 +35,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
@@ -108,6 +108,13 @@ Admin tools (Edge Function `admin-clients`, verify_jwt on, caller must be an act
 **Add a client** (account created with the email confirmed + branded email with a one-time "choose my password" recovery link;
 never a password by email), **Edit details** (profile + login email), **Delete client** (account, requests, files), and
 **Delete this request** in the request drawer. Requests with an accepted quote or a payment received/verified are never deleted.
+Sprint 4 (migration `20261031233107`, rules D9–D17): statuses `refund_pending`, `refunded`, `cancelled_by_client`, `cancelled_by_us`
+(ranks 94–97; rank >= 90 = closed; set only by the database). `refunds` (requested → approved by admin only → paid by Ops/admin with
+reference + proof, or cancelled; clients read them with `my_refunds`), `claims` + `claim_files` (client `open_claim` within
+`claim_hours` of delivery with photos/videos — bucket now accepts videos, 50 MB; Ops/admin answer; a refund outcome creates the refund),
+`team_cancel_request` (admin, D12/D14: refunds everything paid), client `cancel_request` up to rank 8 (D10 refund of the 40%, D11 refused
+after), `payments.final_due_at` + daily pg_cron job `ddp-balance-reminders` → `send_balance_reminders()` (D15), `post_update()` writes
+system messages (emailed). CRM: drawer section "Claims, refunds and cancellation", dashboard counters, profit minus refunds.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.

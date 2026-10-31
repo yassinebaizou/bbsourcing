@@ -194,6 +194,11 @@
   .timeline small{display:block;color:var(--muted)}
   .actions-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .readonly{color:var(--muted);font-size:13px}
+  .rf-row{padding:10px 0;border-top:1px solid var(--line)}
+  .rf-row:first-of-type{border-top:0}
+  .rf-row .actions-row{flex-wrap:wrap;gap:8px}
+  .rf-more{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+  .rf-more summary{cursor:pointer;font-weight:700;font-size:14px;min-height:32px}
 
   /* Conversation */
   .chat{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;padding:12px;background:#F8FAFC;border:1px solid #EEF1F5;border-radius:12px;margin-bottom:10px}
@@ -504,7 +509,7 @@
     { t: "New & review", from: 1, to: 4 }, { t: "Sourcing & quotation", from: 5, to: 7 },
     { t: "Awaiting 40% deposit", from: 8, to: 8 }, { t: "Production & inspection", from: 9, to: 10 },
     { t: "Shipping & customs", from: 11, to: 13 }, { t: "Awaiting 60% payment", from: 14, to: 14 },
-    { t: "Delivery", from: 15, to: 16 }, { t: "Completed", from: 17, to: 17 }, { t: "Closed", from: 99, to: 99 }
+    { t: "Delivery", from: 15, to: 16 }, { t: "Completed", from: 17, to: 17 }, { t: "Closed", from: 90, to: 99 }
   ];
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -549,9 +554,35 @@
   };
   var rank = function (code) { return (S.statuses[code] || {}).rank || 0; };
   var label = function (code) { return (S.statuses[code] || {}).label || code; };
+  // Closed = not qualified, cancelled (by the client or by us), refund pending or refunded (rank 90+).
+  var isClosed = function (code) { return rank(code) >= 90; };
+  // Set only by the database (client cancellation, "Cancel the order", refunds): never in the status list.
+  var SYSTEM_STATUS = { refund_pending: 1, refunded: 1, cancelled_by_client: 1, cancelled_by_us: 1 };
+  var REFUND_REASON = { client_cancelled_before_order: "Client cancelled before the supplier order", cannot_source: "We cannot source the product",
+    supplier_failed: "The supplier failed", inspection_failed: "Goods failed inspection", customs_problem: "Customs problem (legal product)",
+    delivery_failed: "We cannot make the delivery", late_delivery: "Delivered more than the grace days late", claim: "Claim at delivery",
+    refused_product: "Product we do not accept", other: "Other" };
+  var REFUND_STEP = { requested: "To approve", approved: "Approved, to pay", paid: "Paid", cancelled: "Cancelled" };
+  var CLAIM_STEP = { open: "New", in_review: "In review", resolved: "Answered", rejected: "Rejected" };
+  // Adds business days (Monday to Friday) to a date.
+  function addBusinessDays(d, n) {
+    var x = new Date(d), left = n;
+    while (left > 0) { x.setDate(x.getDate() + 1); if (x.getDay() !== 0 && x.getDay() !== 6) left--; }
+    return x;
+  }
+  function refundsOf(q) { return (S.refunds && S.refunds[q.id]) || []; }
+  function claimsOf(q) { return (S.claims && S.claims[q.id]) || []; }
+  // D15: when the 60% became due, when the storage fee starts and when the order can be cancelled.
+  function balanceDates(q) {
+    var p = q.payment;
+    if (!p || p.final_status !== "pending" || !p.final_due_at || !S.settings) return null;
+    var d = new Date(p.final_due_at);
+    return { due: d, fee: new Date(d.getTime() + S.settings.storage_fee_after_days * DAY), cancel: new Date(d.getTime() + S.settings.unpaid_cancel_after_days * DAY) };
+  }
+  function refundedAmount(q) { return refundsOf(q).reduce(function (a, f) { return a + (f.status === "approved" || f.status === "paid" ? Number(f.amount_mad) : 0); }, 0); }
 
   // ---------- Business helpers ----------
-  function isOrder(q) { return q.payment && q.payment.deposit_status === "verified" && q.status !== "not_qualified"; }
+  function isOrder(q) { return q.payment && q.payment.deposit_status === "verified" && !isClosed(q.status); }
   function orderDate(q) { return q.payment && q.payment.deposit_verified_at; }
   function verified(p) {
     if (!p) return 0;
@@ -561,7 +592,8 @@
     return r;
   }
   function costOf(q) { var c = S.costs[q.id]; return c ? Number(c.total_cost_mad) : null; }
-  function profitOf(q) { var c = costOf(q); return c == null || !q.payment ? null : Number(q.payment.final_price_mad) - c; }
+  // Profit = final price − costs − refunds approved or paid (claims on delivered orders).
+  function profitOf(q) { var c = costOf(q); return c == null || !q.payment ? null : Number(q.payment.final_price_mad) - c - refundedAmount(q); }
   function payState(q) {
     var p = q.payment;
     if (!p) return null;
@@ -578,7 +610,7 @@
 
   function statusPill(code) {
     var r = rank(code);
-    var cls = code === "not_qualified" ? "pill-red" : r === 17 ? "pill-green" : (r === 8 || r === 14) ? "pill-orange" : r >= 15 ? "pill-green" : r >= 9 ? "pill-blue" : r === 1 ? "pill-new" : "pill-amber";
+    var cls = code === "refund_pending" ? "pill-orange" : r >= 90 ? "pill-red" : r === 17 ? "pill-green" : (r === 8 || r === 14) ? "pill-orange" : r >= 15 ? "pill-green" : r >= 9 ? "pill-blue" : r === 1 ? "pill-new" : "pill-amber";
     return '<span class="pill ' + cls + '">' + esc(label(code)) + "</span>";
   }
   function payPill(status, labels) {
@@ -592,7 +624,7 @@
   // Has the team answered the client? "new": nobody has replied yet (no team message and still before
   // "Contacted"); "waiting": the client wrote after the team's last message. Closed requests: null.
   function replyState(q) {
-    if (q.status === "completed" || q.status === "not_qualified") return null;
+    if (q.status === "completed" || isClosed(q.status)) return null;
     var c = S.lastClientMsg[q.id], t = S.lastTeamMsg[q.id];
     if (c && (!t || new Date(c) > new Date(t))) return "waiting";
     if (!t && rank(q.status) <= 3) return "new";
@@ -612,6 +644,7 @@
   function allowedStatuses(current) {
     var r = rank(current);
     return S.statusList.filter(function (s) {
+      if (SYSTEM_STATUS[s.code] && s.code !== current) return false;
       if (S.role === "admin") return true;
       if (S.role === "agent") return r <= 8 && (s.rank <= 8 || s.code === "not_qualified");
       if (S.role === "ops_finance") return r >= 8 && r <= 17 && ((s.rank >= 8 && s.rank <= 17) || s.code === "not_qualified");
@@ -682,6 +715,11 @@
       reviews: sb.from("reviews").select("*, client:profiles!reviews_client_id_fkey(full_name,email)").order("created_at", { ascending: false }).range(0, 999)
     };
     if (S.canMoney) jobs.costs = sb.from("order_costs").select("*");
+    if (S.canMoney) {
+      jobs.refunds = sb.from("refunds").select("*").order("requested_at");
+      jobs.settings = sb.from("business_settings").select("*").maybeSingle();
+    }
+    jobs.claims = sb.from("claims").select("*, files:claim_files(path, file_name, media_type)").order("created_at", { ascending: false });
     jobs.acceptances = sb.from("quote_acceptances").select("request_id, amount_mad, terms_version, accepted_at").order("accepted_at");
     if (S.role === "admin") jobs.profiles = sb.from("profiles").select("id, full_name, email, whatsapp, city, business_name, store_link, selling_status, created_at").range(0, 9999);
     var keys = Object.keys(jobs);
@@ -700,6 +738,9 @@
       S.staffById = {}; S.staff.forEach(function (s) { S.staffById[s.id] = s; });
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
       S.accepted = {}; ((res.acceptances && res.acceptances.data) || []).forEach(function (a) { S.accepted[a.request_id] = a; });
+      S.refunds = {}; ((res.refunds && res.refunds.data) || []).forEach(function (f) { (S.refunds[f.request_id] = S.refunds[f.request_id] || []).push(f); });
+      S.claims = {}; ((res.claims && res.claims.data) || []).forEach(function (c) { (S.claims[c.request_id] = S.claims[c.request_id] || []).push(c); });
+      S.settings = (res.settings && res.settings.data) || S.settings || null;
       S.profiles = (res.profiles && res.profiles.data) || [];
       S.reviews = (res.reviews && res.reviews.data) || [];
       S.failed = (res.failed && res.failed.data) || [];
@@ -837,13 +878,25 @@
     });
     S.requests.forEach(function (q) {
       var r = rank(q.status), p = q.payment;
-      if (q.status === "completed" || q.status === "not_qualified") {
+      refundsOf(q).forEach(function (f) {
+        if (f.status === "requested" && S.role === "admin") items.push({ q: q, w: 2, t: "Refund to approve", s: money(f.amount_mad) + " · " + (REFUND_REASON[f.reason] || f.reason) });
+        if (f.status === "approved" && S.canMoney) {
+          var due = addBusinessDays(f.approved_at, (S.settings && S.settings.refund_business_days) || 7);
+          items.push({ q: q, w: 2, t: "Refund to pay" + (due < new Date() ? " (overdue)" : ""), s: money(f.amount_mad) + " · by " + dShort(due.toISOString()) });
+        }
+      });
+      claimsOf(q).forEach(function (c) {
+        if ((c.status === "open" || c.status === "in_review") && S.canMoney) items.push({ q: q, w: 1, t: "Claim to answer", s: c.units_affected + " unit(s) · " + dTime(c.created_at) });
+      });
+      if (q.status === "completed" || isClosed(q.status)) {
         if (S.unread[q.id]) items.push({ q: q, w: 1, t: "New message from client", s: dTime(S.lastClientMsg[q.id]) });
         return;
       }
       if (S.unread[q.id]) items.push({ q: q, w: 1, t: "New message from client", s: dTime(S.lastClientMsg[q.id]) });
       if (S.canMoney && p && p.deposit_status === "received") items.push({ q: q, w: 2, t: "40% deposit received, to verify", s: money(p.deposit_amount_mad) });
       if (S.canMoney && p && p.final_status === "received") items.push({ q: q, w: 2, t: "60% balance received, to verify", s: money(p.balance_amount_mad) });
+      var d15 = balanceDates(q);
+      if (S.canMoney && d15 && d15.fee <= new Date()) items.push({ q: q, w: 3, t: "60% unpaid: storage fee since " + dShort(d15.fee.toISOString()), s: "Cancel after " + dShort(d15.cancel.toISOString()) });
       if (replyState(q) === "new") items.push({ q: q, w: 3, t: "Not answered yet", s: "Received " + dTime(q.created_at) });
       if (isLate(q)) items.push({ q: q, w: 4, t: "Late order", s: daysSince(orderDate(q)) + " days since deposit (target " + DELIVERY_TARGET_DAYS + ")" });
       if (q.internal && q.internal.next_action_date && q.internal.next_action_date <= today)
@@ -884,7 +937,15 @@
       var pr = profitOf(q);
       if (pr != null) { withCost++; costSum += costOf(q); profitSum += pr; salesWithCost += Number(q.payment.final_price_mad); }
     });
-    var outstandingAll = 0, toVerify = 0;
+    var outstandingAll = 0, toVerify = 0, refApprove = 0, refPay = 0, refundSum = 0, claimsOpen = 0;
+    R.forEach(function (q) {
+      refundsOf(q).forEach(function (f) {
+        if (f.status === "requested") refApprove++;
+        if (f.status === "approved") refPay++;
+        if (f.status === "paid" && inPeriod(f.paid_at, from)) refundSum += Number(f.amount_mad);
+      });
+      claimsOf(q).forEach(function (c) { if (c.status === "open" || c.status === "in_review") claimsOpen++; });
+    });
     R.forEach(function (q) {
       if (isOrder(q)) outstandingAll += Number(q.payment.final_price_mad) - verified(q.payment);
       var p = q.payment;
@@ -900,6 +961,8 @@
       km.push({ l: "Profit", v: money(profitSum), s: "Orders with costs entered" });
       km.push({ l: "Average margin", v: pct(salesWithCost ? profitSum / salesWithCost : null), s: "Profit ÷ sales" });
       km.push({ l: "Payments to verify", v: fmt.format(toVerify), s: "Proof received", hl: toVerify > 0, go: { view: "payments" } });
+      km.push({ l: "Refunds", v: fmt.format(refApprove + refPay), s: refApprove + " to approve · " + refPay + " to pay · " + money(refundSum) + " paid in period", hl: refApprove + refPay > 0 });
+      km.push({ l: "Open claims", v: fmt.format(claimsOpen), s: "Damaged or missing units", hl: claimsOpen > 0 });
     }
     km.forEach(function (c) { if (!c.go) delete c.go; });
     $("kpiMoney").innerHTML = kpiHtml(km); bindKpis($("kpiMoney"), km);
@@ -1055,7 +1118,7 @@
     var rows = S.staff.filter(function (s) { return s.active && s.role !== "ops_finance"; }).map(function (s) {
       var mine = S.requests.filter(function (q) { return q.assigned_to === s.id; });
       var minePeriod = mine.filter(function (q) { return inPeriod(q.created_at, from); });
-      var open = mine.filter(function (q) { return q.status !== "completed" && q.status !== "not_qualified"; }).length;
+      var open = mine.filter(function (q) { return q.status !== "completed" && !isClosed(q.status); }).length;
       var quoted = minePeriod.filter(function (q) { return q.quote_amount_mad; }).length;
       var won = mine.filter(function (q) { return isOrder(q) && inPeriod(orderDate(q), from); });
       var sales = won.reduce(function (a, q) { return a + Number(q.payment.final_price_mad); }, 0);
@@ -1090,7 +1153,7 @@
     var st = $("fStatus").value, ow = $("fOwner").value, city = $("fCity").value, cat = $("fCategory").value, pay = $("fPay").value, reply = $("fReply").value;
     var from = $("fFrom").value, to = $("fTo").value, below = $("fBelow").checked, unread = $("fUnread").checked;
     return S.requests.filter(function (q) {
-      if (st === "open" && (q.status === "completed" || q.status === "not_qualified")) return false;
+      if (st === "open" && (q.status === "completed" || isClosed(q.status))) return false;
       if (st && st !== "open" && q.status !== st) return false;
       if (ow === "none" && q.assigned_to) return false;
       if (ow && ow !== "none" && q.assigned_to !== ow) return false;
@@ -1126,7 +1189,7 @@
   }
   function renderKanban(list) {
     var cols = BOARD.filter(function (b) {
-      if (S.role === "agent") return b.from <= 8 || b.from === 99;
+      if (S.role === "agent") return b.from <= 8 || b.from >= 90;
       if (S.role === "ops_finance") return b.from >= 8;
       return true;
     });
@@ -1198,7 +1261,7 @@
   // ---------- Payments ----------
   $("pFilter").addEventListener("change", renderPayments);
   function renderPayments() {
-    var rows = S.requests.filter(function (q) { return q.payment && rank(q.status) >= 8 && q.status !== "not_qualified"; });
+    var rows = S.requests.filter(function (q) { return q.payment && rank(q.status) >= 8 && !isClosed(q.status); });
     var total = 0, ver = 0, depWait = 0, finWait = 0;
     rows.forEach(function (q) {
       var p = q.payment; total += Number(p.final_price_mad); ver += verified(p);
@@ -1276,7 +1339,7 @@
 
   function renderTeam() {
     var openCount = {};
-    S.requests.forEach(function (q) { if (q.assigned_to && q.status !== "completed" && q.status !== "not_qualified") openCount[q.assigned_to] = (openCount[q.assigned_to] || 0) + 1; });
+    S.requests.forEach(function (q) { if (q.assigned_to && q.status !== "completed" && !isClosed(q.status)) openCount[q.assigned_to] = (openCount[q.assigned_to] || 0) + 1; });
     $("teamBody").innerHTML = S.staff.length ? S.staff.map(function (s) {
       var self = s.id === S.user.id;
       return "<tr><td><strong>" + esc(s.name || "—") + (self ? ' <span class="muted">(you)</span>' : "") + "</strong></td><td>" + esc(s.email) + "</td>" +
@@ -1520,6 +1583,8 @@
     }
     h += "</div>";
 
+    h += cancelRefundSection(q);
+
     // Costs & profit
     if (S.canMoney && p) {
       var cs = S.costs[q.id] || {};
@@ -1595,6 +1660,7 @@
     $("addNote").onclick = function () { addNote(q.id, "note"); };
     $("addContact").onclick = function () { addNote(q.id, "contact"); };
     bindCompose(q);
+    bindCancelRefund(q);
 
     loadDrawerExtras(q);
   }
@@ -1672,14 +1738,119 @@
     });
   }
 
+  // ---------- Claims, refunds and cancellation (Sprint 4, rules D9–D17) ----------
+  function cancelRefundSection(q) {
+    var p = q.payment, refs = refundsOf(q), claims = claimsOf(q), r = rank(q.status), h = "", d15 = balanceDates(q);
+    if (d15) {
+      h += '<div class="alert ' + (d15.fee <= new Date() ? "alert-warn" : "alert-info") + '">60% due since ' + dShort(d15.due.toISOString()) + ". Storage fee from <strong>" + dShort(d15.fee.toISOString()) +
+        "</strong>; the order can be cancelled after <strong>" + dShort(d15.cancel.toISOString()) + "</strong>. The client gets reminders automatically.</div>";
+    }
+    claims.forEach(function (c) {
+      var open = c.status === "open" || c.status === "in_review";
+      h += '<div class="rf-row"><div><strong>Claim: ' + fmt.format(c.units_affected) + ' unit(s)</strong> <span class="pill ' + (open ? "pill-orange" : c.status === "rejected" ? "pill-red" : "pill-green") + '">' + CLAIM_STEP[c.status] + "</span> <small class=\"muted\">" + dTime(c.created_at) + "</small></div>" +
+        '<p style="margin:6px 0">' + esc(c.description) + "</p>" +
+        '<div class="actions-row">' + (c.files || []).map(function (x, i) { return '<button type="button" class="btn btn-secondary btn-sm" data-proof="' + esc(x.path) + '">' + (x.media_type === "video" ? "Video " : "Photo ") + (i + 1) + "</button>"; }).join("") + "</div>";
+      if (c.outcome) h += '<p class="hint">Answer: ' + esc(c.outcome) + (c.refund_amount_mad ? " " + money(c.refund_amount_mad) : "") + (c.outcome_note ? " · " + esc(c.outcome_note) : "") + "</p>";
+      if (open && S.canMoney) {
+        h += '<div class="cost-grid" style="margin-top:10px"><div class="field"><label for="clOutcome">Answer</label><select id="clOutcome"><option value="">Choose…</option><option value="refund">Refund</option><option value="credit">Credit on next order</option><option value="replacement">Replacement</option><option value="rejected">Rejected</option></select></div>' +
+          '<div class="field"><label for="clAmount">Refund amount (MAD)</label><input id="clAmount" type="number" min="1" step="1" inputmode="numeric"></div>' +
+          '<div class="field" style="grid-column:1/-1"><label for="clNote">Message to the client</label><input id="clNote" maxlength="2000" placeholder="Required when you reject the claim"></div></div>' +
+          '<div class="actions-row">' + (c.status === "open" ? '<button class="btn btn-secondary btn-sm" type="button" id="clReview" data-claim="' + esc(c.id) + '">Mark in review</button>' : "") +
+          '<button class="btn btn-primary btn-sm" type="button" id="clAnswer" data-claim="' + esc(c.id) + '">Send the answer</button></div>';
+      }
+      h += "</div>";
+    });
+    refs.forEach(function (f) {
+      h += '<div class="rf-row"><div><strong>Refund ' + money(f.amount_mad) + '</strong> <span class="pill ' + (f.status === "paid" ? "pill-green" : f.status === "cancelled" ? "pill-red" : "pill-orange") + '">' + REFUND_STEP[f.status] + "</span></div>" +
+        '<p class="hint" style="margin:4px 0">' + esc(REFUND_REASON[f.reason] || f.reason) + (f.note ? " · " + esc(f.note) : "") + " · requested " + dTime(f.requested_at) +
+        (f.approved_at ? " · approved " + dTime(f.approved_at) + " · pay by " + dShort(addBusinessDays(f.approved_at, (S.settings && S.settings.refund_business_days) || 7).toISOString()) : "") +
+        (f.paid_at ? " · paid " + dTime(f.paid_at) + " · ref. " + esc(f.reference || "") : "") + "</p>";
+      var acts = "";
+      if (f.status === "requested" && S.role === "admin") acts += '<button class="btn btn-primary btn-sm" type="button" data-rapprove="' + esc(f.id) + '">Approve</button>';
+      if (f.status === "approved" && S.canMoney) {
+        acts += '<input id="rref_' + esc(f.id) + '" maxlength="100" placeholder="Transfer reference" aria-label="Transfer reference" style="max-width:180px">' +
+          '<label class="btn btn-secondary btn-sm" style="margin:0">Proof<input type="file" id="rproof_' + esc(f.id) + '" accept="image/jpeg,image/png,image/webp,application/pdf" hidden></label>' +
+          '<button class="btn btn-primary btn-sm" type="button" data-rpaid="' + esc(f.id) + '">Mark as paid</button>';
+      }
+      if ((f.status === "requested" || f.status === "approved") && S.role === "admin") acts += '<button class="btn btn-danger btn-sm" type="button" data-rcancel="' + esc(f.id) + '">Cancel refund</button>';
+      if (f.proof_path) acts += '<button type="button" class="btn btn-secondary btn-sm" data-proof="' + esc(f.proof_path) + '">Transfer proof</button>';
+      if (acts) h += '<div class="actions-row">' + acts + "</div>";
+      h += "</div>";
+    });
+    if (S.canMoney && p && verified(p) + (p.deposit_status === "received" ? Number(p.deposit_amount_mad) : 0) > 0) {
+      h += '<details class="rf-more"><summary>Record a refund</summary><div class="cost-grid" style="margin-top:8px">' +
+        '<div class="field"><label for="rfAmount">Amount (MAD)</label><input id="rfAmount" type="number" min="1" step="1" inputmode="numeric"></div>' +
+        '<div class="field"><label for="rfReason">Reason</label><select id="rfReason">' + Object.keys(REFUND_REASON).filter(function (k) { return k !== "claim"; }).map(function (k) { return '<option value="' + k + '">' + esc(REFUND_REASON[k]) + "</option>"; }).join("") + "</select></div>" +
+        '<div class="field" style="grid-column:1/-1"><label for="rfNote">Note</label><input id="rfNote" maxlength="1000"></div></div>' +
+        '<button class="btn btn-secondary btn-sm" type="button" id="rfAdd">Record the refund</button><p class="hint">An administrator approves it, then Operations &amp; Finance records the transfer.</p></details>';
+    }
+    if (S.role === "admin" && r < 17) {
+      h += '<details class="rf-more"><summary>Cancel the order (problem on our side)</summary><div class="cost-grid" style="margin-top:8px">' +
+        '<div class="field"><label for="tcReason">Reason</label><select id="tcReason">' + ["cannot_source", "supplier_failed", "inspection_failed", "customs_problem", "delivery_failed", "late_delivery", "refused_product", "other"].map(function (k) { return '<option value="' + k + '">' + esc(REFUND_REASON[k]) + "</option>"; }).join("") + "</select></div>" +
+        '<div class="field" style="grid-column:1/-1"><label for="tcNote">Explanation for the client</label><input id="tcNote" maxlength="1000" placeholder="Sent to the client in the conversation"></div></div>' +
+        '<button class="btn btn-danger btn-sm" type="button" id="tcGo">Cancel the order</button><p class="hint">Everything the client paid is refunded in full (D12). The refund still needs your approval.</p></details>';
+    }
+    return h ? '<div class="sec"><h3>Claims, refunds and cancellation</h3>' + h + "</div>" : "";
+  }
+  function bindCancelRefund(q) {
+    var body = $("drawerBody");
+    var claimUpdate = function (id, patch, ok) { act(sb.from("claims").update(patch).eq("id", id), ok); };
+    if ($("clReview")) $("clReview").onclick = function () { claimUpdate(this.dataset.claim, { status: "in_review" }, "Claim marked in review. The client is told."); };
+    if ($("clAnswer")) $("clAnswer").onclick = function () {
+      var o = $("clOutcome").value, amt = Number($("clAmount").value), note = $("clNote").value.trim();
+      if (!o) return toast("Choose the answer.", true);
+      if (o === "refund" && !(amt > 0)) return toast("Enter the refund amount.", true);
+      if (o === "rejected" && !note) return toast("Explain to the client why the claim is rejected.", true);
+      claimUpdate(this.dataset.claim, { status: o === "rejected" ? "rejected" : "resolved", outcome: o, refund_amount_mad: o === "refund" ? amt : null, outcome_note: note || null },
+        "Answer sent to the client." + (o === "refund" ? " The refund waits for approval." : ""));
+    };
+    body.querySelectorAll("[data-rapprove]").forEach(function (b) {
+      b.onclick = function () { act(sb.from("refunds").update({ status: "approved" }).eq("id", b.dataset.rapprove), "Refund approved. Operations & Finance can pay it."); };
+    });
+    body.querySelectorAll("[data-rcancel]").forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm("Cancel this refund? Record a new one if the amount was wrong.")) return;
+        act(sb.from("refunds").update({ status: "cancelled" }).eq("id", b.dataset.rcancel), "Refund cancelled.");
+      };
+    });
+    body.querySelectorAll("[data-rpaid]").forEach(function (b) {
+      b.onclick = function () {
+        var id = b.dataset.rpaid, ref = $("rref_" + id).value.trim(), file = $("rproof_" + id).files && $("rproof_" + id).files[0];
+        if (!ref) return toast("Enter the bank transfer reference.", true);
+        b.disabled = true;
+        var save = function (path) {
+          var patch = { status: "paid", reference: ref }; if (path) patch.proof_path = path;
+          return act(sb.from("refunds").update(patch).eq("id", id), "Refund marked as paid. The client is told.").then(function () { b.disabled = false; });
+        };
+        if (!file) return save(null);
+        var path = "staff/" + q.id + "/refund-" + Date.now() + "-" + safeName(file.name);
+        sb.storage.from("request-files").upload(path, file, { contentType: file.type, upsert: false }).then(function (u) {
+          if (u.error) { b.disabled = false; return toast(friendly(u.error), true); }
+          save(path);
+        });
+      };
+    });
+    if ($("rfAdd")) $("rfAdd").onclick = function () {
+      var amt = Number($("rfAmount").value);
+      if (!(amt > 0)) return toast("Enter the refund amount.", true);
+      act(sb.from("refunds").insert({ request_id: q.id, amount_mad: amt, reason: $("rfReason").value, note: $("rfNote").value.trim() || null }), "Refund recorded. It waits for approval.");
+    };
+    if ($("tcGo")) $("tcGo").onclick = function () {
+      var note = $("tcNote").value.trim();
+      if (note.length < 3) return toast("Write a short explanation for the client.", true);
+      if (!confirm("Cancel " + q.code + "? The client is told, and everything they paid is refunded after your approval.")) return;
+      act(sb.rpc("team_cancel_request", { p_request: q.id, p_reason: $("tcReason").value, p_note: note }), "Order cancelled. The client is told.");
+    };
+  }
+
   // Quote sent / expiry / acceptance / client closing, shown under the quotation.
   function quoteStatus(q, canQuote) {
     var h = "", a = S.accepted[q.id];
     if (q.closed_kind) {
-      h += '<div class="alert alert-warn" style="margin-top:12px"><strong>' + (q.closed_kind === "declined" ? "The client declined the quote" : "The client cancelled the request") + "</strong>" +
+      h += '<div class="alert alert-warn" style="margin-top:12px"><strong>' + (q.closed_kind === "declined" ? "The client declined the quote" : q.cancelled_by === "team" ? "We cancelled the order" : "The client cancelled the request") + "</strong>" +
         (q.closed_at ? " on " + dTime(q.closed_at) : "") + ". Reason: " + esc(q.closed_reason || "—") + "</div>";
     }
-    if (a && q.status !== "not_qualified") {
+    if (a && !isClosed(q.status)) {
       h += '<p class="hint" style="color:var(--green)">Accepted by the client on ' + dTime(a.accepted_at) + " · " + money(a.amount_mad) + " · Terms " + esc(a.terms_version) + "</p>";
     }
     if (q.quote_sent_at && q.status === "awaiting_confirmation") {
@@ -1816,9 +1987,20 @@
       case "message_to_client": return "Message sent to the client";
       case "message_from_client": return "Message from the client";
       case "costs_updated": return "Costs updated (total " + money(d.total) + ")";
+      case "client_cancelled": return "Client cancelled the request: " + (d.reason || "") + (d.refund ? " (refund " + money(d.refund) + ")" : "");
+      case "team_cancelled": return "Order cancelled by us (" + (REFUND_REASON[d.reason] || d.reason) + ")" + (d.refund ? ", refund " + money(d.refund) : "");
+      case "refund_requested": return "Refund requested: " + money(d.amount) + " · " + (REFUND_REASON[d.reason] || d.reason);
+      case "refund_approved": return "Refund approved: " + money(d.amount);
+      case "refund_paid": return "Refund paid: " + money(d.amount) + (d.reference ? " · ref. " + d.reference : "");
+      case "refund_cancelled": return "Refund cancelled: " + money(d.amount);
+      case "refund_updated": return "Refund details updated";
+      case "claim_opened": return "Client opened a claim: " + d.units + " unit(s), " + d.files + " file(s)";
+      case "claim_in_review": return "Claim in review";
+      case "claim_resolved": return "Claim answered: " + (d.outcome || "") + (d.amount ? " " + money(d.amount) : "");
+      case "claim_rejected": return "Claim rejected";
+      case "balance_reminder": return "Reminder sent for the 60% (day " + d.day + ")";
       case "quote_accepted": return "Client accepted the quote (" + money(d.amount) + ", Terms " + (d.terms_version || "") + ")";
       case "quote_declined": return "Client declined the quote: " + (d.reason || "");
-      case "client_cancelled": return "Client cancelled the request: " + (d.reason || "");
       default:
         var m = e.action.match(/^(deposit|final_payment)_(.+)$/);
         if (m) return (m[1] === "deposit" ? "40% deposit" : "60% balance") + " marked " + (DEP_LABEL[m[2]] || FIN_LABEL[m[2]] || m[2]).toLowerCase() + (d.amount ? " (" + money(d.amount) + ")" : "");

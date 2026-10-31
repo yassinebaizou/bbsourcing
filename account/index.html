@@ -84,6 +84,8 @@
   .bank dt{font-size:12.5px;color:var(--muted);font-weight:600}
   .bank dd{margin:0;font-weight:700;word-break:break-all}
   .copy{font:inherit;font-size:12.5px;font-weight:700;color:#B04600;background:none;border:0;cursor:pointer;padding:0 0 0 8px;min-height:24px}
+  .refund-row{padding:10px 0;border-top:1px solid var(--line)}
+  .refund-row:first-of-type{border-top:0;padding-top:0}
   .cancel-box{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
   @media (max-width:760px){.copy,.cancel-box .link{min-height:44px}}
 
@@ -505,7 +507,11 @@
     if (rank <= 13) return 3; if (rank === 14) return 4; return 5;
   }
   function nextStep(status, rank) {
-    if (status === "not_qualified") return ["This request is closed", "Contact us on WhatsApp if you have any question about it."];
+    if (status === "refund_pending") return ["Your refund is in progress", "We refund you by bank transfer. You see each step below and receive the transfer proof."];
+    if (status === "refunded") return ["Your refund is paid", "The transfer details are below. Contact us if you have any question."];
+    if (status === "cancelled_by_us") return ["We cancelled this order", "Read the reason in the conversation below."];
+    if (status === "cancelled_by_client") return ["You cancelled this request", "You can send a new request at any time."];
+    if (rank >= 90) return ["This request is closed", "Contact us on WhatsApp if you have any question about it."];
     if (rank <= 4) return ["We are reviewing your request", "Our team will contact you on WhatsApp within the same business day."];
     if (rank <= 6) return ["Your product can be sourced", "We are preparing your final door-to-door quotation."];
     if (rank === 7) return ["Your quotation is ready", "Read your final door-to-door price below, then accept it, decline it or ask us a question."];
@@ -863,11 +869,11 @@
   }
 
   function pill(code, st) {
-    var cls = code === "not_qualified" ? "pill-red" : st.rank >= 17 ? "pill-green" : (st.rank === 8 || st.rank === 14 || st.rank === 7) ? "pill-orange" : st.rank >= 9 ? "pill-blue" : "pill-new";
+    var cls = code === "refunded" ? "pill-green" : st.rank >= 90 ? "pill-red" : st.rank >= 17 ? "pill-green" : (st.rank === 8 || st.rank === 14 || st.rank === 7) ? "pill-orange" : st.rank >= 9 ? "pill-blue" : "pill-new";
     return '<span class="pill ' + cls + '">' + esc(st.client_stage) + "</span>";
   }
   function progressBar(code, rank) {
-    if (code === "not_qualified") return "";
+    if (rank >= 90) return "";
     var cur = stageIndex(rank), done = rank >= 17;
     return '<div class="progress" aria-hidden="true">' + MILESTONES.map(function (m, i) {
       return '<span class="' + (done || i < cur ? "done" : i === cur ? "now" : "") + '"></span>';
@@ -887,7 +893,8 @@
       var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
       var ns = nextStep(q.status, st.rank);
       if (q.closed_kind === "declined") ns = ["You declined this quote", "Reason: " + (q.closed_reason || "") + ". You can send a new request at any time."];
-      if (q.closed_kind === "cancelled") ns = ["You cancelled this request", "Reason: " + (q.closed_reason || "") + ". If you already paid the 40%, our team contacts you about the refund."];
+      if (q.closed_kind === "cancelled" && q.cancelled_by === "team" && q.status === "cancelled_by_us") ns = ["We cancelled this order", q.closed_reason || ""];
+      if (q.closed_kind === "cancelled" && q.cancelled_by !== "team" && q.status === "cancelled_by_client") ns = ["You cancelled this request", "Reason: " + (q.closed_reason || "") + ". You can send a new request at any time."];
       var row = function (k, v) { return v || v === 0 ? "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
       box.innerHTML =
         '<button type="button" class="btn btn-ghost" id="backList">← All requests</button>' +
@@ -948,24 +955,111 @@
   function renderDeal(q, st) {
     var box = $("dealBox");
     if (!box) return;
-    var cancellable = q.status !== "not_qualified" && st.rank <= 8;
+    // D9/D10: the client can cancel until we order from the supplier (rank 8); D11: not after.
+    var cancellable = st.rank <= 8;
+    var hasQuote = q.quote_amount_mad != null;
     Promise.all([
       loadSettings(),
-      q.quote_amount_mad != null ? sb.rpc("my_payment_info", { p_request: q.id }) : Promise.resolve({ data: null }),
-      sb.from("quote_acceptances").select("amount_mad, terms_version, accepted_at").eq("request_id", q.id).order("accepted_at", { ascending: false }).limit(1)
+      hasQuote ? sb.rpc("my_payment_info", { p_request: q.id }) : Promise.resolve({ data: null }),
+      sb.from("quote_acceptances").select("amount_mad, terms_version, accepted_at").eq("request_id", q.id).order("accepted_at", { ascending: false }).limit(1),
+      hasQuote ? sb.rpc("my_refunds", { p_request: q.id }) : Promise.resolve({ data: [] }),
+      q.status === "completed" ? sb.from("claims").select("*, files:claim_files(path, file_name, media_type)").eq("request_id", q.id).order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
+      q.status === "completed" ? sb.rpc("delivered_at", { p_request: q.id }) : Promise.resolve({ data: null })
     ]).then(function (res) {
       if (!$("dealBox")) return;
-      var S = res[0], pay = res[1].data, acc = (res[2].data || [])[0], html = "";
-      if (pay && pay.deposit_status === "verified") cancellable = false;
+      var S = res[0], pay = res[1].data, acc = (res[2].data || [])[0], refunds = res[3].data || [], claims = res[4].data || [];
+      var html = "";
       if (q.status === "awaiting_confirmation" && q.quote_sent_at) html = quoteCard(q, S);
       else if (pay && pay.bank) html = payCard(q, pay, S);
-      if (acc && q.status !== "not_qualified") html += '<p class="muted" style="font-size:13.5px;margin:12px 0 0">You accepted this quote (' + esc(mad(acc.amount_mad)) + ") on " + esc(dayFmt(acc.accepted_at)) + ", under our Terms version " + esc(acc.terms_version) + ".</p>";
+      if (acc && st.rank < 90) html += '<p class="muted" style="font-size:13.5px;margin:12px 0 0">You accepted this quote (' + esc(mad(acc.amount_mad)) + ") on " + esc(dayFmt(acc.accepted_at)) + ", under our Terms version " + esc(acc.terms_version) + ".</p>";
       var main = !!html;
       if (cancellable && q.status !== "awaiting_confirmation") html += cancelBox(pay, S);
-      if (!html) { box.innerHTML = ""; return; }
-      box.innerHTML = '<div class="card' + (main ? " deal" : "") + '" style="margin-top:16px">' + html + "</div>";
+      var extra = refundsCard(refunds, S) + (q.status === "completed" ? claimCard(q, claims, res[5].data, S) : "");
+      if (!html && !extra) { box.innerHTML = ""; return; }
+      box.innerHTML = (html ? '<div class="card' + (main ? " deal" : "") + '" style="margin-top:16px">' + html + "</div>" : "") + extra;
       bindDeal(q, pay, S);
+      bindClaim(q, S);
     });
+  }
+  var REFUND_STEP = { requested: "Being checked by our team", approved: "Approved: transfer in progress", paid: "Paid" };
+  function refundsCard(list, S) {
+    if (!list.length) return "";
+    return '<div class="card" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">' + (list.length > 1 ? "Your refunds" : "Your refund") + "</h3>" +
+      list.map(function (f) {
+        var when = f.status === "paid" ? "Paid on " + dayFmt(f.paid_at) + (f.reference ? " · transfer reference " + f.reference : "")
+          : f.status === "approved" ? "Approved on " + dayFmt(f.approved_at) + ". Paid by bank transfer within " + (S.refundBusinessDays || 7) + " business days."
+          : "Requested on " + dayFmt(f.requested_at) + ".";
+        return '<div class="refund-row"><div><strong>' + esc(mad(f.amount_mad)) + '</strong> <span class="pill ' + (f.status === "paid" ? "pill-green" : "pill-orange") + '">' + esc(REFUND_STEP[f.status] || f.status) + "</span></div>" +
+          '<p class="muted" style="margin:4px 0 0;font-size:14px">' + esc(when) + "</p>" +
+          (f.proof_path ? '<button type="button" class="link" data-proof="' + esc(f.proof_path) + '">See the transfer proof</button>' : "") + "</div>";
+      }).join("") + '<p class="muted" style="font-size:13px;margin:10px 0 0">How refunds work: <a href="/policies" target="_blank" rel="noopener">payments, cancellation and refunds</a>.</p></div>';
+  }
+  var CLAIM_STEP = { open: "Received", in_review: "Being reviewed", resolved: "Answered", rejected: "Not accepted" };
+  var CLAIM_OUTCOME = { refund: "Refund", credit: "Credit on your next order", replacement: "Replacement of the affected units", rejected: "Not accepted" };
+  function claimCard(q, claims, deliveredAt, S) {
+    var hrs = S.claimHours || 72, from = deliveredAt || q.updated_at;
+    var deadline = new Date(new Date(from).getTime() + hrs * 3600e3), open = claims.some(function (c) { return c.status === "open" || c.status === "in_review"; });
+    var h = '<div class="card" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">Problem with your goods?</h3>';
+    h += claims.map(function (c) {
+      return '<div class="refund-row"><div><strong>Claim: ' + fmt.format(c.units_affected) + " unit(s)</strong> <span class=\"pill " + (c.status === "resolved" ? "pill-green" : c.status === "rejected" ? "pill-red" : "pill-orange") + '">' + esc(CLAIM_STEP[c.status]) + "</span></div>" +
+        '<p class="muted" style="margin:4px 0 0;font-size:14px">' + esc(c.description) + "</p>" +
+        (c.outcome ? '<p style="margin:6px 0 0;font-size:14px"><strong>Our answer:</strong> ' + esc(CLAIM_OUTCOME[c.outcome]) + (c.refund_amount_mad ? " of " + esc(mad(c.refund_amount_mad)) : "") + (c.outcome_note ? ". " + esc(c.outcome_note) : "") + "</p>" : "") + "</div>";
+    }).join("");
+    if (!open && new Date() < deadline) {
+      h += '<p style="font-size:14px;margin:0 0 10px">Damaged or missing units? Tell us before <strong>' + esc(deadline.toLocaleString("en-GB", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })) + "</strong> (" + hrs + " hours after delivery), with photos or an unboxing video.</p>" +
+        '<button type="button" class="btn btn-secondary" id="claimOpen">Report a problem</button>' +
+        '<form id="claimForm" hidden novalidate style="margin-top:14px">' +
+        '<div class="field"><label for="claimUnits">Number of units affected</label><input id="claimUnits" type="number" min="1" max="' + q.quantity + '" step="1" inputmode="numeric"></div>' +
+        '<div class="field"><label for="claimText">What is the problem?</label><textarea id="claimText" maxlength="3000" placeholder="For example: 12 units arrived with a broken screen."></textarea></div>' +
+        '<div class="field"><label for="claimFiles">Photos or unboxing video (required)</label><input id="claimFiles" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"><p class="hint">Up to 10 files: photos 10 MB, videos 50 MB each.</p></div>' +
+        '<div id="claimMsg"></div><button type="submit" class="btn btn-primary" id="claimSend">Send my claim</button></form>';
+    } else if (!claims.length) {
+      h += '<p class="muted" style="font-size:14px;margin:0">The ' + hrs + ' hours to report a problem after delivery have passed. Write to us in the conversation if you need help.</p>';
+    }
+    return h + "</div>";
+  }
+  function bindClaim(q, S) {
+    document.querySelectorAll("#dealBox [data-proof]").forEach(function (b) {
+      b.onclick = function () {
+        sb.storage.from("request-files").createSignedUrl(b.dataset.proof, 600).then(function (u) {
+          if (u.error) return toast(friendly(u.error), true);
+          window.open(u.data.signedUrl, "_blank", "noopener");
+        });
+      };
+    });
+    if (!$("claimForm")) return;
+    $("claimOpen").onclick = function () { $("claimForm").hidden = false; this.hidden = true; $("claimUnits").focus(); };
+    $("claimForm").onsubmit = function (e) {
+      e.preventDefault();
+      var units = Number($("claimUnits").value), text = $("claimText").value.trim(), files = Array.prototype.slice.call($("claimFiles").files || []);
+      var m = $("claimMsg");
+      if (!(units >= 1 && units <= q.quantity)) return msg(m, "error", "Enter the number of units affected (1 to " + fmt.format(q.quantity) + ").");
+      if (text.length < 10) return msg(m, "error", "Describe the problem in a few words.");
+      if (!files.length) return msg(m, "error", "Add at least one photo or video of the problem.");
+      if (files.length > 10) return msg(m, "error", "Add 10 files at most.");
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i], video = /^video\//.test(f.type);
+        if (!/^(image\/(jpeg|png|webp)|video\/(mp4|quicktime|webm))$/.test(f.type)) return msg(m, "error", f.name + ": only photos (JPG, PNG, WEBP) or videos (MP4, MOV, WEBM).");
+        if (f.size > (video ? 50 : 10) * 1024 * 1024) return msg(m, "error", f.name + " is larger than " + (video ? 50 : 10) + " MB.");
+      }
+      var btn = $("claimSend"); btn.disabled = true; btn.textContent = "Sending…"; msg(m, "info", "Uploading your files…");
+      var stamp = Date.now();
+      Promise.all(files.map(function (f, i) {
+        var path = state.user.id + "/" + q.id + "/claim-" + stamp + "-" + i + "-" + safeName(f.name);
+        return sb.storage.from("request-files").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+          if (u.error) throw u.error;
+          return { path: path, name: f.name, type: f.type };
+        });
+      })).then(function (list) {
+        return sb.rpc("open_claim", { p_request: q.id, p_units: units, p_description: text, p_files: list });
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        toast("Claim sent. Our team answers in the conversation.");
+        openDetail(q.id);
+      }).catch(function (err) {
+        btn.disabled = false; btn.textContent = "Send my claim"; msg(m, "error", friendly(err));
+      });
+    };
   }
   function quoteCard(q, S) {
     var total = Number(q.quote_amount_mad), expired = !q.quote_expires_at || new Date(q.quote_expires_at) <= new Date();
@@ -998,6 +1092,10 @@
     };
     var h = "<h3>" + (part === "deposit" ? "Pay the 40% deposit" : "Pay the remaining 60%") + '</h3><div class="total">' + esc(mad(amount)) + "</div>" +
       '<p class="muted" style="margin:0;font-size:14px">By bank transfer only, to the company account below. We never ask for cash or a personal account.</p>';
+    if (part === "final" && status === "pending" && pay.storage_fee_from) {
+      h += '<div class="alert alert-warn" style="margin-top:12px">Please pay before <strong>' + esc(dayFmt(pay.storage_fee_from)) + "</strong>: after that date a storage fee applies. Without payment by " + esc(dayFmt(pay.cancel_after)) +
+        ', the order is cancelled and the deposit is kept. <a href="/policies" target="_blank" rel="noopener">See the rules</a>.</div>';
+    }
     if (b.rib || b.iban) {
       h += '<dl class="bank">' + line("Bank", b.bank_name) + line("Account holder", b.account_holder) + line("RIB", b.rib, true) + line("IBAN", b.iban, true) + line("SWIFT", b.swift, true) +
         line("Reference to write", b.reference, true) + "</dl>" + '<p style="font-size:14px;margin:0 0 12px">' + esc(b.reference_note) + "</p>";
@@ -1015,10 +1113,10 @@
     return h;
   }
   function cancelBox(pay, S) {
-    var paid = pay && pay.deposit_status === "received";
+    var paid = pay && (pay.deposit_status === "received" || pay.deposit_status === "verified");
     return '<div class="cancel-box"' + (pay && pay.bank ? "" : ' style="margin:0;padding:0;border:0"') + '><button type="button" class="link" id="cancelOpen">Cancel this request</button>' +
       '<div id="cancelForm" hidden style="margin-top:10px"><p style="margin:0 0 10px">' + (paid
-        ? "You can cancel until we verify your 40% and order from the supplier. Your 40% is refunded in full, by bank transfer within " + esc(S.refundBusinessDays || 7) + " business days."
+        ? "You can cancel until we order your goods from the supplier. Your 40% is refunded in full, by bank transfer within " + esc(S.refundBusinessDays || 7) + " business days after we confirm the refund."
         : "Cancelling is free: you have paid nothing.") + ' <a href="/policies" target="_blank" rel="noopener">Read the rules</a>.</p>' +
       '<div class="field"><label for="cancelWhy">Why do you cancel?</label><textarea id="cancelWhy" maxlength="1000"></textarea></div><div id="cancelMsg"></div>' +
       '<button type="button" class="btn btn-danger" id="cancelGo">Cancel this request</button></div></div>';
