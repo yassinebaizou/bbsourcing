@@ -35,10 +35,13 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql` (rolled-back DB checks), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql` (rolled-back DB checks), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
-| `privacy.html`, `terms.html` | Legal pages (placeholders removed in Sprint 1; full rewrite in Sprint 2) |
+| `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
+| `terms.html`, `privacy.html` | Terms of Service (version in `assets/policy.js`, currently `2026-11-v1`) and Privacy Policy (Law 09-08, real processors). Lawyer checklist: `docs/LEGAL_REVIEW.md` |
+| `assets/policy.js` | **Every client-facing rule number** (40/60, quote validity, refund delay, claim hours, storage-fee days…). `/policies`, `/terms` and the homepage FAQ read it through `data-policy="key"` spans; keep the static text in those spans equal to the value (tested). `null` hides the sentence. Moves to `business_settings` in Sprint 3 |
+| `assets/legal.css` | Shared styles of the three legal pages |
 
 ## Brand
 

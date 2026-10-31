@@ -5,7 +5,7 @@ const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..'));
 const mock = fs.readFileSync(path.join(__dirname, 'mock-supabase.js'), 'utf8');
 (async () => {
   const b = await chromium.launch(); let total = 0;
-  for (const [url, pre] of [['/', 'window.__MOCK={session:null};'], ['/account', 'window.__MOCK={session:{user:{id:"c1",email:"s@x.ma",user_metadata:{}}},role:null};'], ['/estimate', ''], ['/privacy', ''], ['/terms', '']]) {
+  for (const [url, pre] of [['/', 'window.__MOCK={session:null};'], ['/account', 'window.__MOCK={session:{user:{id:"c1",email:"s@x.ma",user_metadata:{}}},role:null};'], ['/estimate', ''], ['/privacy', ''], ['/terms', ''], ['/policies', '']]) {
     const p = await b.newPage({ viewport: { width: 390, height: 844 } });
     await p.route('**/*', (r) => { const u = new URL(r.request().url()); if (u.hostname !== 'local.test') return r.fulfill({ status: 200, body: '' });
       if (u.pathname === '/assets/vendor/supabase.js') return r.fulfill({ contentType: 'application/javascript', body: pre + mock });

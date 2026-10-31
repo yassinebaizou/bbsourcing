@@ -54,7 +54,7 @@
       ]
     },
     {
-      "source": "/assets/(ui.css|config.js)",
+      "source": "/assets/(ui.css|config.js|legal.css|company.js|policy.js)",
       "headers": [
         {
           "key": "Cache-Control",

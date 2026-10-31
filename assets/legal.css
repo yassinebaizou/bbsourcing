@@ -1,0 +1,46 @@
+/* Shared styles for /policies, /terms and /privacy (brand: navy, orange, Archivo). */
+body{margin:0;font-family:'Archivo','Helvetica Neue',Arial,sans-serif;color:#0B1220;background:#F7F8FA;line-height:1.7;font-size:17px}
+header{background:#0B1220}
+.bar{max-width:860px;margin:0 auto;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.logo{text-decoration:none;display:flex;flex-direction:column;line-height:1}
+.logo b{font-size:26px;font-weight:900;color:#F7F8FA}
+.logo span{font-size:9px;font-weight:700;letter-spacing:.62em;color:#FF6B00;margin-top:3px}
+.back{color:#D5DBE5;font-size:15px}
+main{max-width:860px;margin:0 auto;padding:56px 24px 80px}
+h1{font-size:clamp(32px,5vw,44px);line-height:1.1;margin:0 0 8px;font-weight:900;letter-spacing:-.02em;text-wrap:balance}
+h2{font-size:22px;margin:40px 0 10px;font-weight:800;text-wrap:balance}
+h3{font-size:18px;margin:24px 0 6px;font-weight:800}
+.updated{color:#475569;font-size:15px;margin:0 0 20px}
+.lead{font-size:19px;color:#334155;margin:0 0 8px}
+.box{background:#FFF4EC;border-radius:12px;padding:16px 20px;font-size:16px;margin:20px 0}
+a{color:#C2410C}
+ul,ol{padding-left:22px}
+li{margin:6px 0}
+nav.toc{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px 20px;margin:24px 0;font-size:15px}
+nav.toc ol{margin:6px 0 0;columns:2;column-gap:28px}
+@media (max-width:640px){nav.toc ol{columns:1}}
+/* "If… / What happens" table */
+.rules{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;font-size:16px}
+.rules th,.rules td{text-align:left;vertical-align:top;padding:14px 16px;border-bottom:1px solid #E2E8F0}
+.rules thead th{background:#0B1220;color:#F7F8FA;font-size:14px;letter-spacing:.02em}
+.rules tbody th{width:42%;font-weight:700}
+.rules tr:last-child th,.rules tr:last-child td{border-bottom:0}
+@media (max-width:640px){
+  .rules thead{display:none}
+  .rules tr{display:block;border-bottom:1px solid #E2E8F0}
+  .rules tbody th,.rules td{display:block;width:auto;border:0}
+  .rules tbody th{padding-bottom:2px}
+  .rules td{padding-top:0}
+}
+/* 40% / 60% timeline */
+.timeline{list-style:none;margin:16px 0 0;padding:0;counter-reset:t;display:grid;gap:12px}
+.timeline li{counter-increment:t;position:relative;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px 14px 60px;margin:0}
+.timeline li::before{content:counter(t);position:absolute;left:16px;top:14px;width:30px;height:30px;border-radius:50%;background:#0B1220;color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center}
+.timeline li.pay{border-color:#FF6B00}
+.timeline li.pay::before{background:#FF6B00;color:#0B1220}
+.timeline b{display:block}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;background:#FFE7D6;color:#7A2E00;vertical-align:middle}
+footer{text-align:center;color:#475569;font-size:14px;padding:0 24px 40px}
+footer a{color:#475569}
+:focus-visible{outline:3px solid #FF6B00;outline-offset:3px}
+@media (max-width:760px){.logo,.back,footer a{min-height:44px;display:inline-flex;justify-content:center}.back,footer a{align-items:center}nav.toc li{margin:0}nav.toc a{display:flex;align-items:center;min-height:44px}}

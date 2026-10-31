@@ -580,6 +580,7 @@ fieldset.field{border:0;margin:0;padding:0}
                 <div class="field full"><label for="f-notes">Anything else we should know? (optional)</label><textarea id="f-notes" rows="2" maxlength="3000"></textarea></div>
                 <label class="check full"><input type="checkbox" id="consent-wa"> I agree to be contacted on WhatsApp about this request.</label>
                 <label class="check full"><input type="checkbox" id="consent-privacy"> <span>I accept the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span></label>
+                <p class="hint full" style="margin:0">You pay nothing now. How payments, cancellation and refunds work: <a href="/policies" target="_blank" rel="noopener">read the rules</a>.</p>
               </div>
             </fieldset>
 
@@ -646,7 +647,11 @@ fieldset.field{border:0;margin:0;padding:0}
     <details><summary>What does DDP mean?</summary><p>DDP means Delivered Duty Paid. We take responsibility for the whole journey: supplier, inspection, express air freight, customs clearance, import duties, and delivery to your address in Morocco. You pay one final price and don't deal with any other provider.</p></details>
     <details><summary>What does the final price include?</summary><p>The product cost, China transport and handling, supplier verification, quality inspection, express air freight, customs clearance and import duties, our service fee, and door-to-door delivery. It is the complete amount you pay for the agreed order.</p></details>
     <details><summary>What is the minimum order?</summary><p>A total product value of at least MAD 5,000 or a quantity of at least 100 units. You only need to meet one of these. Smaller requests can still be sent for review.</p></details>
-    <details><summary>What are the payment terms?</summary><p>The request is free. Once you accept the final price, you pay 40% of the stock amount and we order your stock. The remaining 60% is paid once your goods are cleared through customs, before we deliver them to your door. Invoices are issued by Beast Capital Group.</p></details>
+    <details><summary>What are the payment terms?</summary><p>The request is free. Once you accept the final price, you pay <span data-policy="depositPct">40</span>% by bank transfer and we order your stock. The remaining <span data-policy="balancePct">60</span>% is paid once your goods are cleared through customs, before we deliver them to your door. <a href="/policies">See the payment rules</a>.</p></details>
+    <details><summary>Can I cancel?</summary><p>Yes, free of charge before you pay the <span data-policy="depositPct">40</span>% deposit. After the deposit and before we order from the supplier, your deposit is refunded in full. Once we have ordered from the supplier, the order can no longer be cancelled. <a href="/policies">Read the cancellation rules</a>.</p></details>
+    <details><summary>What if something goes wrong on your side?</summary><p>If we cannot source the product, the goods fail inspection, a customs problem blocks a legal product, we cannot deliver, or your order arrives more than <span data-policy="delayGraceDays">10</span> days late (outside force majeure), you get a full refund or a solution you agree with. Nothing flies without your approval of the inspection photos. <a href="/policies">See what happens in each case</a>.</p></details>
+    <details><summary>How do refunds work?</summary><p>Refunds are paid by bank transfer to your account within <span data-policy="refundBusinessDays">7</span> business days after we confirm them, and you receive the transfer proof. Damaged or missing units must be reported within <span data-policy="claimHours">72</span> hours of delivery with an unboxing video or photos. <a href="/policies">How refunds and claims work</a>.</p></details>
+    <details><summary>Who issues my invoice?</summary><p>DDPSourcing is a service of <span data-company-legal-name>Beast Capital Group</span>, <span data-company-city>Casablanca</span>. Every order is invoiced by <span data-company-legal-name>Beast Capital Group</span>, and payments go only to its company bank account at <span data-policy="bankName">CFG Bank</span>, never to a personal account. <a href="/policies">Payment details</a>.</p></details>
     <details><summary>Can you source any product?</summary><p>You can send any product. We review every request for supplier reliability, quality, Moroccan import rules, and air-freight suitability. Illegal, counterfeit, prohibited, or unsafe products are not accepted.</p></details>
     <details><summary>How do you check product quality?</summary><p>We inspect the goods before they are shipped, based on the specifications you agreed to.</p></details>
     <details><summary>How quickly will you reply to my request?</summary><p>The same business day, Monday to Friday between 10:00 AM and 6:00 PM Morocco time. Requests sent outside these hours are handled the next business day.</p></details>
@@ -674,7 +679,7 @@ fieldset.field{border:0;margin:0;padding:0}
         <p class="foot-about">DDP sourcing from China to Morocco. We find trusted suppliers, ship by express air, clear customs, and deliver to your door for one final price per unit.</p>
       </div>
       <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Submit sourcing request</a></li></ul></div>
-      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/policies">Payments and refunds</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
       <div><h4>Contact</h4><ul id="contactList"><li>Monday to Friday, 10:00 AM – 6:00 PM (Morocco time)</li></ul></div>
     </div>
     <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span data-company-line>DDPSourcing is a service of Beast Capital Group, Casablanca. Invoices are issued by Beast Capital Group.</span></div>
@@ -698,6 +703,7 @@ fieldset.field{border:0;margin:0;padding:0}
 <script src="/assets/config.js" defer></script>
 <script src="/assets/pending-photos.js" defer></script>
 <script src="/assets/company.js" defer></script>
+<script src="/assets/policy.js" defer></script>
 <script>
 /* =========================================================
    SETTINGS: edit these values (see README.md)

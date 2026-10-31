@@ -73,6 +73,8 @@ Done when: the 3 bugs are reproduced by a test before the fix and pass after; no
 
 ## Sprint 2 — Clear rules and legal pages
 
+**Status: done** (31 Oct 2026). `/policies`, Terms `2026-11-v1`, Privacy, FAQ, `docs/LEGAL_REVIEW.md`. Numbers in `assets/policy.js`.
+
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 2 only. One pull request.
 
 Tasks
