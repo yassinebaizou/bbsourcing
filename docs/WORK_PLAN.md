@@ -104,6 +104,8 @@ Done when: full flow tested end to end (quote → accept → proof → verify), 
 
 ## Sprint 4 — Cancellations, refunds and claims in the platform
 
+**Status: done** (1 Nov 2026). Migration `20261031233107`; `tests/sprint4_db_checks.sql` (31 checks, live project, rolled back) and `tests/browser/sprint4.js` (29 checks). D13 (inspection approval) stays in Sprint 5 as planned.
+
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 4 only. One pull request.
 
 Tasks
