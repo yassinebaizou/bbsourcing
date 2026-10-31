@@ -90,3 +90,15 @@ enter their email, pick the role, **Add to team**.
 | Administrator | Everything | Assign, any status, quotation, payments, team |
 | Sourcing Agent | Requests assigned to them | Contact notes, stages up to "Awaiting 40% deposit", quotation |
 | Operations & Finance | Confirmed orders | Verify 40% / 60% payments with proof, production → delivery |
+
+## 6. Bank details for client payments (CRM → Settings)
+
+Clients see the bank details in their account after they accept a quote. Type them yourself:
+
+1. Open `https://www.ddpsourcing.com/team` → **Settings**.
+2. Fill **RIB (24 digits)** (and IBAN / SWIFT if you have them). Check bank name and account holder.
+3. **Save settings**.
+
+Never send the RIB in a chat or an email to Claude. Until it is filled, clients see "Our bank details will
+appear here very soon". The same page holds the rule numbers (quote validity, refund days, claim hours,
+storage fee…) shown on /policies, the Terms and the FAQ.

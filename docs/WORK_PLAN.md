@@ -88,6 +88,8 @@ Done when: no placeholder left; every rule on `/policies` matches the Terms; own
 
 ## Sprint 3 — Quote, acceptance and payment inside the account
 
+**Status: done** (31 Oct 2026). Database checks passed on the live project (rolled back, no test data left). Migration `20261031001806`, Edge Function `notify-team`, CRM → Settings, tests `tests/sprint3_db_checks.sql` and `tests/browser/sprint3.js`. The owner types the RIB in CRM → Settings.
+
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 3 only. One pull request.
 
 Tasks
@@ -129,6 +131,8 @@ Tasks
 Done when: a visitor sees who we are, how payments are protected and real proof in the first 3 screens on mobile.
 
 ## Sprint 6 — Client email notifications
+
+**Already done (31 Oct 2026, owner's request):** email to the client for every team message (grouped, max one per 10 minutes) and every status change; email to the team for every client message and client action. Function `notify-message`.
 
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 6 only. One pull request.
 

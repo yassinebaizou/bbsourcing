@@ -30,17 +30,17 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 |---|---|
 | `index.html` | Homepage (copy, FAQ, shipments/reviews blocks). Header: **Get estimated price** (→ `/estimate`, instant indicative price, nothing sent to the team) and **Submit sourcing request** (→ `#request`, the real request). Use these two names everywhere, including the client account. `#request` is the 3-step request form: product (link, name, order type, quantity, pictures, specs) → contact (name, WhatsApp, city, selling status; no budget or arrival date) → email, checked with `account_exists`: existing account = password + log in, request inserted under it; new = choose a password, account created at submit and the request travels in `pending_request` (same as `/account`); logged-in visitors insert directly. Supabase is loaded on the homepage for this |
 | `estimate/index.html` | Public price estimator → "Request my exact quote" opens `/account` prefilled |
-| `account/index.html` | Client portal. Request form = same simple fields as the homepage (step 1 product: link, name, order type, quantity, pictures, specs; step 2: delivery city, notes, consents; step 3 for visitors without a session: email checked with `account_exists` → log in, or name/WhatsApp/selling status + new password; the request travels in `pending_request`). Category/USD price/weight are hidden fields filled only from the estimator. **Get estimated price** is a tab inside the account (same `/api/estimate`), with a button that turns the tested product into a prefilled request. Also: log in, reset password (a reset link always opens the new-password form), my requests + tracking + unread badges, two-way conversation per request, profile |
-| `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management; request drawer with client conversation, status, assignment, next action, quotation, 40/60 payments with proof, costs & profit, notes, activity |
+| `account/index.html` | Client portal. Request form = same simple fields as the homepage (step 1 product: link, name, order type, quantity, pictures, specs; step 2: delivery city, notes, consents; step 3 for visitors without a session: email checked with `account_exists` → log in, or name/WhatsApp/selling status + new password; the request travels in `pending_request`). Category/USD price/weight are hidden fields filled only from the estimator. **Get estimated price** is a tab inside the account (same `/api/estimate`), with a button that turns the tested product into a prefilled request. Also: log in, reset password (a reset link always opens the new-password form), my requests + tracking + unread badges, two-way conversation per request, profile. Request page: **quote card** (total, per unit, 40/60, expiry, Accept with Terms checkbox / Decline with reason / Ask a question), then **payment instructions** (bank details from `my_payment_info`) and **transfer proof** upload (`submit_payment_proof`), and **Cancel** until the 40% is verified (`cancel_request`) |
+| `team/index.html` | Internal CRM: dashboard (period KPIs, needs-attention list, 12-month sales/profit chart, pipeline, team performance), requests table/board + filters, clients view (totals, profit), payments, team management, **Settings** (admin edits `business_settings`: bank details typed by the owner + rule numbers; Ops reads); request drawer with client conversation, status, assignment, next action, quotation (saving = sent to the client, expiry, "Send again", client acceptance / decline reason), 40/60 payments with proof, costs & profit, notes, activity |
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql` (rolled-back DB checks), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
 | `terms.html`, `privacy.html` | Terms of Service (version in `assets/policy.js`, currently `2026-11-v1`) and Privacy Policy (Law 09-08, real processors). Lawyer checklist: `docs/LEGAL_REVIEW.md` |
-| `assets/policy.js` | **Every client-facing rule number** (40/60, quote validity, refund delay, claim hours, storage-fee days…). `/policies`, `/terms` and the homepage FAQ read it through `data-policy="key"` spans; keep the static text in those spans equal to the value (tested). `null` hides the sentence. Moves to `business_settings` in Sprint 3 |
+| `assets/policy.js` | **Every client-facing rule number** (40/60, quote validity, refund delay, claim hours, storage-fee days…). `/policies`, `/terms` and the homepage FAQ read it through `data-policy="key"` spans; keep the static text in those spans equal to the value (tested). `null` hides the sentence. On load it replaces the rule numbers with the live values of CRM → Settings (`public_settings()`, no bank data); `termsVersion` must equal `business_settings.terms_version` |
 | `assets/legal.css` | Shared styles of the three legal pages |
 
 ## Brand
@@ -92,8 +92,24 @@ So are the 2 warnings for `account_exists(email)` (callable without login): the 
 at step 3 to ask "your password" or "choose a password"; it returns only true/false, which signup already reveals.
 Same for `published_reviews()` and `review_media_published(name)` (callable without login): the homepage reads approved
 reviews and their media with them; they expose nothing about unapproved reviews or accounts.
+Sprint 3 (migration `20261031001806`): `business_settings` (single row: rule numbers, Terms version, bank name/holder/RIB/IBAN/SWIFT;
+admin + Ops read, admin updates; clients never read it), `requests.quote_sent_at/quote_expires_at` (set by the trigger when the
+team saves or resends a quote; status moves to `awaiting_confirmation`), `requests.closed_kind/closed_reason/closed_at`,
+`quote_acceptances` (permanent: no update/delete for anyone, trigger-enforced, FK restrict). Client RPCs (SECURITY DEFINER,
+intentional advisor warnings): `accept_quote` (refuses expired quotes and an old Terms version → `awaiting_deposit`),
+`decline_quote`, `cancel_request` (only up to rank 8 and before the 40% is verified), `submit_payment_proof`, `my_payment_info`
+(bank details only while a payment is due). They pass the triggers with the transaction setting `ddp.client_action`, which
+clients cannot set. `public_settings()` (anon, intentional) returns only the rule numbers.
+Conversation emails (migration `20261031230501`): every `request_messages` row queues `message_notifications`
+(`client_message` → assigned member or admins; `team_message` and `status_update` → client), sent by the Edge Function
+`notify-message`; messages are grouped (one email per request and direction per 10 minutes), status updates never.
+`message_notifications` has RLS with no policy (service role only), like `team_notifications`.
+Admin tools (Edge Function `admin-clients`, verify_jwt on, caller must be an active admin, service role inside): CRM → Clients
+**Add a client** (account created with the email confirmed + branded email with a one-time "choose my password" recovery link;
+never a password by email), **Edit details** (profile + login email), **Delete client** (account, requests, files), and
+**Delete this request** in the request drawer. Requests with an accepted quote or a payment received/verified are never deleted.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
-team-only table shown in CRM "Needs attention"). `request_notifications` has RLS with no policy on purpose: only the
+team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.
 Links typed by clients (`requests.product_link`, `profiles.store_link`) must be http(s) (DB check constraints);
 pages only make a link clickable through `safeUrl()`. `request-files` accepts pictures and PDF, 10 MB max.
@@ -132,6 +148,6 @@ still to build; the items below are the infrastructure ones.
 1. **Custom SMTP** (Resend) in Supabase Auth, so signup confirmation emails are reliable (Yassine postponed it).
 2. **Privacy Policy** (`privacy.html`): mention client accounts, Supabase (EU hosting) for account,
    request, conversation and payment-tracking data, product images, and how to delete an account.
-3. **Team alert on new request / new client message**: Supabase Database Webhook or Edge Function →
-   email (and later WhatsApp) to the team. Secrets via `create_edge_function_secret`, never in code.
+3. **Team alert on new request / new client message**: done by email (`notify-new-request`, `notify-team`,
+   `notify-message`). Later: WhatsApp. Secrets via `create_edge_function_secret`, never in code.
 4. Nice to have: export requests/payments to CSV from the CRM; client email when the team replies.
