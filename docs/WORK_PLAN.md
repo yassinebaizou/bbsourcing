@@ -120,6 +120,8 @@ Done when: each D9–D17 situation has a tested path; activity log records every
 
 ## Sprint 5 — Trust on the homepage
 
+**Status: done** (2 Nov 2026). Migration `20261031234919` (D13), `tests/sprint5_db_checks.sql` (13 checks, live, rolled back), `tests/browser/sprint5.js` (22). Waiting for the owner: founder photo + story and social links in `assets/company.js`, more photos for `SHIPMENTS` (inspection, warehouse, packing).
+
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 5 only. One pull request.
 
 Tasks
