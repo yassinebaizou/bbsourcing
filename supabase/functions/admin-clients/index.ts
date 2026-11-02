@@ -46,18 +46,22 @@ function profileFields(b: any) {
   };
 }
 
-// Files of the given requests (pictures, conversation attachments, transfer proofs) in the request-files bucket.
+// Files of the given requests (pictures, conversation attachments, transfer proofs, inspection and claim media) in the request-files bucket.
 async function requestFilePaths(ids: string[]) {
   if (!ids.length) return [] as string[];
-  const [f, m, p] = await Promise.all([
+  const [f, m, p, i, c] = await Promise.all([
     sb.from("request_files").select("path").in("request_id", ids),
     sb.from("request_messages").select("attachment_path").in("request_id", ids).not("attachment_path", "is", null),
     sb.from("payments").select("deposit_proof_path, final_proof_path").in("request_id", ids),
+    sb.from("inspection_media").select("path").in("request_id", ids),
+    sb.from("claims").select("files:claim_files(path)").in("request_id", ids),
   ]);
   const out = new Set<string>();
   (f.data || []).forEach((x: any) => x.path && out.add(x.path));
   (m.data || []).forEach((x: any) => x.attachment_path && out.add(x.attachment_path));
   (p.data || []).forEach((x: any) => { if (x.deposit_proof_path) out.add(x.deposit_proof_path); if (x.final_proof_path) out.add(x.final_proof_path); });
+  (i.data || []).forEach((x: any) => x.path && out.add(x.path));
+  (c.data || []).forEach((x: any) => (x.files || []).forEach((y: any) => y.path && out.add(y.path)));
   return [...out];
 }
 async function removeFiles(bucket: string, paths: string[]) {

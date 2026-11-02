@@ -719,6 +719,7 @@
       jobs.refunds = sb.from("refunds").select("*").order("requested_at");
       jobs.settings = sb.from("business_settings").select("*").maybeSingle();
     }
+    jobs.inspection = sb.from("inspection_media").select("request_id, path, file_name, media_type, created_at").order("created_at");
     jobs.claims = sb.from("claims").select("*, files:claim_files(path, file_name, media_type)").order("created_at", { ascending: false });
     jobs.acceptances = sb.from("quote_acceptances").select("request_id, amount_mad, terms_version, accepted_at").order("accepted_at");
     if (S.role === "admin") jobs.profiles = sb.from("profiles").select("id, full_name, email, whatsapp, city, business_name, store_link, selling_status, created_at").range(0, 9999);
@@ -739,6 +740,7 @@
       S.costs = {}; ((res.costs && res.costs.data) || []).forEach(function (c) { S.costs[c.request_id] = c; });
       S.accepted = {}; ((res.acceptances && res.acceptances.data) || []).forEach(function (a) { S.accepted[a.request_id] = a; });
       S.refunds = {}; ((res.refunds && res.refunds.data) || []).forEach(function (f) { (S.refunds[f.request_id] = S.refunds[f.request_id] || []).push(f); });
+      S.inspection = {}; ((res.inspection && res.inspection.data) || []).forEach(function (m) { (S.inspection[m.request_id] = S.inspection[m.request_id] || []).push(m); });
       S.claims = {}; ((res.claims && res.claims.data) || []).forEach(function (c) { (S.claims[c.request_id] = S.claims[c.request_id] || []).push(c); });
       S.settings = (res.settings && res.settings.data) || S.settings || null;
       S.profiles = (res.profiles && res.profiles.data) || [];
@@ -1583,7 +1585,7 @@
     }
     h += "</div>";
 
-    h += cancelRefundSection(q);
+    h += inspectionSection(q) + reviewAskSection(q) + cancelRefundSection(q);
 
     // Costs & profit
     if (S.canMoney && p) {
@@ -1661,6 +1663,7 @@
     $("addContact").onclick = function () { addNote(q.id, "contact"); };
     bindCompose(q);
     bindCancelRefund(q);
+    bindInspectionTeam(q);
 
     loadDrawerExtras(q);
   }
@@ -1736,6 +1739,71 @@
         };
       });
     });
+  }
+
+  // ---------- Inspection before shipping (D13) and review requests (Sprint 5) ----------
+  function inspectionSection(q) {
+    var r = rank(q.status), media = (S.inspection && S.inspection[q.id]) || [];
+    if (!media.length && (r < 9 || r > 10 || isClosed(q.status))) return "";
+    var h = '<div class="sec"><h3>Inspection before shipping</h3>';
+    h += media.length ? '<div class="actions-row" style="flex-wrap:wrap">' + media.map(function (m, i) {
+      return '<button type="button" class="btn btn-secondary btn-sm" data-proof="' + esc(m.path) + '">' + (m.media_type === "video" ? "Video " : "Photo ") + (i + 1) + "</button>";
+    }).join("") + "</div>" : '<p class="hint" style="margin-top:0">No inspection photo yet.</p>';
+    if (q.inspection_approved_at) h += '<div class="alert alert-success" style="margin-top:10px">Client approved shipping on ' + dTime(q.inspection_approved_at) + ".</div>";
+    else if (q.inspection_override_note) h += '<div class="alert alert-warn" style="margin-top:10px">Shipped without the client\'s approval: ' + esc(q.inspection_override_note) + "</div>";
+    else if (q.inspection_requested_at) h += '<p class="hint">Sent to the client ' + dTime(q.inspection_requested_at) + ". Waiting for the approval: the order cannot move to Express air shipping before.</p>";
+    else if (r >= 9 && r <= 10) h += '<p class="hint">The client must approve these photos before the order moves to Express air shipping.</p>';
+    if (r >= 9 && r <= 10 && !isClosed(q.status)) {
+      h += '<div class="actions-row" style="margin-top:10px;flex-wrap:wrap"><label class="btn btn-secondary btn-sm" style="margin:0">Add photos or video<input type="file" id="inspFiles" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" hidden></label>' +
+        (media.length && !q.inspection_approved_at ? '<button class="btn btn-primary btn-sm" type="button" id="inspSend">' + (q.inspection_requested_at ? "Ask the client again" : "Ask the client to approve") + "</button>" : "") + "</div>";
+      if (S.role === "admin" && !q.inspection_approved_at) {
+        h += '<details class="rf-more"><summary>Ship without the client\'s approval (administrator)</summary><div class="field" style="margin-top:8px"><label for="inspOverride">Why (kept in the record)</label><input id="inspOverride" maxlength="1000" placeholder="e.g. Client approved by phone on 3 Nov"></div>' +
+          '<button class="btn btn-danger btn-sm" type="button" id="inspShip">Move to Express air shipping</button></details>';
+      }
+    }
+    return h + "</div>";
+  }
+  function reviewAskSection(q) {
+    if (q.status !== "completed") return "";
+    var has = (S.reviews || []).some(function (rv) { return rv.client_id === q.client_id; });
+    return '<div class="sec"><h3>Client review</h3>' + (has ? '<p class="hint" style="margin-top:0">This client already left a review (CRM → Reviews).</p>' : "") +
+      '<button class="btn btn-secondary btn-sm" type="button" id="askReview">Ask for a review</button><p class="hint">Sends the client a message (and an email) with a link to Account → Leave a review. Only reviews you approve appear on the website.</p></div>';
+  }
+  function bindInspectionTeam(q) {
+    if ($("askReview")) $("askReview").onclick = function () {
+      var first = (q.client.full_name || "").split(" ")[0];
+      act(sb.from("request_messages").insert({ request_id: q.id, body: "Hello" + (first ? " " + first : "") + ", thank you for your order! Could you leave a short review of your experience with us? It helps other Moroccan sellers trust us. It takes 2 minutes: https://www.ddpsourcing.com/account?tab=reviews" }),
+        "Review request sent to the client.");
+    };
+    if ($("inspFiles")) $("inspFiles").onchange = function () {
+      var files = Array.prototype.slice.call(this.files || []); this.value = "";
+      if (!files.length) return;
+      for (var i = 0; i < files.length; i++) {
+        var f = files[i], video = /^video\//.test(f.type);
+        if (!/^(image\/(jpeg|png|webp)|video\/(mp4|quicktime|webm))$/.test(f.type)) return toast(f.name + ": photos (JPG, PNG, WEBP) or videos (MP4, MOV, WEBM) only.", true);
+        if (f.size > (video ? 50 : 10) * 1024 * 1024) return toast(f.name + " is larger than " + (video ? 50 : 10) + " MB.", true);
+      }
+      toast("Uploading " + plural(files.length, "file", "files") + "…");
+      var stamp = Date.now();
+      Promise.all(files.map(function (f, i) {
+        var path = "staff/" + q.id + "/inspection-" + stamp + "-" + i + "-" + safeName(f.name);
+        return sb.storage.from("request-files").upload(path, f, { contentType: f.type, upsert: false }).then(function (u) {
+          if (u.error) throw u.error;
+          return { request_id: q.id, path: path, file_name: f.name.slice(0, 200), media_type: /^video\//.test(f.type) ? "video" : "image" };
+        });
+      })).then(function (rows) {
+        return act(sb.from("inspection_media").insert(rows), plural(rows.length, "file", "files") + " added. Click \"Ask the client to approve\" when ready.");
+      }).catch(function (e) { toast(friendly(e), true); });
+    };
+    if ($("inspSend")) $("inspSend").onclick = function () {
+      act(sb.rpc("request_inspection_approval", { p_request: q.id }), "Sent. The client gets a message and an email to approve shipping.");
+    };
+    if ($("inspShip")) $("inspShip").onclick = function () {
+      var note = $("inspOverride").value.trim();
+      if (note.length < 3) return toast("Write why the goods ship without the client's approval.", true);
+      if (!confirm("Move " + q.code + " to Express air shipping without the client's approval?")) return;
+      act(sb.from("requests").update({ status: "air_shipping", inspection_override_note: note }).eq("id", q.id), "Order moved to Express air shipping. Your note is kept in the record.");
+    };
   }
 
   // ---------- Claims, refunds and cancellation (Sprint 4, rules D9–D17) ----------
@@ -1998,6 +2066,8 @@
       case "claim_in_review": return "Claim in review";
       case "claim_resolved": return "Claim answered: " + (d.outcome || "") + (d.amount ? " " + money(d.amount) : "");
       case "claim_rejected": return "Claim rejected";
+      case "inspection_sent": return "Inspection photos sent to the client for approval (" + d.files + " file" + (d.files > 1 ? "s" : "") + ")";
+      case "inspection_approved": return "Client approved shipping";
       case "balance_reminder": return "Reminder sent for the 60% (day " + d.day + ")";
       case "quote_accepted": return "Client accepted the quote (" + money(d.amount) + ", Terms " + (d.terms_version || "") + ")";
       case "quote_declined": return "Client declined the quote: " + (d.reason || "");

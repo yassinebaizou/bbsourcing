@@ -109,6 +109,34 @@ p{margin:0}
 .route-foot span{color:var(--on-navy-muted);font-size:15px}
 .route-foot b{font-weight:800}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr}}
+/* Phones: the route card repeats "How it works"; hide it so the trust sections come into the first screens. */
+@media (max-width:640px){.hero .route{display:none}}
+.social{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 16px}
+/* How your money is protected + Who we are */
+.protect-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px;align-items:start}
+.protect-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.protect-list li{display:flex;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:var(--r-md);padding:16px}
+.protect-list li svg{flex:none;margin-top:2px}
+.protect-list b{display:block;font-size:16px}
+.protect-list p{font-size:14px;color:var(--muted);margin-top:3px;line-height:1.5}
+.protect-list li:last-child{grid-column:1/-1}
+.who{background:var(--navy);color:var(--white);border-radius:var(--r-lg);padding:24px}
+.who h3{font-size:20px;margin:6px 0 10px}
+.who p{color:var(--on-navy-muted);font-size:15px;line-height:1.6}
+.who .kicker{color:var(--orange)}
+.who a{color:var(--white)}
+.who ul{list-style:none;margin:14px 0 0;padding:0;font-size:14px;color:var(--on-navy-muted)}
+.who li{margin:6px 0}
+.founder{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.founder img{width:72px;height:72px;border-radius:50%;object-fit:cover;flex:none}
+.founder b{display:block;color:var(--white)}
+.founder span{font-size:14px;color:var(--on-navy-muted)}
+.stage-tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#B04600;margin-bottom:4px}
+@media (max-width:900px){.protect-grid{grid-template-columns:1fr}}
+@media (max-width:760px){.who a,.social a,.protect-list a{display:inline-flex;align-items:center;min-height:44px}}
+@media (max-width:560px){.protect-list{grid-template-columns:1fr;gap:10px}.protect-list li{padding:12px 14px}}
+@media (max-width:640px){#protected,#shipments{padding-top:44px;padding-bottom:44px}#protected .head,#shipments .head{margin-bottom:20px}}
+
 
 /* trust strip */
 .trust{background:var(--white);border-bottom:1px solid var(--line)}
@@ -203,6 +231,13 @@ p{margin:0}
 .lightbox-hint{position:absolute;bottom:20px;left:0;right:0;text-align:center;color:var(--on-navy-muted);font-size:13px}
 @media (max-width:900px){.gallery,.reviews{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.gallery,.reviews{grid-template-columns:1fr}.gallery figure:first-child{grid-row:auto}}
+/* Phones: real photos side by side (swipe), so the first one is fully visible early. */
+@media (max-width:560px){
+  #shipments .lead{display:none}
+  .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 20px;gap:12px;margin:0 -20px;padding:0 20px 6px}
+  .gallery figure{flex:0 0 74%;scroll-snap-align:start}
+  .gallery figure:first-child img,.gallery figure:first-child video{aspect-ratio:4/3;height:auto;min-height:0}
+}
 
 /* why + who */
 .why-list{margin-top:28px}
@@ -373,6 +408,47 @@ fieldset.field{border:0;margin:0;padding:0}
   </div>
 </section>
 
+<section class="section" id="protected">
+  <div class="wrap">
+    <div class="head">
+      <p class="kicker">Your money is protected</p>
+      <h2 class="h2">How your money is protected.</h2>
+    </div>
+    <div class="protect-grid">
+      <ul class="protect-list">
+        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 15l2 2 4-4"/></svg><div><b>No payment before a written quote</b><p>Sending a request is free. You pay only after you accept your final price in your account.</p></div></li>
+        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg><div><b>Company bank account only</b><p>Bank transfer to the <span data-policy="bankName">CFG Bank</span> account of <span data-company-legal-name>Beast Capital Group</span>. Never cash, never a personal account.</p></div></li>
+        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><div><b>You approve before it flies</b><p>We inspect your goods in China and show you photos or a video. They ship only after you approve.</p></div></li>
+        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><div><b>Clear refund rules</b><p>A problem on our side means a full refund or a solution you agree with. <a href="/policies">Read the rules</a>.</p></div></li>
+        <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></svg><div><b>An invoice for every order</b><p>Issued by <span data-company-legal-name>Beast Capital Group</span>. You pay <span data-policy="depositPct">40</span>% to start and <span data-policy="balancePct">60</span>% once your goods have cleared customs, before delivery.</p></div></li>
+      </ul>
+      <aside class="who" id="who" aria-labelledby="whoTitle">
+        <p class="kicker">Who we are</p>
+        <div class="founder" data-founder hidden><img data-founder-photo src="" alt="" width="72" height="72" loading="lazy" decoding="async"><div><b data-founder-name></b><span data-founder-role></span></div></div>
+        <h3 id="whoTitle">A Moroccan company, based in <span data-company-city>Casablanca</span>.</h3>
+        <p data-founder-story hidden></p>
+        <p>DDPSourcing is a service of <span data-company-legal-name>Beast Capital Group</span>. We source in China, ship by express air, clear Moroccan customs and deliver to your door, with one team you can reach.</p>
+        <ul>
+          <li><a data-company-email href="mailto:contact@ddpsourcing.com">contact@ddpsourcing.com</a></li>
+          <li>Monday to Friday, 10:00 to 18:00 (Morocco time)</li>
+          <li data-company-ids hidden></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="section bg-white" id="shipments" hidden>
+  <div class="wrap">
+    <div class="head">
+      <p class="kicker">From China to your door</p>
+      <h2 class="h2">Real orders, from inspection in China to delivery in Morocco.</h2>
+      <p class="lead">Photos of real client orders: inspection, warehouse, packing and arrival in Morocco.</p>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+
 <section class="trust" aria-label="Key facts">
   <div class="wrap trust-grid">
     <div class="trust-item"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><b>Express only: 15–20 days</b><p>Your stock arrives within 15 to 20 days of your order.</p></div></div>
@@ -472,16 +548,7 @@ fieldset.field{border:0;margin:0;padding:0}
   </div>
 </section>
 
-<section class="section bg-white" id="shipments" hidden>
-  <div class="wrap">
-    <div class="head">
-      <p class="kicker">Shipments received</p>
-      <h2 class="h2">Real orders, received in Morocco.</h2>
-      <p class="lead">From inspection in China to the moment the cartons arrive at our customers' doors.</p>
-    </div>
-    <div class="gallery" id="gallery"></div>
-  </div>
-</section>
+
 
 <section class="section" id="reviews" hidden>
   <div class="wrap">
@@ -680,7 +747,7 @@ fieldset.field{border:0;margin:0;padding:0}
       </div>
       <div><h4>Service</h4><ul><li><a href="#ddp">What is DDP</a></li><li><a href="#process">How it works</a></li><li><a href="#included">What's included</a></li><li><a href="#request">Submit sourcing request</a></li></ul></div>
       <div><h4>Company</h4><ul><li><a href="#faq">FAQ</a></li><li><a href="/policies">Payments and refunds</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms of Service</a></li></ul></div>
-      <div><h4>Contact</h4><ul id="contactList"><li>Monday to Friday, 10:00 AM – 6:00 PM (Morocco time)</li></ul></div>
+      <div><h4>Contact</h4><ul id="contactList"><li><span data-company-city>Casablanca</span>, Morocco</li><li>Monday to Friday, 10:00 AM – 6:00 PM (Morocco time)</li></ul><ul class="social" data-social hidden></ul></div>
     </div>
     <div class="foot-bottom"><span>© <span id="year"></span> DDPSourcing. All rights reserved.</span><span data-company-line>DDPSourcing is a service of Beast Capital Group, Casablanca. Invoices are issued by Beast Capital Group.</span></div>
   </div>
@@ -719,10 +786,11 @@ const CONFIG = {
 // Example: { type: 'image', src: 'media/arrival-casablanca.jpg', caption: 'Cartons received in Casablanca' }
 //          { type: 'video', src: 'media/unboxing.mp4', caption: 'Customer unboxing' }
 // `full` is an optional larger version opened by the click-to-zoom lightbox.
+// `stage` is a short label shown above the caption: 'Inspection in China', 'Warehouse', 'Packing', 'Arrival in Morocco'.
 // While this list is empty, the "Shipments" section stays hidden.
 const SHIPMENTS = [
-  { type: 'image', src: 'assets/proof/shipment-casablanca-01-card.webp', full: 'assets/proof/shipment-casablanca-01.webp', w: 800, h: 600, caption: 'Client order collected in Casablanca||Five DHL express air parcels, customs cleared, loaded for door delivery.' },
-  { type: 'image', src: 'assets/proof/shipment-dhl-casablanca-02-card.webp', full: 'assets/proof/shipment-dhl-casablanca-02.webp', w: 800, h: 600, caption: 'Collected at the DHL hub, Casablanca||Customs-checked parcels straight from China, ready for door delivery.' }
+  { type: 'image', src: 'assets/proof/shipment-casablanca-01-card.webp', full: 'assets/proof/shipment-casablanca-01.webp', w: 800, h: 600, stage: 'Arrival in Morocco', caption: 'Client order collected in Casablanca||Five DHL express air parcels, customs cleared, loaded for door delivery.' },
+  { type: 'image', src: 'assets/proof/shipment-dhl-casablanca-02-card.webp', full: 'assets/proof/shipment-dhl-casablanca-02.webp', w: 800, h: 600, stage: 'Arrival in Morocco', caption: 'Collected at the DHL hub, Casablanca||Customs-checked parcels straight from China, ready for door delivery.' }
 ];
 
 // Real, verified customer reviews only (with the customer's permission).
@@ -773,8 +841,9 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
         btn.appendChild(el('img', Object.assign({ src: s.src, alt: title || desc || 'Shipment received in Morocco', loading: 'lazy', decoding: 'async' }, s.w ? { width: s.w, height: s.h } : {})));
         fig.appendChild(btn);
       }
-      if (title || desc) {
+      if (title || desc || s.stage) {
         const cap = el('figcaption');
+        if (s.stage) cap.appendChild(el('span', { class: 'stage-tag' }, s.stage));
         if (title) cap.appendChild(el('b', {}, title));
         if (desc) cap.appendChild(document.createTextNode(desc));
         fig.appendChild(cap);

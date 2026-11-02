@@ -775,6 +775,7 @@
       if (lost) return reopenLostRequest(lost);
       if (draft) { tab("new"); goStep(Math.min(state.step, 2)); }
       else if (load(PREFILL_KEY)) openTab("new");
+      else if (/[?&]tab=reviews\b/.test(location.search)) openTab("reviews");  // "Ask for a review" link from the team
       else openTab("requests");
     });
   }
@@ -964,7 +965,8 @@
       sb.from("quote_acceptances").select("amount_mad, terms_version, accepted_at").eq("request_id", q.id).order("accepted_at", { ascending: false }).limit(1),
       hasQuote ? sb.rpc("my_refunds", { p_request: q.id }) : Promise.resolve({ data: [] }),
       q.status === "completed" ? sb.from("claims").select("*, files:claim_files(path, file_name, media_type)").eq("request_id", q.id).order("created_at", { ascending: false }) : Promise.resolve({ data: [] }),
-      q.status === "completed" ? sb.rpc("delivered_at", { p_request: q.id }) : Promise.resolve({ data: null })
+      q.status === "completed" ? sb.rpc("delivered_at", { p_request: q.id }) : Promise.resolve({ data: null }),
+      q.inspection_requested_at ? sb.from("inspection_media").select("path, file_name, media_type, created_at").eq("request_id", q.id).order("created_at") : Promise.resolve({ data: [] })
     ]).then(function (res) {
       if (!$("dealBox")) return;
       var S = res[0], pay = res[1].data, acc = (res[2].data || [])[0], refunds = res[3].data || [], claims = res[4].data || [];
@@ -974,12 +976,61 @@
       if (acc && st.rank < 90) html += '<p class="muted" style="font-size:13.5px;margin:12px 0 0">You accepted this quote (' + esc(mad(acc.amount_mad)) + ") on " + esc(dayFmt(acc.accepted_at)) + ", under our Terms version " + esc(acc.terms_version) + ".</p>";
       var main = !!html;
       if (cancellable && q.status !== "awaiting_confirmation") html += cancelBox(pay, S);
-      var extra = refundsCard(refunds, S) + (q.status === "completed" ? claimCard(q, claims, res[5].data, S) : "");
+      var media = res[6].data || [];
+      var extra = inspectionCard(q, st, media) + refundsCard(refunds, S) + (q.status === "completed" ? claimCard(q, claims, res[5].data, S) : "");
       if (!html && !extra) { box.innerHTML = ""; return; }
       box.innerHTML = (html ? '<div class="card' + (main ? " deal" : "") + '" style="margin-top:16px">' + html + "</div>" : "") + extra;
       bindDeal(q, pay, S);
       bindClaim(q, S);
+      bindInspection(q, media);
     });
+  }
+  // D13: inspection photos/videos shown to the client, who approves shipping or asks a question.
+  function inspectionCard(q, st, media) {
+    if (!q.inspection_requested_at || !media.length) return "";
+    var h = '<div class="card' + (!q.inspection_approved_at && st.rank < 11 ? " deal" : "") + '" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">Inspection of your goods</h3>' +
+      '<p class="muted" style="margin:-6px 0 12px;font-size:14px">Photos and videos of your goods taken by our team in China before shipping.</p>' +
+      '<div class="thumbs" id="inspThumbs">' + media.map(function (m, i) {
+        return m.media_type === "video" ? '<button type="button" class="btn btn-secondary btn-sm" data-insp="' + esc(m.path) + '">▶ Video ' + (i + 1) + "</button>" : '<span data-insp-img="' + esc(m.path) + '"></span>';
+      }).join("") + "</div>";
+    if (q.inspection_approved_at) {
+      h += '<div class="alert alert-success" style="margin-top:12px">You approved shipping on ' + esc(dayFmt(q.inspection_approved_at)) + ". Thank you!</div>";
+    } else if (st.rank < 11) {
+      h += '<p style="font-size:14px;margin:12px 0 0">Your goods ship only after you approve them. Something looks wrong? Ask us before approving.</p>' +
+        '<div class="actions"><button type="button" class="btn btn-primary" id="inspApprove">Approve shipping</button>' +
+        '<button type="button" class="btn btn-secondary" id="inspAsk">I have a question</button></div><div id="inspMsg"></div>';
+    }
+    return h + "</div>";
+  }
+  function bindInspection(q, media) {
+    var imgs = media.filter(function (m) { return m.media_type !== "video"; });
+    if (imgs.length) {
+      sb.storage.from("request-files").createSignedUrls(imgs.map(function (m) { return m.path; }), 3600).then(function (r) {
+        (r.data || []).forEach(function (x) {
+          var slot = document.querySelector('[data-insp-img="' + (window.CSS && CSS.escape ? CSS.escape(x.path) : x.path) + '"]');
+          if (slot && x.signedUrl) slot.outerHTML = '<a href="' + esc(x.signedUrl) + '" target="_blank" rel="noopener"><img src="' + esc(x.signedUrl) + '" alt="Inspection photo"></a>';
+        });
+      });
+    }
+    document.querySelectorAll("#dealBox [data-insp]").forEach(function (b) {
+      b.onclick = function () {
+        sb.storage.from("request-files").createSignedUrl(b.dataset.insp, 600).then(function (u) {
+          if (u.error) return toast(friendly(u.error), true);
+          window.open(u.data.signedUrl, "_blank", "noopener");
+        });
+      };
+    });
+    if ($("inspAsk")) $("inspAsk").onclick = function () { askInChat("Question about the inspection photos: "); };
+    if ($("inspApprove")) $("inspApprove").onclick = function () {
+      var b = this;
+      if (!confirm("Approve shipping? Your goods leave China after your approval.")) return;
+      b.disabled = true;
+      sb.rpc("approve_inspection", { p_request: q.id }).then(function (r) {
+        if (r.error) { b.disabled = false; return msg($("inspMsg"), "error", friendly(r.error)); }
+        toast("Thank you! We prepare your goods for express air shipping.");
+        openDetail(q.id);
+      });
+    };
   }
   var REFUND_STEP = { requested: "Being checked by our team", approved: "Approved: transfer in progress", paid: "Paid" };
   function refundsCard(list, S) {

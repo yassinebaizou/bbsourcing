@@ -102,3 +102,13 @@ Clients see the bank details in their account after they accept a quote. Type th
 Never send the RIB in a chat or an email to Claude. Until it is filled, clients see "Our bank details will
 appear here very soon". The same page holds the rule numbers (quote validity, refund days, claim hours,
 storage fee…) shown on /policies, the Terms and the FAQ.
+
+## 7. Your homepage content (Sprint 5)
+
+Send these to Claude, or edit `assets/company.js` on GitHub (pencil icon) yourself:
+
+- **Who we are:** `founderName`, `founderRole`, a square photo (`founderPhoto`) and 3–4 sentences (`founderStory`).
+  The founder block stays hidden until the name and the story are filled.
+- **Social links:** full addresses starting with `https://` in `social`. Empty = not shown.
+- **Photos "From China to your door":** real photos or short videos of inspection, warehouse, packing and arrivals.
+  Claude adds them to the `SHIPMENTS` list in `index.html` with the right label.

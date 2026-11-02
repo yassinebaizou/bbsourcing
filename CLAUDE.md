@@ -35,7 +35,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql`, `sprint5_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `sprint5.js` = homepage trust + inspection approval, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
@@ -115,6 +115,12 @@ reference + proof, or cancelled; clients read them with `my_refunds`), `claims` 
 `team_cancel_request` (admin, D12/D14: refunds everything paid), client `cancel_request` up to rank 8 (D10 refund of the 40%, D11 refused
 after), `payments.final_due_at` + daily pg_cron job `ddp-balance-reminders` → `send_balance_reminders()` (D15), `post_update()` writes
 system messages (emailed). CRM: drawer section "Claims, refunds and cancellation", dashboard counters, profit minus refunds.
+Sprint 5 (migration `20261031234919`, D13): `inspection_media` (team uploads photos/videos to `staff/<request>/inspection-…`;
+client reads own), `requests.inspection_requested_at/approved_at/override_*`; `request_inspection_approval` (staff → client message +
+email), `approve_inspection` (client → message to the team). No move to `air_shipping`+ without the approval, except an admin with
+`inspection_override_note`. Homepage: `#protected` ("How your money is protected" + "Who we are", founder/social from
+`assets/company.js`, hidden until filled), `#shipments` = "From China to your door" (SHIPMENTS with `stage`), route card hidden on
+phones; CRM "Ask for a review" sends `/account?tab=reviews`.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.
