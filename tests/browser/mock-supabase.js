@@ -1,6 +1,8 @@
 (function(){
   var now=Date.now(), iso=function(d){return new Date(now-d*864e5).toISOString();};
   var M = window.__MOCK = window.__MOCK || {};
+  // M.delay (ms): every query, rpc, function call and upload answers after this delay (tests of "busy" buttons).
+  var R=function(v){return M.delay?new Promise(function(r){setTimeout(function(){r(v);},M.delay);}):Promise.resolve(v);};
   var uid="u-admin";
   var statuses=[["new_application",1,"New application","Received"],["under_review",2,"Under review","Under review"],["contacted",3,"Contacted","Under review"],["sourcing",4,"Sourcing","Under review"],["feasible",5,"Feasible","Quotation in preparation"],["quote_prep",6,"Quote prep","Quotation in preparation"],["quote_sent",7,"Quote sent","Quotation ready"],["awaiting_deposit",8,"Awaiting deposit","Awaiting 40% deposit"],["deposit_confirmed",9,"Deposit confirmed","Order placed"],["inspection",10,"Inspection","Quality inspection"],["shipped",11,"Shipped","In transit"],["customs",12,"Customs","In transit"],["arrived",13,"Arrived","Arrived in Morocco"],["awaiting_final",14,"Awaiting final","Awaiting 60% payment"],["final_confirmed",15,"Final confirmed","Out for delivery"],["out_for_delivery",16,"Out for delivery","Out for delivery"],["completed",17,"Completed","Delivered"],["not_qualified",99,"Not qualified","Closed"]].map(function(s){return {code:s[0],rank:s[1],label:s[2],client_stage:s[3]};});
   var client={full_name:"Sara B",email:"sara@x.ma",whatsapp:"+212612345678",city:"Rabat",business_name:"SB Store",created_at:iso(90)};
@@ -32,21 +34,21 @@
     var rows=(db[this.t]||[]).filter(function(r){return this.f.every(function(f){return r[f[0]]===f[1];});},this);
     if(this.op==="insert"){ var row=Object.assign({id:"new"+Math.random(),code:"DDP-0099",created_at:new Date().toISOString()},this.p); (db[this.t]=db[this.t]||[]).unshift(row); rows=[row]; }
     var data=this.one?(rows[0]||null):rows;
-    return Promise.resolve({data:data,error:null}).then(res,rej);
+    return R({data:data,error:null}).then(res,rej);
   };
   var session=M.session===undefined?{user:{id:uid,email:"y@x.ma",user_metadata:{}}}:M.session;
   window.supabase={createClient:function(){return {
     from:function(t){return new B(t);},
-    rpc:function(n,a){M.calls.push(["rpc",n,a]);if(M.rpcError&&M.rpcError[n])return Promise.resolve({data:null,error:{message:M.rpcError[n]}});return Promise.resolve({data:n==="staff_role"?(M.role||"admin"):n==="account_exists"?!!M.exists:(M.rpcData&&M.rpcData[n])||null,error:null});},
+    rpc:function(n,a){M.calls.push(["rpc",n,a]);if(M.rpcError&&M.rpcError[n])return R({data:null,error:{message:M.rpcError[n]}});return R({data:n==="staff_role"?(M.client?null:(M.role||"admin")):n==="account_exists"?!!M.exists:(M.rpcData&&M.rpcData[n])||null,error:null});},
     auth:{
       getSession:function(){return Promise.resolve({data:{session:session}});},
       onAuthStateChange:function(cb){M.authCb=cb;return {data:{subscription:{unsubscribe:function(){}}}};},
       signUp:function(o){M.calls.push(["signUp",o]);return Promise.resolve({data:{user:{id:M.newUserId||"u-new",identities:[{}],user_metadata:o.options.data},session:M.signUpSession?{user:{id:"u-new"}}:null},error:null});},
-      signInWithPassword:function(o){var u={id:uid,email:o.email,user_metadata:{}};setTimeout(function(){M.authCb&&M.authCb("SIGNED_IN",{user:u});},0);return Promise.resolve({data:{user:u,session:{user:u}},error:null});},
+      signInWithPassword:function(o){var u={id:uid,email:o.email,user_metadata:{}};setTimeout(function(){M.authCb&&M.authCb("SIGNED_IN",{user:u});},M.delay||0);return R({data:{user:u,session:{user:u}},error:null});},
       updateUser:function(o){M.calls.push(["updateUser",o]);return Promise.resolve({data:{user:{}},error:null});},
       signOut:function(){return Promise.resolve({});}
     },
-    functions:{invoke:function(n,o){M.calls.push(["invoke",n,o&&o.body]);if(M.invokeError)return Promise.resolve({data:null,error:{message:"Edge Function returned a non-2xx status code",context:{json:function(){return Promise.resolve({error:M.invokeError});}}}});return Promise.resolve({data:M.invokeData||{ok:true,id:"c1",emailed:true},error:null});}},
-    storage:{from:function(){return {upload:function(p){M.calls.push(["upload",p]);return Promise.resolve({data:{},error:null});},createSignedUrl:function(){return Promise.resolve({data:{signedUrl:"about:blank"},error:null});},createSignedUrls:function(ps){return Promise.resolve({data:ps.map(function(p){return {path:p,signedUrl:"data:image/gif;base64,R0lGODlhAQABAAAAACw="};}),error:null});}};}}
+    functions:{invoke:function(n,o){M.calls.push(["invoke",n,o&&o.body]);if(M.invokeError)return R({data:null,error:{message:"Edge Function returned a non-2xx status code",context:{json:function(){return R({error:M.invokeError});}}}});return R({data:M.invokeData||{ok:true,id:"c1",emailed:true},error:null});}},
+    storage:{from:function(){return {upload:function(p){M.calls.push(["upload",p]);return R({data:{},error:null});},createSignedUrl:function(){return R({data:{signedUrl:"about:blank"},error:null});},createSignedUrls:function(ps){return R({data:ps.map(function(p){return {path:p,signedUrl:"data:image/gif;base64,R0lGODlhAQABAAAAACw="};}),error:null});}};}}
   };}};
 })();

@@ -422,5 +422,14 @@
  "Claim update: our team is reviewing your claim.": "تحديث المطالبة: يدرس فريقنا مطالبتك.",
  "We cancelled this order: {1} You receive a full refund of {2} by bank transfer.": "ألغينا هذه الطلبية: {1} تسترد المبلغ كاملًا {2} بتحويل بنكي.",
  "We cancelled this order: {1}": "ألغينا هذه الطلبية: {1}",
- "Our emails are sent in the language you choose here: English, French or Arabic.": "نرسل رسائلنا باللغة التي تختارها هنا: الإنجليزية أو الفرنسية أو العربية."
+ "Our emails are sent in the language you choose here: English, French or Arabic.": "نرسل رسائلنا باللغة التي تختارها هنا: الإنجليزية أو الفرنسية أو العربية.",
+ "Get started": "لنبدأ",
+ "{1} of 3 done": "{1} من 3 مكتملة",
+ "Hide": "إخفاء",
+ "Complete your profile": "أكمل ملفك",
+ "WhatsApp number and city, so we can reach you.": "رقم واتساب والمدينة، لنتمكن من التواصل معك.",
+ "Send your first sourcing request": "أرسل أول طلب توريد",
+ "The product link and the quantity are enough.": "رابط المنتج والكمية يكفيان.",
+ "Read how payments and refunds work": "اقرأ كيف يعمل الدفع والاسترداد",
+ "40% after you accept the quote, 60% before delivery.": "40% بعد قبول عرض السعر، و60% قبل التسليم."
 }
