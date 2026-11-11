@@ -5,6 +5,8 @@
 // Called by the database (trigger message_notifications_send) with { id } of a message_notifications row.
 // Same safety as notify-team: only rows created in the last 15 minutes, each sent once
 // (sent_at is claimed before sending). Grouping (max one message email per 10 minutes) is done in SQL.
+// Sprint 6: stage-change emails are skipped when the client turned off step-by-step emails, and when
+// a dedicated email of notify-client covers the same moment (decided in SQL).
 // Secret required in Supabase → Edge Functions → Secrets: RESEND_API_KEY (already set).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
@@ -51,10 +53,15 @@ Deno.serve(async (req) => {
 
   const [{ data: m }, { data: q }] = await Promise.all([
     sb.from("request_messages").select("body, attachment_name").eq("id", n.message_id).maybeSingle(),
-    sb.from("requests").select("code, product_name, assigned_to, client:profiles!requests_client_id_fkey(full_name, email, whatsapp)").eq("id", n.request_id).maybeSingle(),
+    sb.from("requests").select("code, product_name, assigned_to, client:profiles!requests_client_id_fkey(full_name, email, whatsapp, email_updates)").eq("id", n.request_id).maybeSingle(),
   ]);
   if (!m || !q) { await unclaim(); return json(404, { error: "not found" }); }
   const c: any = q.client || {};
+  // Stage changes ("Status update: …") are optional: the client can turn them off in their profile.
+  // Reminders, cancellations and other system messages are always sent.
+  if (n.kind === "status_update" && c.email_updates === false && /^Status update:/i.test(String(m.body))) {
+    return json(200, { skipped: "client turned off step-by-step emails" });
+  }
   const att = m.attachment_name ? `<p style="margin:10px 0 0;font-size:14px;color:#334155">📎 File attached: ${esc(m.attachment_name)}</p>` : "";
 
   let to: string[] = [], subject = "", html = "", text = "";
@@ -87,7 +94,9 @@ Deno.serve(async (req) => {
       subject = `${q.code}: ${stage}`;
       html = layout(`Your request ${esc(q.code)}`, esc(q.product_name),
         `<p style="margin:0 0 10px;font-size:15px;color:#334155">${hi} your request has a new status:</p><p style="margin:0;font-size:20px;font-weight:800;color:#0B1220">${esc(stage)}</p>`,
-        "See the details", `${SITE}/account`, "You receive this email for each step of your order.");
+        "See the details", `${SITE}/account`, /^Status update:/i.test(String(m.body))
+          ? `You receive this email for each step of your order. You can turn off these step-by-step emails in <a href="${SITE}/account?tab=profile" style="color:#B04600">your profile</a>.`
+          : "Questions? Reply in your client account, or answer this email.");
       text = `${hiText} your request ${q.code} (${q.product_name}) has a new status: ${stage}\n\nSee the details: ${SITE}/account`;
     }
   }

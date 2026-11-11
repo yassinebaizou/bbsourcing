@@ -109,6 +109,9 @@
   .files-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .files-list span{font-size:12.5px;background:#EEF1F5;border-radius:6px;padding:4px 8px}
   .done-card{padding:32px 22px;text-align:center}
+  .email-prefs{border:1px solid var(--line,#E2E8F0);border-radius:12px;padding:14px 16px;margin:6px 0 18px}
+  .email-prefs legend{font-weight:700;padding:0 6px}
+  .email-prefs .hint{margin:-4px 0 14px}
   .done-card .check-big{width:56px;height:56px;border-radius:50%;background:var(--green);margin:0 auto 14px;display:flex;align-items:center;justify-content:center}
   .done-card h2{margin:0 0 8px}
   .done-card p{color:var(--slate);max-width:460px;margin:0 auto 18px}
@@ -448,6 +451,18 @@
           </div>
           <div class="field"><label for="p_business">Business or store name <span class="opt">(optional)</span></label><input id="p_business"></div>
           <div class="field"><label for="p_link">Store, website or social media link <span class="opt">(optional)</span></label><input id="p_link" type="url"></div>
+          <fieldset class="field email-prefs" id="emailPrefs">
+            <legend>Emails</legend>
+            <label class="check"><input type="checkbox" id="p_updates"> <span>Email me at each step of my order (request received, status changes, shipped)</span></label>
+            <p class="hint">Important emails are always sent: quotes, payments, inspection approval, delivery, refunds and messages from our team.</p>
+            <label for="p_language">Email language</label>
+            <select id="p_language">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="ar">العربية</option>
+            </select>
+            <p class="hint">Our emails are in English for now. French and Arabic are coming soon; we will use the language you choose here.</p>
+          </fieldset>
           <button class="btn btn-primary" type="submit">Save profile</button>
         </form>
       </div>
@@ -775,7 +790,8 @@
       if (lost) return reopenLostRequest(lost);
       if (draft) { tab("new"); goStep(Math.min(state.step, 2)); }
       else if (load(PREFILL_KEY)) openTab("new");
-      else if (/[?&]tab=reviews\b/.test(location.search)) openTab("reviews");  // "Ask for a review" link from the team
+      else if (/[?&]tab=reviews\b/.test(location.search)) openTab("reviews");  // "Ask for a review" link and delivery email
+      else if (/[?&]tab=profile\b/.test(location.search)) openTab("profile");  // "turn off these emails" link
       else openTab("requests");
     });
   }
@@ -1647,6 +1663,8 @@
     $("p_status").value = p.selling_status || "";
     $("p_business").value = p.business_name || "";
     $("p_link").value = p.store_link || "";
+    $("p_updates").checked = p.email_updates !== false;
+    $("p_language").value = ["en", "fr", "ar"].indexOf(p.language) >= 0 ? p.language : "en";
     msg($("profileMsg"));
   }
   $("profileForm").addEventListener("submit", function (e) {
@@ -1660,7 +1678,8 @@
     busy(f, true, "Saving…");
     var upd = {
       full_name: $("p_name").value.trim(), whatsapp: wa, city: $("p_city").value.trim(),
-      selling_status: $("p_status").value || null, business_name: $("p_business").value.trim() || null, store_link: link || null
+      selling_status: $("p_status").value || null, business_name: $("p_business").value.trim() || null, store_link: link || null,
+      email_updates: $("p_updates").checked, language: $("p_language").value
     };
     sb.from("profiles").update(upd).eq("id", state.user.id).select().single().then(function (r) {
       busy(f, false);

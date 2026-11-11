@@ -136,6 +136,11 @@ Done when: a visitor sees who we are, how payments are protected and real proof 
 
 ## Sprint 6 — Client email notifications
 
+**Status: done** (11 Nov 2026). Migration `20261111013752` (`client_emails`, `profiles.email_updates` / `language`, daily job
+`ddp-quote-expiry-reminders`), Edge Function `notify-client` (templates in `templates.ts`), `notify-message` skips stage emails the
+client turned off. Tests: `tests/sprint6_db_checks.sql` (21 checks, live project, rolled back), `tests/emails.mjs` (55 checks,
+renders every email), `tests/browser/sprint6.js` (7 checks).
+
 **Already done (31 Oct 2026, owner's request):** email to the client for every team message (grouped, max one per 10 minutes) and every status change; email to the team for every client message and client action. Function `notify-message`.
 
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 6 only. One pull request.
