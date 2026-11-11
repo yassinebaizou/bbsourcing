@@ -1,5 +1,5 @@
 {
-  "_about": "French texts of the public pages, used by tools/build-fr.mjs. Key = English text exactly as on the English page (a whole piece of text between two tags, or a whole string in quotes). Value = French. Never use ASCII quotes in French: write ’ and « ». After a change, run: node tools/build-fr.mjs",
+  "_about": "French texts of the public pages, used by tools/build-i18n.mjs. Key = English text exactly as on the English page (a whole piece of text between two tags, or a whole string in quotes). Value = French. Never use ASCII quotes in French: write ’ and « ». After a change, run: node tools/build-i18n.mjs",
   "common": {
     "DDPSourcing is a service of Beast Capital Group, Casablanca. Invoices are issued by Beast Capital Group.": "DDPSourcing est un service de Beast Capital Group, Casablanca. Les factures sont émises par Beast Capital Group.",
     "Back to the website": "Retour au site",

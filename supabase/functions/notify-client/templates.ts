@@ -1,4 +1,4 @@
-// Branded client emails, in English or French (profiles.language; Arabic comes in Sprint 8).
+// Branded client emails, in English, French or Arabic (profiles.language).
 // Pure functions: no database, no network, so tests/emails.mjs can render every email locally.
 
 export const SITE = "https://www.ddpsourcing.com";
@@ -6,7 +6,7 @@ export const OPTIONAL = ["request_received", "shipped"];  // the client can turn
 
 export type EmailData = {
   kind: string;
-  lang?: string;  // "fr" = French, anything else = English
+  lang?: string;  // "fr" = French, "ar" = Arabic (right-to-left), anything else = English
   client: { full_name?: string | null };
   request: { code: string; product_name: string; quantity?: number | null; quote_amount_mad?: number | null; quote_expires_at?: string | null };
   payment?: { deposit_amount_mad?: number | null; balance_amount_mad?: number | null; final_due_at?: string | null } | null;
@@ -21,14 +21,16 @@ const mad = (n: unknown) =>
   "MAD " + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const madFr = (n: unknown) =>
   Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).replace(/\u202f|\u00a0/g, " ") + " MAD";
+const madAr = (n: unknown) =>
+  Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " درهم";
 const day = (iso?: string | null, lang = "en") =>
-  iso ? new Date(iso).toLocaleDateString(lang === "fr" ? "fr-FR" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Casablanca" }) : "";
+  iso ? new Date(iso).toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ar" ? "ar-MA-u-nu-latn" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Casablanca" }) : "";
 const addDays = (iso: string | null | undefined, d: number) => (iso ? new Date(new Date(iso).getTime() + d * 864e5).toISOString() : null);
 
-function layout(label: string, title: string, body: string, button: string, link: string, foot: string) {
-  return `<div style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif">
+function layout(label: string, title: string, body: string, button: string, link: string, foot: string, rtl = false) {
+  return `<div${rtl ? ' dir="rtl"' : ""} style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif${rtl ? ";text-align:right" : ""}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
-<tr><td style="background:#0B1220;padding:18px 24px"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
+<tr><td${rtl ? ' dir="ltr" align="right"' : ""} style="background:#0B1220;padding:18px 24px"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
 <tr><td style="padding:26px 24px 8px">
 <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#B04600">${label}</p>
 <h1 style="margin:0 0 16px;font-size:21px;line-height:1.3;color:#0B1220">${title}</h1>
@@ -38,14 +40,15 @@ ${body}
 </td></tr></table></div>`;
 }
 const p = (html: string) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#334155">${html}</p>`;
-function rows(list: [string, string][]) {
+function rows(list: [string, string][], rtl = false) {
   const r = list.filter(([, v]) => v).map(([k, v]) =>
-    `<tr><td style="padding:7px 14px 7px 0;color:#64748B;font-size:13px;white-space:nowrap;vertical-align:top">${esc(k)}</td><td style="padding:7px 0;font-size:15px;font-weight:700;color:#0B1220">${esc(v)}</td></tr>`).join("");
+    `<tr><td style="padding:${rtl ? "7px 0 7px 14px" : "7px 14px 7px 0"};color:#64748B;font-size:13px;white-space:nowrap;vertical-align:top">${esc(k)}</td><td style="padding:7px 0;font-size:15px;font-weight:700;color:#0B1220"${rtl ? ' dir="auto"' : ""}>${esc(v)}</td></tr>`).join("");
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 8px">${r}</table>`;
 }
 
 export function buildEmail(d: EmailData): { subject: string; html: string; text: string } | null {
   if (d.lang === "fr") return buildEmailFr(d);
+  if (d.lang === "ar") return buildEmailAr(d);
   const q = d.request, pay = d.payment || {}, s = d.settings || {};
   const first = String(d.client.full_name || "").trim().split(" ")[0];
   const hiText = first ? `Hello ${first},` : "Hello,";
@@ -267,4 +270,118 @@ function buildEmailFr(d: EmailData): { subject: string; html: string; text: stri
       return null;
   }
   return { subject, html: layout(label, esc(title), body, button, link, footer), text };
+}
+
+// ---------- Arabic (right-to-left) ----------
+function buildEmailAr(d: EmailData): { subject: string; html: string; text: string } | null {
+  const q = d.request, pay = d.payment || {}, s = d.settings || {};
+  const first = String(d.client.full_name || "").trim().split(" ")[0];
+  const hiText = first ? `مرحبًا ${first}،` : "مرحبًا،";
+  const hi = esc(hiText);
+  const label = `طلبك ${esc(q.code)} · ${esc(q.product_name)}`;
+  const account = `${SITE}/ar/account`;
+  const optionalFoot = `تتلقى هذه الرسالة عند كل مرحلة من طلبيتك. يمكنك إيقاف رسائل المراحل من <a href="${account}?tab=profile" style="color:#B04600">ملفك الشخصي</a>.`;
+  const foot = "لديك سؤال؟ رد في حسابك، أو أجب على هذه الرسالة.";
+  const qty = q.quantity ? Number(q.quantity).toLocaleString("en-US") + " قطعة" : "";
+  const aday = (iso?: string | null) => day(iso, "ar");
+  const R = (list: [string, string][]) => rows(list, true);
+  let subject = "", title = "", body = "", button = "افتح حسابي", link = account, footer = foot, text = "";
+
+  switch (d.kind) {
+    case "request_received":
+      subject = `استلمنا طلبك ${q.code}`;
+      title = "استلمنا طلب التوريد";
+      body = p(`${hi} شكرًا لك. يدرس فريقنا طلبك ويرد عليك عبر واتساب في نفس يوم العمل (من الاثنين إلى الجمعة، من 10:00 إلى 18:00).`) +
+        R([["الطلب", q.code], ["المنتج", q.product_name], ["الكمية", qty]]) +
+        p("الخطوة التالية: نتحقق من المنتج مع موردينا، ثم نرسل لك عرض سعر مكتوبًا بسعر نهائي واحد مع التوصيل حتى بابك. لا تدفع شيئًا قبل موافقتك.");
+      button = "تابع طلبي";
+      footer = optionalFoot;
+      text = `${hiText} استلمنا طلب التوريد ${q.code} (${q.product_name}، ${qty}). نرد عبر واتساب في نفس يوم العمل. لا تدفع شيئًا قبل موافقتك على عرض السعر المكتوب.\nتابع طلبك: ${account}`;
+      break;
+    case "quote_ready":
+    case "quote_expiring": {
+      const total = Number(q.quote_amount_mad || 0);
+      const unit = q.quantity ? total / Number(q.quantity) : 0;
+      const exp = aday(q.quote_expires_at);
+      const expiring = d.kind === "quote_expiring";
+      subject = expiring ? `عرض السعر ${q.code} ينتهي في ${exp}` : `عرض السعر جاهز · ${q.code}`;
+      title = expiring ? "عرض السعر ينتهي قريبًا" : "عرض السعر جاهز";
+      body = p(expiring
+        ? `${hi} عرض السعر الخاص بـ ${esc(q.product_name)} ما زال ينتظر ردك. بعد ${esc(exp)} لم يعد السعر مضمونًا.`
+        : `${hi} هذا سعرك النهائي مع التوصيل حتى بابك في المغرب (المنتج، الشحن الجوي السريع، الجمارك والتوصيل).`) +
+        R([["السعر الإجمالي", madAr(total)], ["سعر القطعة", unit ? madAr(Math.ceil(unit * 100) / 100) : ""], ["الكمية", qty],
+          ["الدفعة الأولى 40% للبدء", pay.deposit_amount_mad ? madAr(pay.deposit_amount_mad) : ""], ["صالح حتى", exp]]) +
+        p("افتح حسابك لقبول العرض أو رفضه أو طرح سؤال. لا تدفع الدفعة الأولى 40% إلا بعد موافقتك.");
+      button = expiring ? "رد على عرض السعر" : "اطلع على عرض السعر";
+      text = `${hiText} ${expiring ? `عرض السعر ${q.code} ينتهي في ${exp}.` : `عرض السعر ${q.code} جاهز.`}\nالمجموع: ${madAr(total)} (${qty})\nصالح حتى: ${exp}\nاقبل أو ارفض أو اطرح سؤالًا: ${account}`;
+      break;
+    }
+    case "deposit_verified":
+      subject = `استلمنا الدفعة الأولى · ${q.code} قيد الإنتاج`;
+      title = "استلمنا دفعتك الأولى 40%";
+      body = p(`${hi} تم التحقق من تحويلك. نطلب الآن بضاعتك من المورد.`) +
+        R([["الدفعة الأولى المستلمة", pay.deposit_amount_mad ? madAr(pay.deposit_amount_mad) : ""], ["المبلغ المتبقي (60%)", pay.balance_amount_mad ? madAr(pay.balance_amount_mad) : ""]]) +
+        p("الخطوة التالية: قبل الشحن، نرسل لك صورًا وفيديو لبضاعتك لتوافق عليها. لا تدفع 60% المتبقية إلا عندما تصل بضاعتك إلى المغرب، قبل التسليم.");
+      button = "تابع طلبيتي";
+      text = `${hiText} استلمنا دفعتك الأولى 40% للطلب ${q.code}. طلبيتك قيد الإنتاج. قبل الشحن نرسل لك صورًا وفيديو لتوافق عليها.\nتابع طلبيتك: ${account}`;
+      break;
+    case "inspection_ready": {
+      const n = d.inspectionFiles || 0;
+      subject = `المرجو الموافقة على بضاعتك قبل الشحن · ${q.code}`;
+      title = "بضاعتك جاهزة: المرجو التحقق منها";
+      body = p(`${hi} فحصنا بضاعتك${n ? ` وأضفنا ${n} صورة أو فيديو` : ""} في حسابك.`) +
+        p("اطلع عليها، ثم انقر على <strong>وافق على الشحن</strong>. إذا كان هناك شيء غير صحيح، انقر على <strong>لدي سؤال</strong>. لا نشحن شيئًا قبل موافقتك.");
+      button = "تحقق من بضاعتي";
+      text = `${hiText} صور فحص الطلب ${q.code} جاهزة. تحقق منها ووافق على الشحن في حسابك. لا نشحن شيئًا قبل موافقتك.\n${account}`;
+      break;
+    }
+    case "shipped":
+      subject = `${q.code} في الطريق إلى المغرب`;
+      title = "بضاعتك في الطريق إلى المغرب";
+      body = p(`${hi} غادرت بضاعتك الصين بالشحن الجوي السريع. سنراسلك عند وصولها إلى المغرب وتخليصها الجمركي.`) +
+        R([["الطلب", q.code], ["المنتج", q.product_name], ["الكمية", qty]]);
+      button = "تابع طلبيتي";
+      footer = optionalFoot;
+      text = `${hiText} غادرت بضاعتك للطلب ${q.code} الصين بالشحن الجوي السريع. سنراسلك عند تخليصها الجمركي في المغرب.\nتابع طلبيتك: ${account}`;
+      break;
+    case "final_due": {
+      const fee = Number(s.storage_fee_after_days || 0);
+      const feeDate = fee && pay.final_due_at ? aday(addDays(pay.final_due_at, fee)) : "";
+      subject = `تم التخليص الجمركي · المرجو دفع 60% للطلب ${q.code}`;
+      title = "تم التخليص الجمركي لبضاعتك";
+      body = p(`${hi} بضاعتك في المغرب وتم تخليصها جمركيًا. المرجو دفع المبلغ المتبقي 60% حتى نتمكن من توصيلها.`) +
+        R([["المبلغ المتبقي (60%)", pay.balance_amount_mad ? madAr(pay.balance_amount_mad) : ""], ["مرجع التحويل", q.code]]) +
+        p("معلوماتنا البنكية في حسابك. بعد التحويل، أرسل الإثبات هناك: نتحقق منه ونوصل.") +
+        (feeDate ? p(`المرجو الدفع قبل ${esc(feeDate)}: بعد هذا التاريخ تُطبق رسوم التخزين (انظر <a href="${SITE}/ar/policies" style="color:#B04600">قواعد الدفع</a>).`) : "");
+      button = "ادفع 60%";
+      text = `${hiText} تم التخليص الجمركي لبضاعتك للطلب ${q.code} في المغرب. المرجو دفع المبلغ المتبقي 60%${pay.balance_amount_mad ? ` (${madAr(pay.balance_amount_mad)})` : ""} مع ${q.code} كمرجع، ثم إرسال الإثبات في حسابك.${feeDate ? ` تُطبق رسوم التخزين بعد ${feeDate}.` : ""}\n${account}`;
+      break;
+    }
+    case "delivered": {
+      const h = Number(s.claim_hours || 0);
+      subject = `تم تسليم ${q.code} · كيف كانت التجربة؟`;
+      title = "تم تسليم طلبيتك";
+      body = p(`${hi} تم تسليم بضاعتك. شكرًا على ثقتك في DDPSourcing.`) +
+        (h ? p(`افحص بضاعتك الآن. إذا كانت هناك قطع ناقصة أو تالفة، انقر على <strong>الإبلاغ عن مشكلة</strong> في حسابك خلال ${h} ساعة، مع صور أو فيديو.`) : "") +
+        p("راضٍ عن النتيجة؟ رأي قصير يساعد البائعين الآخرين على الثقة بنا. يستغرق دقيقة واحدة.");
+      button = "اترك رأيك";
+      link = `${account}?tab=reviews`;
+      text = `${hiText} تم تسليم طلبيتك ${q.code}.${h ? ` إذا كانت هناك قطع ناقصة أو تالفة، أبلغ عنها في حسابك خلال ${h} ساعة.` : ""}\nاترك رأيك: ${account}?tab=reviews`;
+      break;
+    }
+    case "refund_paid": {
+      const r = d.refund || {};
+      subject = `تم إرسال الاسترداد · ${q.code}`;
+      title = "أرسلنا المبلغ المسترد";
+      body = p(`${hi} دفعنا المبلغ المسترد بتحويل بنكي.`) +
+        R([["المبلغ", r.amount_mad ? madAr(r.amount_mad) : ""], ["مرجع التحويل", String(r.reference || "")]]) +
+        p("إثبات التحويل في حسابك. إذا لم يصلك المبلغ قريبًا، أجب على هذه الرسالة مع المرجع أعلاه.");
+      button = "اطلع على الاسترداد";
+      text = `${hiText} أرسلنا المبلغ المسترد للطلب ${q.code}${r.amount_mad ? ` (${madAr(r.amount_mad)})` : ""} بتحويل بنكي${r.reference ? `، المرجع ${r.reference}` : ""}.\n${account}`;
+      break;
+    }
+    default:
+      return null;
+  }
+  return { subject, html: layout(label, esc(title), body, button, link, footer, true), text };
 }

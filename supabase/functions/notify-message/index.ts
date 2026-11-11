@@ -7,10 +7,12 @@
 // (sent_at is claimed before sending). Grouping (max one message email per 10 minutes) is done in SQL.
 // Sprint 6: stage-change emails are skipped when the client turned off step-by-step emails, and when
 // a dedicated email of notify-client covers the same moment (decided in SQL).
-// Sprint 7: clients who chose French (profiles.language) get these emails in French (texts in ./fr.ts).
+// Sprint 7–8: clients who chose French or Arabic (profiles.language) get these emails in that language
+// (automatic texts in ./fr.ts and ./ar.ts; Arabic emails are right-to-left).
 // Secret required in Supabase → Edge Functions → Secrets: RESEND_API_KEY (already set).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import { frBody } from "./fr.ts";
+import { arBody } from "./ar.ts";
 
 const SITE = "https://www.ddpsourcing.com";
 const FROM = "DDPSourcing <no-reply@ddpsourcing.com>";
@@ -25,10 +27,10 @@ const esc = (v: unknown) =>
   String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n) + "…" : s);
 
-function layout(label: string, title: string, body: string, button: string, link: string, foot: string) {
-  return `<div style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif">
+function layout(label: string, title: string, body: string, button: string, link: string, foot: string, rtl = false) {
+  return `<div${rtl ? ' dir="rtl"' : ""} style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif${rtl ? ";text-align:right" : ""}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
-<tr><td style="background:#0B1220;padding:18px 24px"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
+<tr><td${rtl ? ' dir="ltr" align="right"' : ""} style="background:#0B1220;padding:18px 24px"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
 <tr><td style="padding:26px 24px 8px">
 <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#B04600">${label}</p>
 <h1 style="margin:0 0 16px;font-size:21px;line-height:1.3;color:#0B1220">${title}</h1>
@@ -37,8 +39,8 @@ ${body}
 <p style="margin:18px 0 24px;font-size:12.5px;color:#64748B">${foot}</p>
 </td></tr></table></div>`;
 }
-const quote = (text: string) =>
-  `<div style="margin:0;padding:14px 16px;background:#F7F8FA;border-left:4px solid #FF6B00;border-radius:8px;font-size:15px;line-height:1.5;color:#0B1220;white-space:pre-wrap">${esc(cut(text, 1500))}</div>`;
+const quote = (text: string, rtl = false) =>
+  `<div dir="auto" style="margin:0;padding:14px 16px;background:#F7F8FA;border-${rtl ? "right" : "left"}:4px solid #FF6B00;border-radius:8px;font-size:15px;line-height:1.5;color:#0B1220;white-space:pre-wrap">${esc(cut(text, 1500))}</div>`;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -81,6 +83,28 @@ Deno.serve(async (req) => {
       `<p style="margin:0 0 10px;font-size:14px;color:#334155"><strong>${esc(c.full_name)}</strong>${c.whatsapp ? " · " + esc(c.whatsapp) : ""}</p>${quote(m.body)}${att}`,
       "Reply in the CRM", `${SITE}/team`, "Reply the same business day. Other messages sent in the next 10 minutes are grouped in the CRM.");
     text = `New message from ${c.full_name || "the client"} on ${q.code} (${q.product_name}):\n\n${m.body}\n\nReply in the CRM: ${SITE}/team`;
+  } else if (c.language === "ar") {
+    if (c.email) to = [c.email];
+    const hiText = c.full_name ? `مرحبًا ${String(c.full_name).split(" ")[0]}،` : "مرحبًا،";
+    const hi = esc(hiText);
+    const ACCOUNT = `${SITE}/ar/account`;
+    if (n.kind === "team_message") {
+      subject = `رسالة جديدة من DDPSourcing · ${q.code}`;
+      html = layout(`طلبك ${esc(q.code)}`, esc(q.product_name),
+        `<p style="margin:0 0 10px;font-size:15px;color:#334155">${hi} أرسل لك فريقنا رسالة:</p>${quote(m.body, true)}${att.replace("File attached", "ملف مرفق")}`,
+        "اقرأ ورد", ACCOUNT, "المرجو الرد من حسابك لتبقى المحادثة كاملة في مكان واحد.", true);
+      text = `${hiText} أرسل لك فريقنا رسالة بخصوص ${q.code} (${q.product_name}):\n\n${m.body}\n\nاقرأ ورد: ${ACCOUNT}`;
+    } else {
+      const stageUpdate = /^Status update:/i.test(String(m.body));
+      const stage = arBody(String(m.body)).replace(/^تحديث الحالة: /, "");
+      subject = `${q.code}: ${stage}`;
+      html = layout(`طلبك ${esc(q.code)}`, esc(q.product_name),
+        `<p style="margin:0 0 10px;font-size:15px;color:#334155">${hi} ${stageUpdate ? "لطلبك حالة جديدة:" : "هذا تحديث لطلبك:"}</p><p style="margin:0;font-size:${stageUpdate ? 20 : 16}px;font-weight:800;color:#0B1220">${esc(stage)}</p>`,
+        "اطلع على التفاصيل", ACCOUNT, stageUpdate
+          ? `تتلقى هذه الرسالة عند كل مرحلة من طلبيتك. يمكنك إيقاف رسائل المراحل من <a href="${ACCOUNT}?tab=profile" style="color:#B04600">ملفك الشخصي</a>.`
+          : "لديك سؤال؟ رد في حسابك، أو أجب على هذه الرسالة.", true);
+      text = `${hiText} طلبك ${q.code} (${q.product_name}): ${stage}\n\nاطلع على التفاصيل: ${ACCOUNT}`;
+    }
   } else if (c.language === "fr") {
     if (c.email) to = [c.email];
     const hiText = c.full_name ? `Bonjour ${String(c.full_name).split(" ")[0]},` : "Bonjour,";

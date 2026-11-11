@@ -35,7 +35,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql`, `sprint5_db_checks.sql`, `sprint6_db_checks.sql`, `sprint7_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `sprint5.js` = homepage trust + inspection approval, `sprint6.js` = email preferences, `sprint7.js` = French pages and account, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]`; email templates: `node --experimental-strip-types tests/emails.mjs`; French pages up to date: `node tools/build-fr.mjs --check` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql`, `sprint5_db_checks.sql`, `sprint6_db_checks.sql`, `sprint7_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `sprint5.js` = homepage trust + inspection approval, `sprint6.js` = email preferences, `sprint7.js` = French pages and account, `sprint8.js` = Arabic pages, account and right-to-left layout, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]`; email templates: `node --experimental-strip-types tests/emails.mjs`; French pages up to date: `node tools/build-i18n.mjs --check` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
@@ -131,7 +131,7 @@ The generic "Status update" email (`notify-message`) is skipped for those moment
 (request received, shipped, generic stage changes); quotes, payments, inspection, delivery, refunds, reminders and team messages
 are always sent.
 Sprint 7 (migration `20261111021251`): French. Public pages `/fr`, `/fr/estimate`, `/fr/policies`, `/fr/terms`, `/fr/privacy` are
-**generated**: never edit `fr/*.html`; change the English page (or `tools/i18n/fr-pages.json`) and run `node tools/build-fr.mjs`
+**generated**: never edit `fr/*.html`; change the English page (or `tools/i18n/fr-pages.json`) and run `node tools/build-i18n.mjs`
 (`--check` in tests). `/fr/account` is a Vercel rewrite to `account/index.html`, translated in the browser by `assets/i18n.js`
 (dictionary `assets/i18n/fr.json`, `{1}` patterns, French dates; `translate="no"` protects client content). New account texts need
 a French entry (`tests/browser/sprint7.js` lists English left on the French screens). French texts never use ASCII quotes (’ « »).
@@ -139,6 +139,10 @@ a French entry (`tests/browser/sprint7.js` lists English left on the French scre
 the profile; `/account` sends a French client to `/fr/account` unless they chose English on that device (`localStorage ddp-lang`).
 Emails follow `profiles.language`: `notify-client` templates (fr), `notify-message` (`fr.ts` translates stage names and system
 messages), `admin-clients` welcome email; CRM shows the client language and lets the admin set it.
+Sprint 8: Arabic, same machinery: `/ar/*` generated (`tools/i18n/ar-pages.json`, `<html lang="ar" dir="rtl">`, Tajawal font, `assets/rtl.css`),
+`/ar/account` (rewrite, `assets/i18n/ar.json`, dates `ar-MA`), Arabic emails (`notify-message/ar.ts`, right-to-left layouts). Headers show
+the two other languages (`data-lang-switch="fr|ar|en"`). **Any new CSS with left/right needs its mirror in `assets/rtl.css`**
+(`tests/browser/sprint8.js` fails on sideways scroll). Number ranges in Arabic are written with words (15 إلى 20), not "15–20".
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.

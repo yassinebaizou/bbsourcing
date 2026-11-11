@@ -1436,7 +1436,7 @@
       '<p class="hint" style="margin-top:10px">' + (c.first ? "First order " + dShort(c.first) + " · last order " + dShort(c.last) : "No confirmed order yet") + "</p></div>";
     h += '<div class="sec"><h3>Profile</h3><dl class="dl">' + dd("Email", esc(p.email)) + dd("WhatsApp", esc(p.whatsapp)) + dd("City", esc(p.city)) +
       dd("Selling status", esc(SELLING[p.selling_status] || "")) + dd("Business", esc(p.business_name)) +
-      dd("Language", p.language === "fr" ? "French (reply in French)" : p.language === "ar" ? "Arabic" : "") +
+      dd("Language", p.language === "fr" ? "French (reply in French)" : p.language === "ar" ? "Arabic (reply in Arabic or French)" : "") +
       dd("Store link", safeUrl(p.store_link) ? '<a href="' + esc(safeUrl(p.store_link)) + '" target="_blank" rel="noopener nofollow">Open</a>' : esc(p.store_link || "")) +
       dd("Client since", p.created_at ? dShort(p.created_at) : "") + "</dl></div>";
     h += '<div class="sec"><h3>Requests and orders</h3>' + (c.reqs.length ? '<div class="table-wrap"><table class="compact" style="min-width:480px"><thead><tr><th>Request</th><th>Product</th><th>Status</th><th>Payment</th><th class="num">Quote</th></tr></thead><tbody id="clientReqs">' +
@@ -1496,7 +1496,7 @@
       fld("cf_store", "Store link", p.store_link, "url", ' maxlength="300" placeholder="https://"') +
       '<div class="field"><label for="cf_selling">Selling status</label><select id="cf_selling"><option value="">—</option>' +
       Object.keys(SELLING).map(function (k) { return '<option value="' + k + '"' + (p.selling_status === k ? " selected" : "") + ">" + esc(SELLING[k]) + "</option>"; }).join("") + "</select></div>" +
-      '<div class="field"><label for="cf_lang">Language (emails and account)</label><select id="cf_lang"><option value="en">English</option><option value="fr"' + (p.language === "fr" ? " selected" : "") + ">French</option></select></div>" +
+      '<div class="field"><label for="cf_lang">Language (emails and account)</label><select id="cf_lang"><option value="en">English</option><option value="fr"' + (p.language === "fr" ? " selected" : "") + ">French</option><option value=\"ar\"" + (p.language === "ar" ? " selected" : "") + ">Arabic</option></select></div>" +
       "</div>" + (isNew ? '<p class="hint">The client receives an email "Your DDPSourcing account is ready" with a button to choose their password. We never send passwords by email.</p>'
         : '<p class="hint">If you change the email, the client logs in with the new email from now on.</p>') +
       '<div class="actions-row" style="margin-top:12px"><button class="btn btn-primary" type="submit" id="cfSave">' + (isNew ? "Create the account and send the email" : "Save changes") + "</button>" +
@@ -1539,7 +1539,7 @@
     h += '<div class="sec"><div class="actions-row">' +
       (c.whatsapp ? '<a class="btn btn-primary btn-sm" href="' + esc(waLink(c.whatsapp)) + '" target="_blank" rel="noopener">WhatsApp ' + esc(c.whatsapp) + "</a>" : "") +
       (c.email ? '<a class="btn btn-secondary btn-sm" href="mailto:' + esc(c.email) + '">Email</a>' : "") + "</div>" +
-      (c.language === "fr" ? '<p class="hint" style="margin-top:8px">This client uses the site in French: reply in French.</p>' : "") + "</div>";
+      (c.language === "fr" || c.language === "ar" ? '<p class="hint" style="margin-top:8px">This client uses the site in ' + (c.language === "fr" ? "French: reply in French" : "Arabic: reply in Arabic (or French)") + ".</p>" : "") + "</div>";
 
     // Conversation
     h += '<div class="sec"><h3>Conversation with the client</h3><div class="chat" id="dChat" aria-live="polite"><div class="muted">Loading…</div></div>' +

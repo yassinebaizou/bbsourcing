@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/ui.css">
-<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/account"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr/account">
+<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/account"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr/account"><link rel="alternate" hreflang="ar" href="https://www.ddpsourcing.com/ar/account">
 <script src="/assets/i18n.js"></script>
 <style>
   .top{background:var(--navy);color:var(--white)}
@@ -18,6 +18,8 @@
   .top-right{display:flex;align-items:center;gap:6px;font-size:14px;color:#CBD5E1}
   .top-right a,.top-right button{color:#CBD5E1;text-decoration:none;background:none;border:0;cursor:pointer;font-size:14px;font-weight:500;padding:8px}
   .top-right a:hover,.top-right button:hover{color:var(--white)}
+  /* Small phones: the estimate is also a tab, and the greeting is in the page; keep the header on one line. */
+  @media (max-width:480px){ #estHeader, .top-right .hello{display:none} .top-right{gap:2px} .top-right a, .top-right button{padding:8px 6px} }
   .top-right .lang-switch{font-weight:700;color:var(--white);min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .hello{display:none}
   @media (min-width:600px){.hello{display:inline}}
@@ -159,7 +161,7 @@
       <span class="hello" id="hello"></span>
       <a href="/team" id="crmLink" hidden>Team CRM</a>
       <a href="/estimate" id="estHeader">Get estimated price</a>
-      <a class="lang-switch" href="/fr/account" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch>FR</a>
+      <a class="lang-switch" href="/fr/account" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch="fr">FR</a><a class="lang-switch" href="/ar/account" hreflang="ar" lang="ar" aria-label="النسخة العربية" data-lang-switch="ar">ع</a>
       <button type="button" id="loginTop" hidden>Log in</button>
       <button type="button" id="logoutBtn" hidden>Log out</button>
     </div>
@@ -465,7 +467,7 @@
               <option value="fr">Français</option>
               <option value="ar">العربية</option>
             </select>
-            <p class="hint">Our emails are sent in English or in French, as you choose here. Arabic is coming soon.</p>
+            <p class="hint">Our emails are sent in the language you choose here: English, French or Arabic.</p>
           </fieldset>
           <button class="btn btn-primary" type="submit">Save profile</button>
         </form>
@@ -485,7 +487,7 @@
   var fmt = new Intl.NumberFormat("en-US");
   // Language of this page (assets/i18n.js): /account = English, /fr/account = French.
   var LANG = (window.DDP_I18N && window.DDP_I18N.lang) || "en";
-  var ACCOUNT_PATH = LANG === "fr" ? "/fr/account" : "/account";
+  var ACCOUNT_PATH = LANG === "en" ? "/account" : "/" + LANG + "/account";
   var LANG_KEY = "ddp-lang";
   var CATEGORY_LABELS = {
     gadget: "Gadget (standard)", connected: "Gadget with Bluetooth / WiFi", vibration: "Product with vibration",
@@ -648,7 +650,7 @@
   // Language switch: remembered on this device and, for a signed-in client, saved as their email language.
   document.querySelectorAll("[data-lang-switch]").forEach(function (a) {
     a.addEventListener("click", function (e) {
-      var to = LANG === "fr" ? "en" : "fr", href = a.getAttribute("href");
+      var to = a.getAttribute("data-lang-switch") || "en", href = a.getAttribute("href");
       try { localStorage.setItem(LANG_KEY, to); } catch (err) {}
       if (!state.user || state.guest || !state.profile || state.profile.language === to) return;
       e.preventDefault();
@@ -791,10 +793,11 @@
       sb.rpc("staff_role")
     ]).then(function (res) {
       state.profile = res[0].data || { full_name: "", email: user.email };
-      // A client who chose French gets the French account, unless they switched to English on this device.
+      // A client who chose French or Arabic gets that account, unless they switched to English on this device.
       var chosen = null; try { chosen = localStorage.getItem(LANG_KEY); } catch (e) {}
-      if (LANG === "en" && state.profile.language === "fr" && chosen !== "en") {
-        location.replace("/fr/account" + location.search + location.hash);
+      var want = state.profile.language;
+      if (LANG === "en" && (want === "fr" || want === "ar") && chosen !== "en") {
+        location.replace("/" + want + "/account" + location.search + location.hash);
         return new Promise(function () {});
       }
       (res[1].data || []).forEach(function (s) { state.statuses[s.code] = s; });
@@ -1289,7 +1292,7 @@
         var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
         box.innerHTML = list.length ? list.map(function (m) {
           if (m.kind === "update") return '<div class="bubble update"><span>' + esc(m.body) + "</span> · " + esc(chatTime(m.created_at)) + "</div>";
-          return '<div class="bubble ' + (m.from_team ? "theirs" : "mine") + '"><p translate="no">' + esc(m.body) + "</p>" +
+          return '<div class="bubble ' + (m.from_team ? "theirs" : "mine") + '"><p translate="no" dir="auto">' + esc(m.body) + "</p>" +
             (m.attachment_path ? '<button type="button" class="att" data-file="' + esc(m.attachment_path) + '">📎 ' + esc(m.attachment_name || "Attachment") + "</button>" : "") +
             '<div class="meta">' + (m.from_team ? "DDPSourcing team" : "You") + " · " + esc(chatTime(m.created_at)) + "</div></div>";
         }).join("") : '<div class="muted" style="font-size:14px">No messages yet. Our updates and answers will appear here.</div>';

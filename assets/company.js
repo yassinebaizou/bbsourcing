@@ -18,6 +18,8 @@ window.DDP_COMPANY = {
   founderStory: "",  // 3 or 4 short sentences, in your own words
   founderRoleFr: "",  // French version for /fr (empty = the English text is used)
   founderStoryFr: "",
+  founderRoleAr: "",  // Arabic version for /ar (empty = the English text is used)
+  founderStoryAr: "",
 
   // Social links in the footer: full https:// addresses. Empty = not shown.
   social: { instagram: "", facebook: "", tiktok: "", youtube: "", linkedin: "" }
@@ -28,11 +30,14 @@ window.DDP_COMPANY = {
 (function () {
   "use strict";
   function fr() { return /^fr/i.test(document.documentElement.lang || ""); }
+  function ar() { return /^ar/i.test(document.documentElement.lang || ""); }
   function line() {
     var c = window.DDP_COMPANY, ids = [];
     if (c.rc) ids.push("RC " + c.rc);
     if (c.ice) ids.push("ICE " + c.ice);
     if (c.if) ids.push("IF " + c.if);
+    if (ar()) return c.brand + " خدمة تابعة لشركة " + c.legalName + (c.city ? "، " + c.city : "") + ". تصدر الفواتير باسم " + c.legalName + "." +
+      (ids.length ? " " + ids.join(" · ") + "." : "");
     if (fr()) return c.brand + " est un service de " + c.legalName + (c.city ? ", " + c.city : "") + ". Les factures sont émises par " + c.legalName + "." +
       (ids.length ? " " + ids.join(" · ") + "." : "");
     return c.brand + " is a service of " + c.legalName + (c.city ? ", " + c.city : "") + ". Invoices are issued by " + c.legalName + "." +
@@ -51,9 +56,9 @@ window.DDP_COMPANY = {
     // Founder (homepage "Who we are"): shown only when the owner filled the name and the story.
     var hasFounder = !!(c.founderName && c.founderStory);
     document.querySelectorAll("[data-founder]").forEach(function (el) { el.hidden = !hasFounder; });
-    document.querySelectorAll("[data-founder-story]").forEach(function (el) { el.textContent = (fr() && c.founderStoryFr) || c.founderStory || ""; el.hidden = !hasFounder; });
+    document.querySelectorAll("[data-founder-story]").forEach(function (el) { el.textContent = (fr() && c.founderStoryFr) || (ar() && c.founderStoryAr) || c.founderStory || ""; el.hidden = !hasFounder; });
     document.querySelectorAll("[data-founder-name]").forEach(function (el) { el.textContent = c.founderName || ""; });
-    document.querySelectorAll("[data-founder-role]").forEach(function (el) { el.textContent = (fr() && c.founderRoleFr) || c.founderRole || ""; });
+    document.querySelectorAll("[data-founder-role]").forEach(function (el) { el.textContent = (fr() && c.founderRoleFr) || (ar() && c.founderRoleAr) || c.founderRole || ""; });
     document.querySelectorAll("[data-founder-photo]").forEach(function (el) {
       if (hasFounder && c.founderPhoto) { el.src = c.founderPhoto; el.alt = c.founderName; } else el.remove();
     });

@@ -85,3 +85,9 @@ them). **Confirm or remove:**
   `tools/i18n/fr-pages.json`). The French Terms say: "en cas de différence, la version anglaise fait foi".
   Ask the lawyer whether the French version should prevail instead (common for Moroccan clients), and to
   check the legal vocabulary (rendu droits acquittés, force majeure, loi 09-08, CNDP).
+
+## 5. Arabic version (Sprint 8)
+
+- `/ar/terms`, `/ar/privacy` and `/ar/policies` are translations (texts in `tools/i18n/ar-pages.json`). Like the French
+  version, the Arabic Terms say the English version prevails in case of difference. Same question for the lawyer, and a
+  check of the legal Arabic vocabulary (القانون 09-08، اللجنة الوطنية CNDP، القوة القاهرة، المحاكم المختصة بالدار البيضاء).

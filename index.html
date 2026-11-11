@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr"><link rel="alternate" hreflang="x-default" href="https://www.ddpsourcing.com/">
+<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr"><link rel="alternate" hreflang="ar" href="https://www.ddpsourcing.com/ar"><link rel="alternate" hreflang="x-default" href="https://www.ddpsourcing.com/">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DDPSourcing: DDP sourcing from China to Morocco</title>
 <meta name="description" content="Send us a product link. We find a trusted supplier in China, ship by express air, clear Moroccan customs, and deliver your stock to your door in 15 to 20 days, for one final price per unit.">
@@ -376,7 +376,7 @@ fieldset.field{border:0;margin:0;padding:0}
       <a class="nav-mobile" href="/account?login" id="navAccount">Log in</a>
     </nav>
     <div class="header-actions">
-      <a class="lang-switch" href="/fr" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch>FR</a>
+      <a class="lang-switch" href="/fr" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch="fr">FR</a><a class="lang-switch" href="/ar" hreflang="ar" lang="ar" aria-label="النسخة العربية" data-lang-switch="ar">ع</a>
       <a class="btn btn-ghost-dark header-cta" href="/account?login" id="headerLogin">Log in</a>
       <a class="btn btn-ghost-dark header-cta" href="/estimate" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a>
       <a class="btn btn-primary header-cta" href="#request">Submit sourcing request</a>
@@ -1177,7 +1177,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
         return await insertAndFinish(row);
       }
       const email = $('a-email').value.trim();
-      const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row, language: document.documentElement.lang === 'fr' ? 'fr' : 'en' }) } });
+      const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row, language: ['fr', 'ar'].indexOf(document.documentElement.lang) >= 0 ? document.documentElement.lang : 'en' }) } });
       if (r.error) throw r.error;
       if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
         setAcct('login'); $('a-pass').value = '';
