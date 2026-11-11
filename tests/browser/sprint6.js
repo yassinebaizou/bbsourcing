@@ -8,7 +8,7 @@ const mock = fs.readFileSync(path.join(__dirname, 'mock-supabase.js'), 'utf8');
 let pre = '';
 const results = [], errors = [];
 const check = (name, ok, detail) => { results.push(!!ok); console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? '  — ' + detail : '')); };
-const CT = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
+const CT = { '.json': 'application/json', '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
 
 async function page(b, m, viewport) {
   pre = 'window.__MOCK=' + JSON.stringify(m || {}) + ';';
@@ -17,7 +17,7 @@ async function page(b, m, viewport) {
     const u = new URL(r.request().url());
     if (u.hostname !== 'local.test') return r.fulfill({ status: 200, body: '' });
     if (u.pathname === '/assets/vendor/supabase.js') return r.fulfill({ contentType: 'application/javascript', body: pre + mock });
-    let f = path.join(ROOT, u.pathname === '/' ? 'index.html' : u.pathname);
+    let f = path.join(ROOT, u.pathname === '/' ? 'index.html' : /^\/(fr|ar)\/account$/.test(u.pathname) ? '/account/index.html' : u.pathname);  // vercel.json rewrites
     if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
     if (!fs.existsSync(f)) return r.fulfill({ status: 404, body: '' });
     r.fulfill({ body: fs.readFileSync(f), contentType: CT[path.extname(f)] || 'application/octet-stream' });
@@ -44,10 +44,10 @@ const me = (o) => [Object.assign({ id: 'u-admin', full_name: 'Sara Benali', emai
   check('saving sends email_updates=false and language=fr', up && up[2].email_updates === false && up[2].language === 'fr' && up[2].full_name === 'Sara Benali', JSON.stringify(up && up[2]));
   await ctx.close();
 
-  // A client who turned the emails off sees the box unchecked and their language.
+  // A client who turned the emails off sees the box unchecked and their language (Arabic: the account opens in Arabic, Sprint 8).
   ({ ctx, p } = await page(b, { extraTables: { profiles: me({ email_updates: false, language: 'ar' }) } }));
-  await p.goto('http://local.test/account?tab=profile'); await p.waitForTimeout(1200);
-  check('saved choice shown: off, Arabic', !(await p.isChecked('#p_updates')) && (await p.inputValue('#p_language')) === 'ar');
+  await p.goto('http://local.test/account?tab=profile'); await p.waitForTimeout(2500);
+  check('saved choice shown: off, Arabic (opened in /ar/account)', new URL(p.url()).pathname === '/ar/account' && !(await p.isChecked('#p_updates')) && (await p.inputValue('#p_language')) === 'ar');
   await ctx.close();
 
   // Phone: the emails box fits the screen.

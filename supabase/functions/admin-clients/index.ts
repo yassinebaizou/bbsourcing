@@ -1,6 +1,6 @@
 // Administrator actions that need the service role, called from the CRM (team/index.html):
 //   create_client  — creates the client account (email confirmed) and emails a secure link to choose a password
-//                    (in French when the team picks French: Sprint 7)
+//                    (in French or Arabic when the team picks that language: Sprints 7–8)
 //   update_client  — edits the client's profile, including the login email
 //   delete_client  — deletes the client account, their requests and their files
 //   delete_request — deletes one request and its files
@@ -81,6 +81,7 @@ async function blocker(ids: string[]) {
 
 function welcomeEmail(name: string, email: string, link: string, lang: string) {
   if (lang === "fr") return welcomeEmailFr(name, email, link);
+  if (lang === "ar") return welcomeEmailAr(name, email, link);
   const hi = name ? `Hello ${esc(name.split(" ")[0])},` : "Hello,";
   const html = `<div style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
@@ -114,6 +115,23 @@ function welcomeEmailFr(name: string, email: string, link: string) {
   return { html, text };
 }
 
+function welcomeEmailAr(name: string, email: string, link: string) {
+  const hi = name ? `مرحبًا ${esc(name.split(" ")[0])}،` : "مرحبًا،";
+  const html = `<div dir="rtl" style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif;text-align:right">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+<tr><td style="background:#0B1220;padding:18px 24px" dir="ltr" align="right"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
+<tr><td style="padding:26px 24px 8px">
+<h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;color:#0B1220">حسابك في DDPSourcing جاهز</h1>
+<p style="margin:0 0 12px;font-size:15px;color:#334155">${hi} أنشأ فريقنا حسابك. تتابع فيه طلباتك، وتطلع على عروض الأسعار، وتدفع، وتتحدث مع فريقنا.</p>
+<p style="margin:0 0 4px;font-size:13px;color:#64748B">بريد الدخول</p>
+<p style="margin:0 0 18px;font-size:16px;font-weight:700;color:#0B1220" dir="ltr">${esc(email)}</p>
+<p style="margin:0"><a href="${link}" style="display:inline-block;background:#FF6B00;color:#0B1220;font-weight:700;font-size:15px;text-decoration:none;padding:13px 22px;border-radius:10px">اختر كلمة المرور</a></p>
+<p style="margin:18px 0 24px;font-size:12.5px;color:#64748B">لأمانك، يعمل هذا الرابط مرة واحدة وتنتهي صلاحيته بسرعة. إذا انتهت، افتح ${SITE}/ar/account وانقر على « نسيت كلمة المرور؟ » بالبريد أعلاه. لا نرسل كلمات المرور عبر البريد أبدًا.</p>
+</td></tr></table></div>`;
+  const text = `${hi.replace(/&#39;/g, "'")} أنشأ فريقنا حسابك في DDPSourcing.\nبريد الدخول: ${email}\nاختر كلمة المرور: ${link}\nإذا انتهت صلاحية الرابط، افتح ${SITE}/ar/account وانقر على « نسيت كلمة المرور؟ ».`;
+  return { html, text };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return fail(405, "Method not allowed");
@@ -141,8 +159,8 @@ Deno.serve(async (req) => {
     }
     const id = created.data.user.id;
     await sb.from("profiles").update({ ...fields, email }).eq("id", id);
-    const fr = fields.language === "fr";
-    const link = await sb.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${SITE}${fr ? "/fr" : ""}/account` } });
+    const fr = fields.language === "fr", ar = fields.language === "ar";
+    const link = await sb.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${SITE}${fr || ar ? "/" + fields.language : ""}/account` } });
     const key = Deno.env.get("RESEND_API_KEY");
     let emailed = false;
     if (!link.error && link.data?.properties?.action_link && key) {
@@ -150,7 +168,7 @@ Deno.serve(async (req) => {
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM, to: [email], reply_to: REPLY_TO, subject: fr ? "Votre compte DDPSourcing est prêt" : "Your DDPSourcing account is ready", html, text }),
+        body: JSON.stringify({ from: FROM, to: [email], reply_to: REPLY_TO, subject: fr ? "Votre compte DDPSourcing est prêt" : ar ? "حسابك في DDPSourcing جاهز" : "Your DDPSourcing account is ready", html, text }),
       });
       emailed = r.ok;
     }

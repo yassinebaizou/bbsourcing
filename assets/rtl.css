@@ -1,0 +1,41 @@
+/* Arabic pages (/ar, Sprint 8): right-to-left fixes. Loaded only when <html dir="rtl">.
+   The pages are mirrored by dir="rtl"; this file sets the Arabic font and fixes what uses fixed left/right. */
+html[dir="rtl"] body, html[dir="rtl"] button, html[dir="rtl"] input, html[dir="rtl"] select, html[dir="rtl"] textarea {
+  font-family: "Tajawal", "Archivo", system-ui, sans-serif;
+}
+/* Emails, phone numbers, links and amounts typed in Latin stay left-to-right inside the Arabic text. */
+html[dir="rtl"] input[type="email"], html[dir="rtl"] input[type="tel"], html[dir="rtl"] input[type="url"],
+html[dir="rtl"] input[type="number"], html[dir="rtl"] input[type="password"] { direction: ltr; text-align: right; }
+html[dir="rtl"] a[href^="mailto:"], html[dir="rtl"] [data-company-email] { unicode-bidi: isolate; direction: ltr; }
+/* "Skip to content" waits off-screen on the right side (left:-999px would widen the page in right-to-left). */
+html[dir="rtl"] .skip { left: auto; right: -999px; }
+html[dir="rtl"] .skip:focus { right: 8px; }
+
+/* ---------- Homepage ---------- */
+html[dir="rtl"] .route li:not(:last-child)::after { left: auto; right: 6px; }
+html[dir="rtl"] .dot.done { margin-left: 0; margin-right: -4px; }
+html[dir="rtl"] .hp { left: auto; right: -5000px; }
+html[dir="rtl"] .errors ul { padding-left: 0; padding-right: 18px; }
+html[dir="rtl"] #lightboxClose { right: auto; left: 20px; }
+html[dir="rtl"] .wa-float { right: auto; left: 20px; }
+
+/* ---------- Forms (homepage, estimator, account) ---------- */
+html[dir="rtl"] select { background-position: left 14px center; padding-right: 13px; padding-left: 40px; }
+html[dir="rtl"] .with-unit input { padding-right: 13px; padding-left: 64px; }
+html[dir="rtl"] .unit, html[dir="rtl"] .with-unit .unit { right: auto; left: 14px; }
+
+/* ---------- Client account ---------- */
+html[dir="rtl"] .deal ul { padding-left: 0; padding-right: 20px; }
+html[dir="rtl"] .progress-labels span:last-child { text-align: left; }
+html[dir="rtl"] .bubble.mine { border-bottom-right-radius: 12px; border-bottom-left-radius: 4px; }
+html[dir="rtl"] .bubble.theirs { border-bottom-left-radius: 12px; border-bottom-right-radius: 4px; }
+
+/* ---------- Legal pages ---------- */
+html[dir="rtl"] main ul, html[dir="rtl"] main ol { padding-left: 0; padding-right: 22px; }
+html[dir="rtl"] .rules th, html[dir="rtl"] .rules td { text-align: right; }
+html[dir="rtl"] .timeline { padding-right: 0; }
+html[dir="rtl"] .timeline li { padding: 14px 60px 14px 16px; }
+html[dir="rtl"] .timeline li::before { left: auto; right: 16px; }
+html[dir="rtl"] .tag { margin-left: 0; margin-right: 6px; }
+/* Codes written in Latin (Terms version, request codes) stay readable inside Arabic sentences. */
+html[dir="rtl"] [data-policy="termsVersion"], html[dir="rtl"] .req-code, html[dir="rtl"] #sentCode { unicode-bidi: isolate; direction: ltr; }

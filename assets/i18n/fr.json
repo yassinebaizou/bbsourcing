@@ -192,7 +192,6 @@
  "Email me at each step of my order (request received, status changes, shipped)": "M’envoyer un e-mail à chaque étape de ma commande (demande reçue, changements de statut, expédition)",
  "Important emails are always sent: quotes, payments, inspection approval, delivery, refunds and messages from our team.": "Les e-mails importants sont toujours envoyés : devis, paiements, validation du contrôle, livraison, remboursements et messages de notre équipe.",
  "Email language": "Langue des e-mails",
- "Our emails are sent in English or in French, as you choose here. Arabic is coming soon.": "Nos e-mails sont envoyés en anglais ou en français, selon votre choix ici. L’arabe arrive bientôt.",
  "Save profile": "Enregistrer le profil",
  "Name and city are required.": "Le nom et la ville sont obligatoires.",
  "The store link must start with https://": "Le lien de la boutique doit commencer par https://",
@@ -422,5 +421,6 @@
  "Claim answered: claim not accepted. {1}": "Réclamation traitée : réclamation non acceptée. {1}",
  "Claim update: our team is reviewing your claim.": "Réclamation : notre équipe étudie votre réclamation.",
  "We cancelled this order: {1} You receive a full refund of {2} by bank transfer.": "Nous avons annulé cette commande : {1} Vous recevez un remboursement complet de {2} par virement.",
- "We cancelled this order: {1}": "Nous avons annulé cette commande : {1}"
+ "We cancelled this order: {1}": "Nous avons annulé cette commande : {1}",
+ "Our emails are sent in the language you choose here: English, French or Arabic.": "Nos e-mails sont envoyés dans la langue choisie ici : anglais, français ou arabe."
 }

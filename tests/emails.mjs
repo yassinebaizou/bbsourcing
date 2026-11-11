@@ -1,7 +1,8 @@
-// Sprint 6–7: renders every client email (English and French) locally and checks its content.
+// Sprint 6–8: renders every client email (English, French, Arabic) locally and checks its content.
 // Usage: node --experimental-strip-types tests/emails.mjs [folderForHtmlPreviews]
 import { buildEmail, OPTIONAL } from "../supabase/functions/notify-client/templates.ts";
 import { frBody, STAGES_FR } from "../supabase/functions/notify-message/fr.ts";
+import { arBody, STAGES_AR } from "../supabase/functions/notify-message/ar.ts";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -55,7 +56,7 @@ for (const kind of KINDS) {
 const frq = buildEmail({ ...base, kind: "quote_ready", lang: "fr" }), frf = buildEmail({ ...base, kind: "final_due", lang: "fr" });
 check("fr amounts and dates written the French way", /24 000 MAD/.test(frq.html) && /20 novembre 2026/.test(frq.html) && /8 décembre 2026/.test(frf.html) && /\/fr\/policies/.test(frf.html));
 check("fr optional emails link to the French profile", /\/fr\/account\?tab=profile/.test(buildEmail({ ...base, kind: "shipped", lang: "fr" }).html));
-check("other languages fall back to English (Arabic comes in Sprint 8)", /Your quote is ready/.test(buildEmail({ ...base, kind: "quote_ready", lang: "ar" }).subject));
+check("unknown languages fall back to English", /Your quote is ready/.test(buildEmail({ ...base, kind: "quote_ready", lang: "de" }).subject));
 
 const SYSTEM = [
   "Status update: Quotation sent",
@@ -78,6 +79,25 @@ check("fr unknown text is left as written", frBody("Hello from the team") === "H
 const stagesInDb = ["In review", "Approved", "Approved, preparing your quotation", "Quotation sent", "Waiting for 40% deposit", "In production", "Quality inspection", "Shipped to Morocco", "Arrived in Morocco, in customs clearance", "Customs cleared", "Waiting for 60% payment", "Out for delivery", "Delivered", "Refund in progress", "Refunded", "Cancelled", "Cancelled by DDPSourcing", "Closed"];
 const acct = JSON.parse(fs.readFileSync(new URL("../assets/i18n/fr.json", import.meta.url), "utf8"));
 check("every stage has the same French name in emails and in the account", stagesInDb.every((st) => STAGES_FR[st] && STAGES_FR[st] === acct[st]), stagesInDb.filter((st) => STAGES_FR[st] !== acct[st]).join(", "));
+
+// ---------- Arabic (Sprint 8) ----------
+const LATIN_WORDS = /(?<!\p{L})(the|your|you|our|we|and|with|this|is|are|to|of|order|request|quote|payment|deposit|please|days|hours|before|after|delivery|refund|claim|account|review|paid|sent|bonjour|votre|devis)(?!\p{L})/iu;
+for (const kind of KINDS) {
+  const m = buildEmail({ ...base, kind, lang: "ar" });
+  const words = m ? (m.subject + " " + strip(m.html) + " " + m.text).replace(/Earbuds|Sara|Benali|https?:\S+/g, "") : "";
+  check("ar " + kind + ": Arabic, right-to-left, no English left", m && /مرحبًا Sara/.test(m.html) && /dir="rtl"/.test(m.html) && /text-align:right/.test(m.html) && !LATIN_WORDS.test(words), m && (words.match(LATIN_WORDS) || [""])[0]);
+  check("ar " + kind + ": links to the Arabic account", m && /href="https:\/\/www\.ddpsourcing\.com\/ar\/account/.test(m.html) && !/ddpsourcing\.com\/(fr\/)?account/.test(m.html + m.text));
+  if (out && m) fs.writeFileSync(path.join(out, "ar-" + kind + ".html"), m.html);
+}
+const arq = buildEmail({ ...base, kind: "quote_ready", lang: "ar" }), arf = buildEmail({ ...base, kind: "final_due", lang: "ar" });
+check("ar amounts in dirhams and Moroccan month names", /24,000 درهم/.test(arq.html) && /9,600 درهم/.test(arq.html) && /20 نونبر 2026/.test(arq.html) && /8 دجنبر 2026/.test(arf.html) && /\/ar\/policies/.test(arf.html), (arq.html.match(/\d+ [\u0600-\u06FF]+ 2026/) || [""])[0]);
+for (const sys of SYSTEM) {
+  const ar = arBody(sys);
+  check("ar system message: " + sys.slice(0, 40) + "…", ar !== sys && !LATIN_WORDS.test(ar.replace(/VIR-1|DDP-1042/g, "")), ar);
+}
+check("ar money and dates in reminders", /14,400 درهم/.test(arBody(SYSTEM[1])) && /18 نونبر 2026/.test(arBody(SYSTEM[1])) && /11 دجنبر 2026/.test(arBody(SYSTEM[1])), arBody(SYSTEM[1]));
+const acctAr = JSON.parse(fs.readFileSync(new URL("../assets/i18n/ar.json", import.meta.url), "utf8"));
+check("every stage has the same Arabic name in emails and in the account", stagesInDb.every((st) => STAGES_AR[st] && STAGES_AR[st] === acctAr[st]), stagesInDb.filter((st) => STAGES_AR[st] !== acctAr[st]).join(", "));
 
 const failed = results.filter((x) => !x).length;
 console.log(failed ? failed + " FAILED" : "ALL " + results.length + " PASSED");

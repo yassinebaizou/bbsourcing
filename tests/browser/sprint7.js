@@ -1,6 +1,6 @@
 // Sprint 7 browser checks: French pages and French client account.
 // Usage: node tests/browser/sprint7.js [siteFolder]   (Playwright + Chromium; Supabase is mocked)
-// Also run: node tools/build-fr.mjs --check   (French public pages up to date, every English text translated)
+// Also run: node tools/build-i18n.mjs --check   (French public pages up to date, every English text translated)
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..'));
@@ -44,7 +44,7 @@ async function leftovers(p) {
     let n;
     while ((n = tw.nextNode())) { const t = n.nodeValue.replace(/\s+/g, ' ').trim(); if (t && !skip(n.parentElement) && en.test(t) && !ok.test(t)) out.add(t); }
     document.querySelectorAll('[placeholder],[title],[aria-label],[alt]').forEach((el) => {
-      if (skip(el)) return;
+      if (/^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName) || el.closest('[translate="no"]')) return;
       ['placeholder', 'title', 'aria-label', 'alt'].forEach((a) => { const v = el.getAttribute(a); if (v && en.test(v) && !ok.test(v)) out.add('@' + a + ': ' + v); });
     });
     return [...out];
@@ -93,14 +93,14 @@ async function frAccount(b, r, rpc, tables) {
     let { ctx, p } = await page(b, { session: null });
     await p.goto('http://local.test' + fr); await p.waitForTimeout(500);
     const info = await p.evaluate(() => ({ lang: document.documentElement.lang, alt: [...document.querySelectorAll('link[rel=alternate]')].map((l) => l.hreflang + '=' + l.href).join(' '),
-      sw: (document.querySelector('[data-lang-switch]') || {}).getAttribute ? document.querySelector('[data-lang-switch]').getAttribute('href') : null,
+      sw: (document.querySelector('[data-lang-switch="en"]') || {}).getAttribute ? document.querySelector('[data-lang-switch="en"]').getAttribute('href') : null,
       links: [...document.querySelectorAll('a[href^="/"]:not([data-lang-switch])')].map((a) => a.getAttribute('href')).filter((h) => /^\/(account|estimate|policies|terms|privacy)?([?#]|$)/.test(h)) }));
     check(fr + ': lang fr, hreflang en/fr/x-default, switch to ' + en, info.lang === 'fr' && /en=https:\/\/www\.ddpsourcing\.com/.test(info.alt) && info.alt.includes('fr=https://www.ddpsourcing.com' + fr) && /x-default/.test(info.alt) && info.sw === en, JSON.stringify(info.alt) + ' sw=' + info.sw);
     check(fr + ': links stay in French', info.links.length === 0, info.links.join(' '));
     await ctx.close();
     ({ ctx, p } = await page(b, { session: null }));
     await p.goto('http://local.test' + en); await p.waitForTimeout(300);
-    check(en + ': English page offers FR', (await p.getAttribute('[data-lang-switch]', 'href')) === fr && (await p.evaluate(() => document.documentElement.lang)) === 'en');
+    check(en + ': English page offers FR', (await p.getAttribute('[data-lang-switch="fr"]', 'href')) === fr && (await p.evaluate(() => document.documentElement.lang)) === 'en');
     await ctx.close();
   }
   // French rule values and company line
@@ -119,7 +119,7 @@ async function frAccount(b, r, rpc, tables) {
   // ---------- French client account ----------
   ({ ctx, p } = await page(b, { session: null }));
   await p.goto('http://local.test/fr/account'); await p.waitForTimeout(1200);
-  check('fr/account: lang fr, title, switch to /account', (await p.evaluate(() => document.documentElement.lang)) === 'fr' && /Mon compte/.test(await p.title()) && (await p.getAttribute('[data-lang-switch]', 'href')) === '/account' && (await p.textContent('[data-lang-switch]')) === 'EN');
+  check('fr/account: lang fr, title, switch to /account', (await p.evaluate(() => document.documentElement.lang)) === 'fr' && /Mon compte/.test(await p.title()) && (await p.getAttribute('[data-lang-switch="en"]', 'href')) === '/account' && (await p.textContent('[data-lang-switch="en"]')) === 'EN');
   check('fr/account: public links go to French pages', await p.evaluate(() => [...document.querySelectorAll('a[href]')].every((a) => !/^\/(estimate|policies|terms|privacy)([?#]|$)/.test(a.getAttribute('href')))));
   note('logged out', await leftovers(p));
   await p.evaluate(() => {
@@ -189,7 +189,7 @@ async function frAccount(b, r, rpc, tables) {
   check('profile language fr: /account opens /fr/account', new URL(p.url()).pathname === '/fr/account');
   // Calls are kept in sessionStorage because the click opens another page.
   await p.evaluate(() => { const c = window.__MOCK.calls, push = c.push.bind(c); c.push = (...a) => { sessionStorage.setItem('calls', JSON.stringify(JSON.parse(sessionStorage.getItem('calls') || '[]').concat(a))); return push(...a); }; });
-  await p.click('[data-lang-switch]'); await p.waitForTimeout(1200);
+  await p.click('[data-lang-switch="en"]'); await p.waitForTimeout(1200);
   const upd = JSON.parse(await p.evaluate(() => sessionStorage.getItem('calls') || '[]')).find((c) => c[0] === 'update' && c[1] === 'profiles');
   check('switching to English saves language=en and opens /account', upd && upd[2].language === 'en' && new URL(p.url()).pathname === '/account', JSON.stringify(upd));
   await ctx.close();

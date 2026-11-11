@@ -21,11 +21,16 @@ window.DDP_POLICY = {
   unpaidCancelAfterDays: 30,      // D15 (default, to confirm)
   storageFeeMad: null             // D15: amount set by the owner (hidden until then)
 };
-/* French pages (/fr): the values written as words. Keep them equal to the English ones above. */
+/* French (/fr) and Arabic (/ar) pages: the values written as words. Keep them equal to the English ones above. */
 window.DDP_POLICY_FR = {
   lastUpdated: "31 octobre 2026",
   deliveryDays: "15 à 20",
   paymentMethod: "virement bancaire"
+};
+window.DDP_POLICY_AR = {
+  lastUpdated: "31 أكتوبر 2026",
+  deliveryDays: "15 إلى 20",
+  paymentMethod: "تحويل بنكي"
 };
 
 /* Fills [data-policy="key"] with the value, hides [data-policy-if="key"] blocks whose value is null,
@@ -34,7 +39,8 @@ window.DDP_POLICY_FR = {
   "use strict";
   function fill() {
     var p = window.DDP_POLICY, c = window.DDP_COMPANY || {};
-    var fr = /^fr/i.test(document.documentElement.lang || "") ? window.DDP_POLICY_FR : {};
+    var lg = (document.documentElement.lang || "").slice(0, 2);
+    var fr = (lg === "fr" ? window.DDP_POLICY_FR : lg === "ar" ? window.DDP_POLICY_AR : null) || {};
     document.querySelectorAll("[data-policy]").forEach(function (el) {
       var k = el.getAttribute("data-policy"), v = k in fr ? fr[k] : p[k];
       if (v !== null && v !== undefined) el.textContent = String(v);

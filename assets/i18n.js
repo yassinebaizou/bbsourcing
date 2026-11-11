@@ -1,22 +1,31 @@
-/* Client account in French (Sprint 7). Loaded in <head> of /account, before the page script.
-   The page is the same file for every language; on /fr/account this script:
-   - sets <html lang="fr"> and hides the page until the French texts are in place (max 3 s);
-   - loads /assets/i18n/fr.json: { "English text": "French text" }. A key with {1}, {2}… is a pattern:
+/* Client account in French (Sprint 7) and Arabic (Sprint 8). Loaded in <head> of /account, before the page script.
+   The page is the same file for every language; on /fr/account and /ar/account this script:
+   - sets <html lang> (and dir="rtl", the Arabic font and /assets/rtl.css for Arabic) and hides the page until
+     the texts are in place (max 3 s);
+   - loads /assets/i18n/<lang>.json: { "English text": "translation" }. A key with {1}, {2}… is a pattern:
      "Sent on {1}" matches "Sent on 3 November 2026"; each part is translated too when it is itself a key;
    - translates every text, placeholder, title, aria-label and alt now and each time the page changes
      (MutationObserver), and the messages of confirm() and alert();
-   - points public links to the French pages (/estimate → /fr/estimate…), shows dates in French.
+   - points public links to the pages of the same language (/estimate → /fr/estimate…), shows dates in that language.
    Texts inside an element with translate="no" (client messages, product names) are never changed.
    window.DDP_I18N = { lang, t(text) } lets the page translate a text itself. */
 (function () {
   "use strict";
-  var lang = /^\/fr(\/|$)/.test(location.pathname) ? "fr" : "en";
+  var m0 = /^\/(fr|ar)(\/|$)/.exec(location.pathname);
+  var lang = m0 ? m0[1] : "en";
+  var LOCALE = { fr: "fr-FR", ar: "ar-MA" }[lang];
   var dict = {}, pats = [];
   var api = window.DDP_I18N = { lang: lang, t: function (s) { return s; } };
   if (lang === "en") return;
 
   var root = document.documentElement;
   root.lang = lang;
+  if (lang === "ar") {
+    root.dir = "rtl";
+    [["https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"], ["/assets/rtl.css"]].forEach(function (h) {
+      var l = document.createElement("link"); l.rel = "stylesheet"; l.href = h[0]; document.head.appendChild(l);
+    });
+  }
   var hide = document.createElement("style");
   hide.textContent = "body{visibility:hidden}";
   document.head.appendChild(hide);
@@ -24,11 +33,11 @@
   function show() { if (!shown) { shown = true; hide.remove(); } }
   setTimeout(show, 3000);
 
-  // Dates in French wherever the page asks for an English format.
+  // Dates in the page language wherever the page asks for an English format.
   ["toLocaleDateString", "toLocaleString", "toLocaleTimeString"].forEach(function (m) {
     var orig = Date.prototype[m];
     Date.prototype[m] = function (loc, opt) {
-      return orig.call(this, !loc || /^en/i.test(String(loc)) ? "fr-FR" : loc, opt);
+      return orig.call(this, !loc || /^en/i.test(String(loc)) ? LOCALE : loc, opt);
     };
   });
 
@@ -53,9 +62,11 @@
 
   var PUBLIC = /^\/(account|estimate|policies|terms|privacy)?([?#].*)?$/;
   var ATTRS = ["placeholder", "title", "aria-label", "alt"];
-  function skip(el) { return !el || /^(SCRIPT|STYLE|TEXTAREA|NOSCRIPT)$/.test(el.tagName) || !!(el.closest && el.closest('[translate="no"]')); }
+  // Texts: never inside scripts, styles, textareas (typed text) or translate="no". Attributes: textarea placeholders are translated.
+  function skipAttr(el) { return !el || /^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName) || !!(el.closest && el.closest('[translate="no"]')); }
+  function skip(el) { return skipAttr(el) || el.tagName === "TEXTAREA"; }
   function doEl(el) {
-    if (skip(el)) return;
+    if (skipAttr(el)) return;
     for (var i = 0; i < ATTRS.length; i++) {
       var v = el.getAttribute(ATTRS[i]);
       if (v) { var r = t(v); if (r !== v) el.setAttribute(ATTRS[i], r); }
@@ -64,7 +75,7 @@
     if (el.tagName === "A") {
       var h = el.getAttribute("href");
       var m = h && PUBLIC.exec(h);
-      if (m) el.setAttribute("href", "/fr" + (m[1] ? "/" + m[1] : "") + (m[2] || ""));
+      if (m) el.setAttribute("href", "/" + lang + (m[1] ? "/" + m[1] : "") + (m[2] || ""));
     }
   }
   function doText(n) {
@@ -74,10 +85,10 @@
   }
   function walk(node) {
     if (node.nodeType === 3) return doText(node);
-    if (node.nodeType !== 1 || skip(node)) return;
+    if (node.nodeType !== 1 || skipAttr(node)) return;
     doEl(node);
     var tw = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
-      acceptNode: function (n) { return n.nodeType === 1 && skip(n) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+      acceptNode: function (n) { return n.nodeType === 1 && skipAttr(n) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
     });
     var n;
     while ((n = tw.nextNode())) { if (n.nodeType === 3) doText(n); else doEl(n); }
@@ -90,8 +101,9 @@
 
   function start() {
     // The language switch points back to the English page.
-    document.querySelectorAll("[data-lang-switch]").forEach(function (a) {
-      a.setAttribute("href", location.pathname.replace(/^\/fr(?=\/|$)/, "") || "/");
+    document.querySelectorAll('[data-lang-switch="' + lang + '"]').forEach(function (a) {
+      a.setAttribute("href", location.pathname.replace(/^\/(fr|ar)(?=\/|$)/, "") || "/");
+      a.setAttribute("data-lang-switch", "en");
       a.setAttribute("hreflang", "en"); a.setAttribute("lang", "en"); a.setAttribute("aria-label", "English version");
       a.setAttribute("translate", "no"); a.textContent = "EN";
     });

@@ -150,7 +150,7 @@ Emails (Resend, branded like `docs/email-templates/`): request received, quote r
 ## Sprint 7 — French
 
 **Status: done** (11 Nov 2026). `/fr`, `/fr/estimate`, `/fr/policies`, `/fr/terms`, `/fr/privacy` are built by
-`node tools/build-fr.mjs` from the English pages + `tools/i18n/fr-pages.json` (run it after any change to an English
+`node tools/build-i18n.mjs` from the English pages + `tools/i18n/fr-pages.json` (run it after any change to an English
 public page; `--check` fails if a page is out of date). `/fr/account` (Vercel rewrite) = the same account page translated
 in the browser by `assets/i18n.js` + `assets/i18n/fr.json`. Language switch in every header, `hreflang`, `lang`.
 `profiles.language` set at signup (migration `20261111021251`), by the switch and in the profile; emails in French
@@ -162,6 +162,15 @@ in the browser by `assets/i18n.js` + `assets/i18n/fr.json`. Language switch in e
 `/fr` homepage, `/fr/estimate`, `/fr/policies`, `/fr/terms`, `/fr/privacy`; account and estimator texts in `assets/i18n/fr.json`; language switcher in every header; `hreflang` and `lang` attributes; `profiles.language`; emails in French when the client chose it. List the texts for a native review in the PR.
 
 ## Sprint 8 — Arabic
+
+**Status: done** (11 Nov 2026). `/ar`, `/ar/estimate`, `/ar/policies`, `/ar/terms`, `/ar/privacy` built by `node tools/build-i18n.mjs`
+(formerly build-fr.mjs; now builds French and Arabic) from `tools/i18n/ar-pages.json`, with `dir="rtl"`, the Tajawal font (Google Fonts,
+already allowed by the CSP) and `assets/rtl.css` (mirrored positions, inputs for email/phone/numbers stay left-to-right, number ranges
+written « 15 إلى 20 »). `/ar/account` (Vercel rewrite) translated by `assets/i18n.js` + `assets/i18n/ar.json`, Moroccan month names.
+Switch FR / ع / EN in every header. Arabic emails (`notify-client`, `notify-message` + `ar.ts`, `admin-clients`), right-to-left.
+Also fixed: account header wider than small phones (all languages), textarea placeholders now translated, client messages keep their own
+direction. Tests: `tests/browser/sprint8.js` (36, includes no sideways scroll at 6 widths), `tests/emails.mjs` (120).
+Native Arabic review still to do.
 
 **Prompt:** > Read CLAUDE.md and docs/WORK_PLAN.md. Do Sprint 8 only. One pull request.
 
