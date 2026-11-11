@@ -16,7 +16,7 @@
   .top{background:var(--navy);color:var(--white)}
   .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
   .top-right{display:flex;align-items:center;gap:6px;font-size:14px;color:#CBD5E1}
-  .top-right a,.top-right button{color:#CBD5E1;text-decoration:none;background:none;border:0;cursor:pointer;font-size:14px;font-weight:500;padding:8px}
+  .top-right a,.top-right button{color:#CBD5E1;text-decoration:none;background:none;border:0;cursor:pointer;font-size:14px;font-weight:500;padding:8px;min-height:44px;display:inline-flex;align-items:center}
   .top-right a:hover,.top-right button:hover{color:var(--white)}
   /* Small phones: the estimate is also a tab, and the greeting is in the page; keep the header on one line. */
   @media (max-width:480px){ #estHeader, .top-right .hello{display:none} .top-right{gap:2px} .top-right a, .top-right button{padding:8px 6px} }
@@ -63,6 +63,20 @@
 
   /* Detail */
   .detail .card{padding:20px}
+  /* Onboarding checklist (Sprint 9) */
+  .onboard{padding:16px 18px;margin-bottom:14px}
+  .onboard-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .onboard-head strong{font-size:16px;color:var(--navy)}
+  .onboard-head span{font-size:13px;color:var(--muted)}
+  .onboard-head .link{margin-inline-start:auto;min-height:44px}
+  .onboard ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .onboard li{display:flex;gap:12px;align-items:flex-start;padding:8px 0}
+  .onboard .tick{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line-2);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--white)}
+  .onboard li.done .tick{background:var(--green);border-color:var(--green)}
+  .onboard li.done .step-title{text-decoration:line-through;color:var(--muted)}
+  .onboard .step-title{font-weight:600;color:var(--navy);background:none;border:0;padding:0;font:inherit;text-align:start;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:24px}
+  .onboard li.done .step-title{cursor:default}
+  .onboard .step-hint{font-size:13.5px;color:var(--muted);margin-top:2px}
   .next-step{display:flex;gap:12px;align-items:flex-start;background:var(--navy);color:var(--white);border-radius:var(--radius);padding:18px;margin:16px 0}
   .next-step strong{display:block;margin-bottom:2px}
   .next-step p{margin:0;color:#CBD5E1;font-size:14px}
@@ -254,6 +268,7 @@
 
       <!-- Requests -->
       <div id="tab-requests">
+        <div id="onboard"></div>
         <div id="reqList" class="req-list"></div>
       </div>
 
@@ -876,6 +891,39 @@
     msg($("reqMsg"), "warn", "We could not save the request you sent when you created your account. Your details are below: please check them and send it again.");
   }
 
+  // Onboarding checklist (Sprint 9): shown above "My requests" after the first login, until the three
+  // steps are done or the client hides it. The "rules read" and "hidden" marks are kept on this device.
+  var ONBOARD_KEY = "ddp-onboarding-hidden", RULES_KEY = "ddp-read-rules";
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function renderOnboarding() {
+    var box = $("onboard");
+    if (!box) return;
+    var p = state.profile || {};
+    var steps = [
+      { done: !!(p.whatsapp && p.city), title: "Complete your profile", hint: "WhatsApp number and city, so we can reach you.", tab: "profile" },
+      { done: state.requests.length > 0, title: "Send your first sourcing request", hint: "The product link and the quantity are enough.", tab: "new" },
+      { done: lsGet(RULES_KEY) === "1", title: "Read how payments and refunds work", hint: "40% after you accept the quote, 60% before delivery.", href: "/policies" }
+    ];
+    var left = steps.filter(function (x) { return !x.done; }).length;
+    if (!left || lsGet(ONBOARD_KEY) === "1" || !$("crmLink").hidden) { box.innerHTML = ""; return; }
+    box.innerHTML = '<div class="card onboard"><div class="onboard-head"><strong>Get started</strong><span>' + (3 - left) + ' of 3 done</span>' +
+      '<button type="button" class="link" id="onboardHide">Hide</button></div><ol>' + steps.map(function (x, i) {
+        var t = x.done ? '<span class="step-title">' + x.title + "</span>"
+          : x.href ? '<a class="step-title" data-step="' + i + '" href="' + x.href + '" target="_blank" rel="noopener">' + x.title + "</a>"
+          : '<button type="button" class="step-title" data-step="' + i + '">' + x.title + "</button>";
+        return '<li class="' + (x.done ? "done" : "") + '"><span class="tick" aria-hidden="true">' + (x.done ? "✓" : "") + "</span><div>" + t + '<div class="step-hint">' + x.hint + "</div></div></li>";
+      }).join("") + "</ol></div>";
+    $("onboardHide").onclick = function () { lsSet(ONBOARD_KEY, "1"); box.innerHTML = ""; };
+    box.querySelectorAll("[data-step]").forEach(function (el) {
+      el.onclick = function () {
+        var x = steps[Number(el.dataset.step)];
+        if (x.href) { lsSet(RULES_KEY, "1"); setTimeout(renderOnboarding, 300); return; }
+        openTab(x.tab);
+      };
+    });
+  }
+
   function loadRequests() {
     var list = $("reqList");
     list.innerHTML = '<div class="loading"><div class="spinner"></div> Loading your requests…</div>';
@@ -895,6 +943,7 @@
         (res[1].data || []).forEach(function (m) {
           if (!reads[m.request_id] || new Date(m.created_at) > new Date(reads[m.request_id])) state.unread[m.request_id] = (state.unread[m.request_id] || 0) + 1;
         });
+        renderOnboarding();
         if (!state.requests.length) {
           list.innerHTML = '<div class="card empty"><p style="margin:0 0 14px"><strong style="color:var(--navy)">No requests yet.</strong><br>Sure about a product? Submit a sourcing request for your final door-to-door quote. Just testing an idea? Get an estimated price first.</p><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" type="button" id="emptyNew">Submit sourcing request</button><button class="btn btn-secondary" type="button" id="emptyEst">Get estimated price</button></div></div>';
           $("emptyNew").onclick = function () { openTab("new"); };
@@ -1718,6 +1767,7 @@
       try { localStorage.setItem(LANG_KEY, upd.language); } catch (err) {}
       $("p_whatsapp").value = wa;
       $("hello").textContent = "Hi, " + r.data.full_name.split(" ")[0];
+      renderOnboarding();
       msg($("profileMsg"), "success", "Your profile is saved.");
     });
   });

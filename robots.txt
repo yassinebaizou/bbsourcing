@@ -1,0 +1,10 @@
+# DDPSourcing: public pages in English, French (/fr) and Arabic (/ar) can be indexed.
+# Client accounts, the team CRM and the API are private.
+User-agent: *
+Disallow: /account
+Disallow: /fr/account
+Disallow: /ar/account
+Disallow: /team
+Disallow: /api/
+
+Sitemap: https://www.ddpsourcing.com/sitemap.xml
