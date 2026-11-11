@@ -35,7 +35,7 @@ prefer no-terminal options when he has to act himself, and never ask him for sec
 | `assets/ui.css` | Shared styles for account + team (brand tokens) |
 | `assets/company.js` | Company details (brand, legal name, city, email, RC/ICE/IF, address). Footer and legal pages read it; empty fields are not shown |
 | `assets/pending-photos.js` | Keeps a new visitor's request pictures in the browser (IndexedDB) until their first login; `/account` then uploads them to the request |
-| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql`, `sprint5_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `sprint5.js` = homepage trust + inspection approval, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]` |
+| `tests/` | `sprint1_db_checks.sql`, `sprint3_db_checks.sql`, `sprint4_db_checks.sql`, `sprint5_db_checks.sql`, `sprint6_db_checks.sql` (rolled-back DB checks; no CREATE/ALTER/DELETE so the Supabase tool runs them without a prompt), `browser/*.js` (Playwright + mocked Supabase: `sprint1.js`, `sprint2.js` = rules consistency, `sprint3.js` = quote/accept/payment/settings, `sprint4.js` = cancellations/refunds/claims, `sprint5.js` = homepage trust + inspection approval, `sprint6.js` = email preferences, `admin-clients.js` = CRM admin tools, `tap-targets.js`). Run `node tests/browser/sprint1.js [folder]`; email templates: `node --experimental-strip-types tests/emails.mjs` |
 | `supabase/migrations/` | SQL already applied to the live project. New DB changes = new migration file |
 | `docs/SETUP.md` | What Yassine still has to do in dashboards |
 | `policies.html` (`/policies`) | "Payments, cancellation and refunds" in simple words: 40/60 timeline, "If… / What happens" table, refunds, claims |
@@ -121,6 +121,15 @@ email), `approve_inspection` (client → message to the team). No move to `air_s
 `inspection_override_note`. Homepage: `#protected` ("How your money is protected" + "Who we are", founder/social from
 `assets/company.js`, hidden until filled), `#shipments` = "From China to your door" (SHIPMENTS with `stage`), route card hidden on
 phones; CRM "Ask for a review" sends `/account?tab=reviews`.
+Sprint 6 (migration `20261111013752`): client emails. Triggers queue `client_emails` (RLS, no policy: service role only; unique
+`request_id, kind, ref` = each email once) through `queue_client_email()` (not callable by users); the Edge Function `notify-client`
+sends them with the branded templates of `supabase/functions/notify-client/templates.ts` (request received, quote ready / sent again,
+quote expiring within 2 days — daily pg_cron `ddp-quote-expiry-reminders` → `send_quote_expiry_reminders()`, deposit verified,
+inspection ready, shipped, `awaiting_final_payment` = customs cleared + 60% due, completed = delivered + review link, refund paid).
+The generic "Status update" email (`notify-message`) is skipped for those moments (decided in `request_messages_after_insert`).
+`profiles.email_updates` (account → My profile; `?tab=profile` opens it): when false, only the optional emails are skipped
+(request received, shipped, generic stage changes); quotes, payments, inspection, delivery, refunds, reminders and team messages
+are always sent. `profiles.language` (en/fr/ar) is stored for Sprints 7–8; emails are English for now.
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
 team-only table shown in CRM "Needs attention"). `team_notifications` (same pattern: Edge Function `notify-team` emails the team on quote accepted/declined, client cancellation, 40%/60% proof) and `request_notifications` have RLS with no policy on purpose: only the
 `notify-new-request` Edge Function (service role) uses it.
