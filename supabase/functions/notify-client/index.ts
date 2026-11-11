@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     inspectionFiles = count || 0;
   }
 
-  const mail = buildEmail({ kind: e.kind, client: c, request: q as any, payment: pay, refund, settings: s, inspectionFiles });
+  const mail = buildEmail({ kind: e.kind, lang: c.language, client: c, request: q as any, payment: pay, refund, settings: s, inspectionFiles });
   const key = Deno.env.get("RESEND_API_KEY");
   if (!mail || !c.email || !key) {
     await unclaim();

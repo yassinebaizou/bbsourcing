@@ -10,12 +10,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/ui.css">
+<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/account"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr/account">
+<script src="/assets/i18n.js"></script>
 <style>
   .top{background:var(--navy);color:var(--white)}
   .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
   .top-right{display:flex;align-items:center;gap:6px;font-size:14px;color:#CBD5E1}
   .top-right a,.top-right button{color:#CBD5E1;text-decoration:none;background:none;border:0;cursor:pointer;font-size:14px;font-weight:500;padding:8px}
   .top-right a:hover,.top-right button:hover{color:var(--white)}
+  .top-right .lang-switch{font-weight:700;color:var(--white);min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .hello{display:none}
   @media (min-width:600px){.hello{display:inline}}
   .wrap{max-width:960px;margin:0 auto}
@@ -156,6 +159,7 @@
       <span class="hello" id="hello"></span>
       <a href="/team" id="crmLink" hidden>Team CRM</a>
       <a href="/estimate" id="estHeader">Get estimated price</a>
+      <a class="lang-switch" href="/fr/account" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch>FR</a>
       <button type="button" id="loginTop" hidden>Log in</button>
       <button type="button" id="logoutBtn" hidden>Log out</button>
     </div>
@@ -461,7 +465,7 @@
               <option value="fr">Français</option>
               <option value="ar">العربية</option>
             </select>
-            <p class="hint">Our emails are in English for now. French and Arabic are coming soon; we will use the language you choose here.</p>
+            <p class="hint">Our emails are sent in English or in French, as you choose here. Arabic is coming soon.</p>
           </fieldset>
           <button class="btn btn-primary" type="submit">Save profile</button>
         </form>
@@ -479,6 +483,10 @@
   var CFG = window.DDP_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
   var fmt = new Intl.NumberFormat("en-US");
+  // Language of this page (assets/i18n.js): /account = English, /fr/account = French.
+  var LANG = (window.DDP_I18N && window.DDP_I18N.lang) || "en";
+  var ACCOUNT_PATH = LANG === "fr" ? "/fr/account" : "/account";
+  var LANG_KEY = "ddp-lang";
   var CATEGORY_LABELS = {
     gadget: "Gadget (standard)", connected: "Gadget with Bluetooth / WiFi", vibration: "Product with vibration",
     textile: "Textile & clothing", home: "Home & kitchen", beauty: "Beauty & accessories", other: "Other"
@@ -637,6 +645,18 @@
   $("newReqTop").onclick = function () { openTab("new"); };
   $("estTop").onclick = function () { openTab("estimate"); };
   // Logged-in clients stay in their account; visitors without an account use the public page.
+  // Language switch: remembered on this device and, for a signed-in client, saved as their email language.
+  document.querySelectorAll("[data-lang-switch]").forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      var to = LANG === "fr" ? "en" : "fr", href = a.getAttribute("href");
+      try { localStorage.setItem(LANG_KEY, to); } catch (err) {}
+      if (!state.user || state.guest || !state.profile || state.profile.language === to) return;
+      e.preventDefault();
+      var go = function () { location.href = href + location.search + location.hash; };
+      sb.from("profiles").update({ language: to }).eq("id", state.user.id).then(go, go);
+      setTimeout(go, 2000);
+    });
+  });
   $("estHeader").addEventListener("click", function (e) { if (state.user && !state.guest) { e.preventDefault(); openTab("estimate"); } });
   $("viewRequestsBtn").onclick = function () { openTab("requests"); };
   $("anotherBtn").onclick = function () { openTab("new"); };
@@ -702,8 +722,8 @@
     sb.auth.signUp({
       email: email, password: pw,
       options: {
-        emailRedirectTo: location.origin + "/account",
-        data: { full_name: name, whatsapp: wa, city: city, selling_status: status, business_name: $("su_business").value.trim() }
+        emailRedirectTo: location.origin + ACCOUNT_PATH,
+        data: { full_name: name, whatsapp: wa, city: city, selling_status: status, business_name: $("su_business").value.trim(), language: LANG }
       }
     }).then(function (r) {
       busy(f, false);
@@ -735,7 +755,7 @@
     var f = this, email = $("fp_email").value.trim();
     if (!/^\S+@\S+\.\S+$/.test(email)) return msg($("authMsg"), "error", "Please enter a valid email address.");
     busy(f, true, "Sending…");
-    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/account" }).then(function (r) {
+    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + ACCOUNT_PATH }).then(function (r) {
       busy(f, false);
       if (r.error) return msg($("authMsg"), "error", friendly(r.error));
       msg($("authMsg"), "success", "If an account exists for " + email + ", you will receive a reset link in a few minutes.");
@@ -771,6 +791,12 @@
       sb.rpc("staff_role")
     ]).then(function (res) {
       state.profile = res[0].data || { full_name: "", email: user.email };
+      // A client who chose French gets the French account, unless they switched to English on this device.
+      var chosen = null; try { chosen = localStorage.getItem(LANG_KEY); } catch (e) {}
+      if (LANG === "en" && state.profile.language === "fr" && chosen !== "en") {
+        location.replace("/fr/account" + location.search + location.hash);
+        return new Promise(function () {});
+      }
       (res[1].data || []).forEach(function (s) { state.statuses[s.code] = s; });
       $("crmLink").hidden = !res[2].data;
       $("hello").textContent = state.profile.full_name ? "Hi, " + state.profile.full_name.split(" ")[0] : "";
@@ -875,7 +901,7 @@
         list.innerHTML = state.requests.map(function (q) {
           var st = state.statuses[q.status] || { rank: 1, client_stage: q.status };
           return '<button type="button" class="card req" data-id="' + esc(q.id) + '">' +
-            '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
+            '<div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name" translate="no">' + esc(q.product_name) + '</div>' +
             '<div class="req-meta">' + fmt.format(q.quantity) + ' units · ' + (q.category ? esc(CATEGORY_LABELS[q.category] || q.category) + ' · ' : '') + new Date(q.created_at).toLocaleDateString("en-GB") + '</div></div>' +
             pill(q.status, st) + '</div>' + progressBar(q.status, st.rank) +
             (state.unread[q.id] ? '<div class="unread">' + state.unread[q.id] + ' new from our team</div>' : "") +
@@ -915,7 +941,7 @@
       var row = function (k, v) { return v || v === 0 ? "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>" : ""; };
       box.innerHTML =
         '<button type="button" class="btn btn-ghost" id="backList">← All requests</button>' +
-        '<div class="card" style="margin-top:8px"><div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name">' + esc(q.product_name) + '</div>' +
+        '<div class="card" style="margin-top:8px"><div class="req-top"><div><div class="req-code">' + esc(q.code) + '</div><div class="req-name" translate="no">' + esc(q.product_name) + '</div>' +
         '<div class="req-meta">Sent on ' + new Date(q.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) + "</div></div>" + pill(q.status, st) + "</div>" +
         progressBar(q.status, st.rank) +
         '<div class="next-step"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 22px;margin-top:1px"><circle cx="12" cy="12" r="10" fill="#FF6B00"/><path d="M12 7v6M12 16.5v.5" stroke="#0B1220" stroke-width="2.4" stroke-linecap="round"/></svg><div><strong>' + esc(ns[0]) + "</strong><p>" + esc(ns[1]) + "</p></div></div>" +
@@ -966,7 +992,7 @@
   }
   function askInChat(text) {
     var t = $("chatMsg"); if (!t) return;
-    t.value = text; t.focus();
+    t.value = window.DDP_I18N ? window.DDP_I18N.t(text) : text; t.focus();
     t.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function renderDeal(q, st) {
@@ -1069,7 +1095,7 @@
     var h = '<div class="card" style="margin-top:16px"><h3 class="section-title" style="margin-top:0">Problem with your goods?</h3>';
     h += claims.map(function (c) {
       return '<div class="refund-row"><div><strong>Claim: ' + fmt.format(c.units_affected) + " unit(s)</strong> <span class=\"pill " + (c.status === "resolved" ? "pill-green" : c.status === "rejected" ? "pill-red" : "pill-orange") + '">' + esc(CLAIM_STEP[c.status]) + "</span></div>" +
-        '<p class="muted" style="margin:4px 0 0;font-size:14px">' + esc(c.description) + "</p>" +
+        '<p class="muted" style="margin:4px 0 0;font-size:14px" translate="no">' + esc(c.description) + "</p>" +
         (c.outcome ? '<p style="margin:6px 0 0;font-size:14px"><strong>Our answer:</strong> ' + esc(CLAIM_OUTCOME[c.outcome]) + (c.refund_amount_mad ? " of " + esc(mad(c.refund_amount_mad)) : "") + (c.outcome_note ? ". " + esc(c.outcome_note) : "") + "</p>" : "") + "</div>";
     }).join("");
     if (!open && new Date() < deadline) {
@@ -1262,8 +1288,8 @@
         var list = r.data || [];
         var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
         box.innerHTML = list.length ? list.map(function (m) {
-          if (m.kind === "update") return '<div class="bubble update">' + esc(m.body) + " · " + esc(chatTime(m.created_at)) + "</div>";
-          return '<div class="bubble ' + (m.from_team ? "theirs" : "mine") + '"><p>' + esc(m.body) + "</p>" +
+          if (m.kind === "update") return '<div class="bubble update"><span>' + esc(m.body) + "</span> · " + esc(chatTime(m.created_at)) + "</div>";
+          return '<div class="bubble ' + (m.from_team ? "theirs" : "mine") + '"><p translate="no">' + esc(m.body) + "</p>" +
             (m.attachment_path ? '<button type="button" class="att" data-file="' + esc(m.attachment_path) + '">📎 ' + esc(m.attachment_name || "Attachment") + "</button>" : "") +
             '<div class="meta">' + (m.from_team ? "DDPSourcing team" : "You") + " · " + esc(chatTime(m.created_at)) + "</div></div>";
         }).join("") : '<div class="muted" style="font-size:14px">No messages yet. Our updates and answers will appear here.</div>';
@@ -1541,8 +1567,9 @@
     sb.auth.signUp({
       email: email, password: $("g_password").value,
       options: {
-        emailRedirectTo: location.origin + "/account",
+        emailRedirectTo: location.origin + ACCOUNT_PATH,
         data: {
+          language: LANG,
           full_name: $("g_name").value.trim(), whatsapp: normWhatsapp($("g_whatsapp").value), city: row.delivery_city,
           selling_status: $("g_status").value, business_name: $("g_business").value.trim(),
           pending_request: row
@@ -1685,6 +1712,7 @@
       busy(f, false);
       if (r.error) return msg($("profileMsg"), "error", friendly(r.error));
       state.profile = r.data;
+      try { localStorage.setItem(LANG_KEY, upd.language); } catch (err) {}
       $("p_whatsapp").value = wa;
       $("hello").textContent = "Hi, " + r.data.full_name.split(" ")[0];
       msg($("profileMsg"), "success", "Your profile is saved.");

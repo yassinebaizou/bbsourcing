@@ -7,8 +7,10 @@
 // (sent_at is claimed before sending). Grouping (max one message email per 10 minutes) is done in SQL.
 // Sprint 6: stage-change emails are skipped when the client turned off step-by-step emails, and when
 // a dedicated email of notify-client covers the same moment (decided in SQL).
+// Sprint 7: clients who chose French (profiles.language) get these emails in French (texts in ./fr.ts).
 // Secret required in Supabase → Edge Functions → Secrets: RESEND_API_KEY (already set).
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { frBody } from "./fr.ts";
 
 const SITE = "https://www.ddpsourcing.com";
 const FROM = "DDPSourcing <no-reply@ddpsourcing.com>";
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
 
   const [{ data: m }, { data: q }] = await Promise.all([
     sb.from("request_messages").select("body, attachment_name").eq("id", n.message_id).maybeSingle(),
-    sb.from("requests").select("code, product_name, assigned_to, client:profiles!requests_client_id_fkey(full_name, email, whatsapp, email_updates)").eq("id", n.request_id).maybeSingle(),
+    sb.from("requests").select("code, product_name, assigned_to, client:profiles!requests_client_id_fkey(full_name, email, whatsapp, email_updates, language)").eq("id", n.request_id).maybeSingle(),
   ]);
   if (!m || !q) { await unclaim(); return json(404, { error: "not found" }); }
   const c: any = q.client || {};
@@ -79,6 +81,28 @@ Deno.serve(async (req) => {
       `<p style="margin:0 0 10px;font-size:14px;color:#334155"><strong>${esc(c.full_name)}</strong>${c.whatsapp ? " · " + esc(c.whatsapp) : ""}</p>${quote(m.body)}${att}`,
       "Reply in the CRM", `${SITE}/team`, "Reply the same business day. Other messages sent in the next 10 minutes are grouped in the CRM.");
     text = `New message from ${c.full_name || "the client"} on ${q.code} (${q.product_name}):\n\n${m.body}\n\nReply in the CRM: ${SITE}/team`;
+  } else if (c.language === "fr") {
+    if (c.email) to = [c.email];
+    const hiText = c.full_name ? `Bonjour ${String(c.full_name).split(" ")[0]},` : "Bonjour,";
+    const hi = esc(hiText);
+    const ACCOUNT = `${SITE}/fr/account`;
+    if (n.kind === "team_message") {
+      subject = `Nouveau message de DDPSourcing · ${q.code}`;
+      html = layout(`Votre demande ${esc(q.code)}`, esc(q.product_name),
+        `<p style="margin:0 0 10px;font-size:15px;color:#334155">${hi} notre équipe vous a envoyé un message :</p>${quote(m.body)}${att.replace("File attached", "Fichier joint")}`,
+        "Lire et répondre", ACCOUNT, "Merci de répondre dans votre compte client pour garder toute la conversation au même endroit.");
+      text = `${hiText} notre équipe vous a envoyé un message au sujet de ${q.code} (${q.product_name}) :\n\n${m.body}\n\nLire et répondre : ${ACCOUNT}`;
+    } else {
+      const stageUpdate = /^Status update:/i.test(String(m.body));
+      const stage = frBody(String(m.body)).replace(/^Mise à jour : /, "");
+      subject = `${q.code} : ${stage}`;
+      html = layout(`Votre demande ${esc(q.code)}`, esc(q.product_name),
+        `<p style="margin:0 0 10px;font-size:15px;color:#334155">${hi} ${stageUpdate ? "votre demande a un nouveau statut :" : "voici une mise à jour de votre demande :"}</p><p style="margin:0;font-size:${stageUpdate ? 20 : 16}px;font-weight:800;color:#0B1220">${esc(stage)}</p>`,
+        "Voir les détails", ACCOUNT, stageUpdate
+          ? `Vous recevez cet e-mail à chaque étape de votre commande. Vous pouvez désactiver ces e-mails d’étape dans <a href="${ACCOUNT}?tab=profile" style="color:#B04600">votre profil</a>.`
+          : "Une question ? Répondez dans votre compte client, ou répondez à cet e-mail.");
+      text = `${hiText} votre demande ${q.code} (${q.product_name}) : ${stage}\n\nVoir les détails : ${ACCOUNT}`;
+    }
   } else {
     if (c.email) to = [c.email];
     const hiText = c.full_name ? `Hello ${String(c.full_name).split(" ")[0]},` : "Hello,";

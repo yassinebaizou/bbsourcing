@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<link rel="alternate" hreflang="en" href="https://www.ddpsourcing.com/"><link rel="alternate" hreflang="fr" href="https://www.ddpsourcing.com/fr"><link rel="alternate" hreflang="x-default" href="https://www.ddpsourcing.com/">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DDPSourcing: DDP sourcing from China to Morocco</title>
 <meta name="description" content="Send us a product link. We find a trusted supplier in China, ship by express air, clear Moroccan customs, and deliver your stock to your door in 15 to 20 days, for one final price per unit.">
@@ -70,11 +71,15 @@ p{margin:0}
 .header-cta{min-height:46px;font-size:15px;padding:0 20px}
 .header-actions{display:flex;gap:10px;flex:none}
 .header-actions .btn{white-space:nowrap}
+.lang-switch{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 8px;color:#F7F8FA;font-weight:700;font-size:14px;text-decoration:none;border-radius:8px}
+.lang-switch:hover{color:#FF6B00}
+/* French texts are longer: the estimate button stays in the hero, not in the header, on medium screens. */
+@media (max-width:1600px){html[lang="fr"] .header-cta[href$="estimate"]{display:none}}
 .cta-help{font-size:14px;color:#AEB8C8;max-width:60ch;margin-top:16px}
 .cta-help b{color:#E2E8F0;font-weight:600}
 .nav-mobile{display:none}
 .menu-btn{display:none;background:none;border:1.5px solid var(--navy-soft);border-radius:10px;width:46px;height:46px;color:#fff;cursor:pointer;align-items:center;justify-content:center}
-@media (max-width:1100px){
+@media (max-width:1180px){
   .nav{display:none;position:absolute;left:0;right:0;top:100%;background:var(--navy);flex-direction:column;gap:0;padding:8px var(--gutter) 20px;border-bottom:1px solid var(--navy-line)}
   .nav.open{display:flex}
   .nav a{padding:14px 0;border-bottom:1px solid var(--navy-line);font-size:17px}
@@ -371,6 +376,7 @@ fieldset.field{border:0;margin:0;padding:0}
       <a class="nav-mobile" href="/account?login" id="navAccount">Log in</a>
     </nav>
     <div class="header-actions">
+      <a class="lang-switch" href="/fr" hreflang="fr" lang="fr" aria-label="Version française" data-lang-switch>FR</a>
       <a class="btn btn-ghost-dark header-cta" href="/account?login" id="headerLogin">Log in</a>
       <a class="btn btn-ghost-dark header-cta" href="/estimate" title="Instant price to test a product. Nothing is sent to our team.">Get estimated price</a>
       <a class="btn btn-primary header-cta" href="#request">Submit sourcing request</a>
@@ -1171,7 +1177,7 @@ const INCLUDED = ['Product purchase cost', 'Supplier verification', 'Quality ins
         return await insertAndFinish(row);
       }
       const email = $('a-email').value.trim();
-      const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row }) } });
+      const r = await sb.auth.signUp({ email, password: $('a-pass').value, options: { emailRedirectTo: location.origin + '/account', data: Object.assign({}, profile, { pending_request: row, language: document.documentElement.lang === 'fr' ? 'fr' : 'en' }) } });
       if (r.error) throw r.error;
       if (r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
         setAcct('login'); $('a-pass').value = '';
