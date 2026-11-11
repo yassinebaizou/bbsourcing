@@ -38,9 +38,11 @@ const invokes = (p) => p.evaluate(() => window.__MOCK.calls.filter((c) => c[0] =
   await p.fill('#cf_name', 'Karim Alaoui'); await p.fill('#cf_email', 'bad-email'); await p.click('#cfSave'); await p.waitForTimeout(200);
   check('invalid email is refused before sending', (await invokes(p)).length === 0);
   await p.fill('#cf_email', 'karim@shop.ma'); await p.fill('#cf_wa', '0612345678'); await p.selectOption('#cf_selling', 'selling');
+  check('language defaults to English', (await p.inputValue('#cf_lang')) === 'en');
+  await p.selectOption('#cf_lang', 'fr');
   await p.click('#cfSave'); await p.waitForTimeout(500);
   let inv = (await invokes(p))[0];
-  check('create_client sent to admin-clients with the details', inv && inv[1] === 'admin-clients' && inv[2].action === 'create_client' && inv[2].email === 'karim@shop.ma' && inv[2].full_name === 'Karim Alaoui' && inv[2].selling_status === 'selling', JSON.stringify(inv && inv[2]));
+  check('create_client sent to admin-clients with the details (French client)', inv && inv[1] === 'admin-clients' && inv[2].action === 'create_client' && inv[2].email === 'karim@shop.ma' && inv[2].full_name === 'Karim Alaoui' && inv[2].selling_status === 'selling' && inv[2].language === 'fr', JSON.stringify(inv && inv[2]));
   check('success message says the login email was sent', /login email was sent/.test(await p.textContent('.toast')));
 
   // After creating, the new client's panel opens (the mock answers with id c1 = Sara B).

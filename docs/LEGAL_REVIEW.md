@@ -78,3 +78,10 @@ them). **Confirm or remove:**
 - Update the texts with the lawyer's changes, raise the version (`termsVersion` in
   `assets/policy.js`, for example `2026-12-v2`) and the date.
 - Orders accepted under an older version keep that version (Terms §16).
+
+## 4. French version (Sprint 7)
+
+- `/fr/terms`, `/fr/privacy` and `/fr/policies` are translations of the English pages (texts in
+  `tools/i18n/fr-pages.json`). The French Terms say: "en cas de différence, la version anglaise fait foi".
+  Ask the lawyer whether the French version should prevail instead (common for Moroccan clients), and to
+  check the legal vocabulary (rendu droits acquittés, force majeure, loi 09-08, CNDP).

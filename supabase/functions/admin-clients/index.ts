@@ -1,5 +1,6 @@
 // Administrator actions that need the service role, called from the CRM (team/index.html):
 //   create_client  — creates the client account (email confirmed) and emails a secure link to choose a password
+//                    (in French when the team picks French: Sprint 7)
 //   update_client  — edits the client's profile, including the login email
 //   delete_client  — deletes the client account, their requests and their files
 //   delete_request — deletes one request and its files
@@ -43,6 +44,7 @@ function profileFields(b: any) {
     business_name: str(b.business_name, 160) || null,
     store_link: store ? (/^https?:\/\//i.test(store) ? store : "https://" + store) : null,
     selling_status: SELLING.includes(b.selling_status) ? b.selling_status : null,
+    language: ["en", "fr", "ar"].includes(b.language) ? b.language : "en",
   };
 }
 
@@ -77,7 +79,8 @@ async function blocker(ids: string[]) {
   return null;
 }
 
-function welcomeEmail(name: string, email: string, link: string) {
+function welcomeEmail(name: string, email: string, link: string, lang: string) {
+  if (lang === "fr") return welcomeEmailFr(name, email, link);
   const hi = name ? `Hello ${esc(name.split(" ")[0])},` : "Hello,";
   const html = `<div style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
@@ -91,6 +94,23 @@ function welcomeEmail(name: string, email: string, link: string) {
 <p style="margin:18px 0 24px;font-size:12.5px;color:#64748B">For your security this link works once and expires soon. If it has expired, open ${SITE}/account and click "Forgot password?" with the email above. We never send passwords by email.</p>
 </td></tr></table></div>`;
   const text = `${hi.replace(/&#39;/g, "'")} our team created your DDPSourcing client account.\nLogin email: ${email}\nChoose your password: ${link}\nIf the link has expired, open ${SITE}/account and click "Forgot password?".`;
+  return { html, text };
+}
+
+function welcomeEmailFr(name: string, email: string, link: string) {
+  const hi = name ? `Bonjour ${esc(name.split(" ")[0])},` : "Bonjour,";
+  const html = `<div style="margin:0;padding:24px 12px;background:#F7F8FA;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E8F0;border-radius:14px;overflow:hidden">
+<tr><td style="background:#0B1220;padding:18px 24px"><span style="font-size:20px;font-weight:800;color:#fff">DDP</span><span style="font-size:10px;font-weight:700;color:#FF6B00;letter-spacing:4px;margin-left:6px">SOURCING</span></td></tr>
+<tr><td style="padding:26px 24px 8px">
+<h1 style="margin:0 0 14px;font-size:21px;line-height:1.3;color:#0B1220">Votre compte DDPSourcing est prêt</h1>
+<p style="margin:0 0 12px;font-size:15px;color:#334155">${hi} notre équipe a créé votre compte client. Vous y suivez vos demandes, lisez vos devis, payez et échangez avec notre équipe.</p>
+<p style="margin:0 0 4px;font-size:13px;color:#64748B">Votre e-mail de connexion</p>
+<p style="margin:0 0 18px;font-size:16px;font-weight:700;color:#0B1220">${esc(email)}</p>
+<p style="margin:0"><a href="${link}" style="display:inline-block;background:#FF6B00;color:#0B1220;font-weight:700;font-size:15px;text-decoration:none;padding:13px 22px;border-radius:10px">Choisir mon mot de passe</a></p>
+<p style="margin:18px 0 24px;font-size:12.5px;color:#64748B">Pour votre sécurité, ce lien ne fonctionne qu’une fois et expire vite. S’il a expiré, ouvrez ${SITE}/fr/account et cliquez sur « Mot de passe oublié ? » avec l’e-mail ci-dessus. Nous n’envoyons jamais de mot de passe par e-mail.</p>
+</td></tr></table></div>`;
+  const text = `${hi.replace(/&#39;/g, "'")} notre équipe a créé votre compte client DDPSourcing.\nE-mail de connexion : ${email}\nChoisir votre mot de passe : ${link}\nSi le lien a expiré, ouvrez ${SITE}/fr/account et cliquez sur « Mot de passe oublié ? ».`;
   return { html, text };
 }
 
@@ -121,15 +141,16 @@ Deno.serve(async (req) => {
     }
     const id = created.data.user.id;
     await sb.from("profiles").update({ ...fields, email }).eq("id", id);
-    const link = await sb.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${SITE}/account` } });
+    const fr = fields.language === "fr";
+    const link = await sb.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: `${SITE}${fr ? "/fr" : ""}/account` } });
     const key = Deno.env.get("RESEND_API_KEY");
     let emailed = false;
     if (!link.error && link.data?.properties?.action_link && key) {
-      const { html, text } = welcomeEmail(fields.full_name, email, link.data.properties.action_link);
+      const { html, text } = welcomeEmail(fields.full_name, email, link.data.properties.action_link, fields.language);
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from: FROM, to: [email], reply_to: REPLY_TO, subject: "Your DDPSourcing account is ready", html, text }),
+        body: JSON.stringify({ from: FROM, to: [email], reply_to: REPLY_TO, subject: fr ? "Votre compte DDPSourcing est prêt" : "Your DDPSourcing account is ready", html, text }),
       });
       emailed = r.ok;
     }
