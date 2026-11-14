@@ -84,15 +84,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/fr/account",
-      "destination": "/account/index.html"
-    },
-    {
-      "source": "/ar/account",
-      "destination": "/account/index.html"
-    }
   ]
 }

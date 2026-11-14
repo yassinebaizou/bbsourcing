@@ -151,7 +151,7 @@ Emails (Resend, branded like `docs/email-templates/`): request received, quote r
 
 **Status: done** (11 Nov 2026). `/fr`, `/fr/estimate`, `/fr/policies`, `/fr/terms`, `/fr/privacy` are built by
 `node tools/build-i18n.mjs` from the English pages + `tools/i18n/fr-pages.json` (run it after any change to an English
-public page; `--check` fails if a page is out of date). `/fr/account` (Vercel rewrite) = the same account page translated
+public page; `--check` fails if a page is out of date). `/fr/account` (generated copy of `account/index.html`) = the same account page translated
 in the browser by `assets/i18n.js` + `assets/i18n/fr.json`. Language switch in every header, `hreflang`, `lang`.
 `profiles.language` set at signup (migration `20261111021251`), by the switch and in the profile; emails in French
 (`notify-client`, `notify-message` + `fr.ts`, `admin-clients`). Tests: `tests/browser/sprint7.js` (31),
@@ -166,7 +166,7 @@ in the browser by `assets/i18n.js` + `assets/i18n/fr.json`. Language switch in e
 **Status: done** (11 Nov 2026). `/ar`, `/ar/estimate`, `/ar/policies`, `/ar/terms`, `/ar/privacy` built by `node tools/build-i18n.mjs`
 (formerly build-fr.mjs; now builds French and Arabic) from `tools/i18n/ar-pages.json`, with `dir="rtl"`, the Tajawal font (Google Fonts,
 already allowed by the CSP) and `assets/rtl.css` (mirrored positions, inputs for email/phone/numbers stay left-to-right, number ranges
-written « 15 إلى 20 »). `/ar/account` (Vercel rewrite) translated by `assets/i18n.js` + `assets/i18n/ar.json`, Moroccan month names.
+written « 15 إلى 20 »). `/ar/account` (generated copy) translated by `assets/i18n.js` + `assets/i18n/ar.json`, Moroccan month names.
 Switch FR / ع / EN in every header. Arabic emails (`notify-client`, `notify-message` + `ar.ts`, `admin-clients`), right-to-left.
 Also fixed: account header wider than small phones (all languages), textarea placeholders now translated, client messages keep their own
 direction. Tests: `tests/browser/sprint8.js` (36, includes no sideways scroll at 6 widths), `tests/emails.mjs` (120).
