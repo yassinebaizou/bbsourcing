@@ -17,7 +17,7 @@ async function page(b, m, viewport) {
     const u = new URL(r.request().url());
     if (u.hostname !== 'local.test') return r.fulfill({ status: 200, body: '' });
     if (u.pathname === '/assets/vendor/supabase.js') return r.fulfill({ contentType: 'application/javascript', body: pre + mock });
-    let f = path.join(ROOT, u.pathname === '/' ? 'index.html' : /^\/(fr|ar)\/account$/.test(u.pathname) ? '/account/index.html' : u.pathname);  // vercel.json rewrites
+    let f = path.join(ROOT, u.pathname === '/' ? 'index.html' : u.pathname);  // /fr/account, /ar/account = real generated files
     if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
     if (!fs.existsSync(f)) return r.fulfill({ status: 404, body: '' });
     r.fulfill({ body: fs.readFileSync(f), contentType: CT[path.extname(f)] || 'application/octet-stream' });

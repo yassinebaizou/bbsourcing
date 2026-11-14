@@ -134,7 +134,7 @@ The generic "Status update" email (`notify-message`) is skipped for those moment
 are always sent.
 Sprint 7 (migration `20261111021251`): French. Public pages `/fr`, `/fr/estimate`, `/fr/policies`, `/fr/terms`, `/fr/privacy` are
 **generated**: never edit `fr/*.html`; change the English page (or `tools/i18n/fr-pages.json`) and run `node tools/build-i18n.mjs`
-(`--check` in tests). `/fr/account` is a Vercel rewrite to `account/index.html`, translated in the browser by `assets/i18n.js`
+(`--check` in tests). `/fr/account` (`fr/account/index.html`) is a **generated copy** of `account/index.html` (run `node tools/build-i18n.mjs` after every account change; the old Vercel rewrite gave a 404 live), translated in the browser by `assets/i18n.js`
 (dictionary `assets/i18n/fr.json`, `{1}` patterns, French dates; `translate="no"` protects client content). New account texts need
 a French entry (`tests/browser/sprint7.js` lists English left on the French screens). French texts never use ASCII quotes (’ « »).
 `profiles.language` (en/fr/ar) comes from signup metadata (`handle_new_user`), the header switch (saved for signed-in clients) and
@@ -144,7 +144,7 @@ messages), `admin-clients` welcome email; CRM shows the client language and lets
 Sprint 9: account "Get started" checklist (`renderOnboarding()`, localStorage `ddp-onboarding-hidden` / `ddp-read-rules`, hidden for staff).
 Every action button uses `busy()` while waiting; header tap targets ≥ 44 px. Mock Supabase options: `client: true` (no staff role), `delay` (ms).
 Sprint 8: Arabic, same machinery: `/ar/*` generated (`tools/i18n/ar-pages.json`, `<html lang="ar" dir="rtl">`, Tajawal font, `assets/rtl.css`),
-`/ar/account` (rewrite, `assets/i18n/ar.json`, dates `ar-MA`), Arabic emails (`notify-message/ar.ts`, right-to-left layouts). Headers show
+`/ar/account` (generated copy, `assets/i18n/ar.json`, dates `ar-MA`), Arabic emails (`notify-message/ar.ts`, right-to-left layouts). Headers show
 the two other languages (`data-lang-switch="fr|ar|en"`). **Any new CSS with left/right needs its mirror in `assets/rtl.css`**
 (`tests/browser/sprint8.js` fails on sideways scroll). Number ranges in Arabic are written with words (15 إلى 20), not "15–20".
 `my_failed_request()` (signed-in) returns only the caller's own request refused at sign-up (`failed_pending_requests`,
