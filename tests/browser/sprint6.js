@@ -44,10 +44,10 @@ const me = (o) => [Object.assign({ id: 'u-admin', full_name: 'Sara Benali', emai
   check('saving sends email_updates=false and language=fr', up && up[2].email_updates === false && up[2].language === 'fr' && up[2].full_name === 'Sara Benali', JSON.stringify(up && up[2]));
   await ctx.close();
 
-  // A client who turned the emails off sees the box unchecked and their language (Arabic: the account opens in Arabic, Sprint 8).
+  // A client who turned the emails off sees the box unchecked and their language (the site itself stays English until they tap the switch).
   ({ ctx, p } = await page(b, { extraTables: { profiles: me({ email_updates: false, language: 'ar' }) } }));
   await p.goto('http://local.test/account?tab=profile'); await p.waitForTimeout(2500);
-  check('saved choice shown: off, Arabic (opened in /ar/account)', new URL(p.url()).pathname === '/ar/account' && !(await p.isChecked('#p_updates')) && (await p.inputValue('#p_language')) === 'ar');
+  check('saved choice shown: off, Arabic (site stays English until the client taps the switch)', new URL(p.url()).pathname === '/account' && !(await p.isChecked('#p_updates')) && (await p.inputValue('#p_language')) === 'ar');
   await ctx.close();
 
   // Phone: the emails box fits the screen.

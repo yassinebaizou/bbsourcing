@@ -183,19 +183,31 @@ async function frAccount(b, r, rpc, tables) {
   }
   check('French account: no English text left in ' + (states.length + 7) + ' screens', found.size === 0, [...found].map(([t, w]) => '[' + w + '] ' + t).join(' | '));
 
-  // A client who chose French is sent to the French account; the switch to English is remembered.
+  // Owner rule: English by default; the site changes only when the client taps the switch (remembered on this device).
   ({ ctx, p } = await page(b, { extraTables: { profiles: [{ id: 'u-admin', full_name: 'Sara B', email: 'sara@x.ma', language: 'fr' }] } }));
-  await p.goto('http://local.test/account'); await p.waitForTimeout(1500);
-  check('profile language fr: /account opens /fr/account', new URL(p.url()).pathname === '/fr/account');
+  await p.goto('http://local.test/account'); await p.waitForTimeout(1300);
+  check('saved language fr alone does not change the site: /account stays English', new URL(p.url()).pathname === '/account');
+  await p.goto('http://local.test/'); await p.waitForTimeout(300);
+  check('homepage stays English by default', new URL(p.url()).pathname === '/');
+  await ctx.close();
+  ({ ctx, p } = await page(b, { extraTables: { profiles: [{ id: 'u-admin', full_name: 'Sara B', email: 'sara@x.ma', language: 'en' }] } }));
+  await p.goto('http://local.test/account'); await p.waitForTimeout(1300);
   // Calls are kept in sessionStorage because the click opens another page.
   await p.evaluate(() => { const c = window.__MOCK.calls, push = c.push.bind(c); c.push = (...a) => { sessionStorage.setItem('calls', JSON.stringify(JSON.parse(sessionStorage.getItem('calls') || '[]').concat(a))); return push(...a); }; });
-  await p.click('[data-lang-switch="en"]'); await p.waitForTimeout(1200);
-  const upd = JSON.parse(await p.evaluate(() => sessionStorage.getItem('calls') || '[]')).find((c) => c[0] === 'update' && c[1] === 'profiles');
-  check('switching to English saves language=en and opens /account', upd && upd[2].language === 'en' && new URL(p.url()).pathname === '/account', JSON.stringify(upd));
-  await ctx.close();
-  ({ ctx, p } = await page(b, { extraTables: { profiles: [{ id: 'u-admin', full_name: 'Sara B', email: 'sara@x.ma', language: 'fr' }] } }, null, { 'ddp-lang': 'en' }));
-  await p.goto('http://local.test/account'); await p.waitForTimeout(1300);
-  check('English chosen on this device: stays on /account', new URL(p.url()).pathname === '/account');
+  await p.click('[data-lang-switch="fr"]'); await p.waitForTimeout(1500);
+  let upd = JSON.parse(await p.evaluate(() => sessionStorage.getItem('calls') || '[]')).find((c) => c[0] === 'update' && c[1] === 'profiles');
+  check('client taps fr: /fr/account opens and language=fr is saved', upd && upd[2].language === 'fr' && new URL(p.url()).pathname === '/fr/account', JSON.stringify(upd));
+  await p.goto('http://local.test/account'); await p.waitForTimeout(800);
+  const accUrl = new URL(p.url()).pathname;
+  await p.goto('http://local.test/policies'); await p.waitForTimeout(300);
+  check('choice remembered: /account and /policies open in French', accUrl === '/fr/account' && new URL(p.url()).pathname === '/fr/policies', accUrl + ' ' + p.url());
+  await p.goto('http://local.test/fr/account'); await p.waitForTimeout(1300);
+  await p.evaluate(() => sessionStorage.removeItem('calls'));
+  await p.evaluate(() => { const c = window.__MOCK.calls, push = c.push.bind(c); c.push = (...a) => { sessionStorage.setItem('calls', JSON.stringify(JSON.parse(sessionStorage.getItem('calls') || '[]').concat(a))); return push(...a); }; });
+  await p.click('[data-lang-switch="en"]'); await p.waitForTimeout(1500);
+  check('switching back to English opens /account and is remembered', new URL(p.url()).pathname === '/account' && (await p.evaluate(() => localStorage.getItem('ddp-lang'))) === 'en');  // (mock profile is re-read as en, so no save is needed here)
+  await p.goto('http://local.test/'); await p.waitForTimeout(300);
+  check('English chosen: homepage stays English', new URL(p.url()).pathname === '/');
   await ctx.close();
 
   // English account unchanged.

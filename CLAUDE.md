@@ -138,7 +138,9 @@ Sprint 7 (migration `20261111021251`): French. Public pages `/fr`, `/fr/estimate
 (dictionary `assets/i18n/fr.json`, `{1}` patterns, French dates; `translate="no"` protects client content). New account texts need
 a French entry (`tests/browser/sprint7.js` lists English left on the French screens). French texts never use ASCII quotes (’ « »).
 `profiles.language` (en/fr/ar) comes from signup metadata (`handle_new_user`), the header switch (saved for signed-in clients) and
-the profile; `/account` sends a French client to `/fr/account` unless they chose English on that device (`localStorage ddp-lang`).
+the profile. **Owner rule: the site is English by default and changes only when the client taps FR / ع / EN**: `assets/lang.js`
+(in the `<head>` of every public page and the account) remembers that tap on the device (`localStorage ddp-lang`) and sends English pages
+to the chosen language; `profiles.language` alone only decides the emails.
 Emails follow `profiles.language`: `notify-client` templates (fr), `notify-message` (`fr.ts` translates stage names and system
 messages), `admin-clients` welcome email; CRM shows the client language and lets the admin set it.
 Sprint 9: account "Get started" checklist (`renderOnboarding()`, localStorage `ddp-onboarding-hidden` / `ddp-read-rules`, hidden for staff).

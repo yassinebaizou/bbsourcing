@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script src="/assets/lang.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>My Account | DDPSourcing</title>
@@ -809,13 +810,7 @@
       sb.rpc("staff_role")
     ]).then(function (res) {
       state.profile = res[0].data || { full_name: "", email: user.email };
-      // A client who chose French or Arabic gets that account, unless they switched to English on this device.
-      var chosen = null; try { chosen = localStorage.getItem(LANG_KEY); } catch (e) {}
-      var want = state.profile.language;
-      if (LANG === "en" && (want === "fr" || want === "ar") && chosen !== "en") {
-        location.replace("/" + want + "/account" + location.search + location.hash);
-        return new Promise(function () {});
-      }
+      // Language: English unless the client chose French or Arabic on this device (assets/lang.js).
       (res[1].data || []).forEach(function (s) { state.statuses[s.code] = s; });
       $("crmLink").hidden = !res[2].data;
       $("hello").textContent = state.profile.full_name ? "Hi, " + state.profile.full_name.split(" ")[0] : "";
